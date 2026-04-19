@@ -76,7 +76,7 @@ export default function AuthPage({ initialMode = "login", onBack, onLoginSuccess
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center gap-3 mb-8"
             >
-              <BrandLogo wrapperClassName="w-12 h-12 rounded-2xl overflow-hidden shadow-xl" imgClassName="w-full h-full" />
+              <BrandLogo wrapperClassName="w-12 h-12 rounded-full overflow-hidden shadow-xl bg-white" imgClassName="w-full h-full" />
               <span className="font-display font-bold text-3xl tracking-tight drop-shadow-md">
                 Paradise <span className="text-primary-light">Hub</span>
               </span>

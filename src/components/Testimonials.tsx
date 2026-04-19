@@ -5,7 +5,7 @@ import BrandLogo from "./BrandLogo";
 
 export default function Testimonials() {
   return (
-    <section id="about" className="pt-24 pb-48 px-4 bg-white overflow-hidden">
+    <section id="about" className="mt-4 pt-24 pb-48 px-4 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <motion.h2 
@@ -27,10 +27,9 @@ export default function Testimonials() {
             className="relative group rounded-[32px] overflow-hidden aspect-video border-4 border-ink shadow-[12px_12px_0px_0px_rgba(17,24,39,1)]"
           >
             <img 
-              src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?q=80&w=1000&auto=format&fit=crop" 
-              alt="Paradise Hub Environment" 
+              src="/community-group.jpg" 
+              alt="Paradise Hub Community" 
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              referrerPolicy="no-referrer"
             />
             <div className="absolute inset-0 bg-ink/20" />
             
@@ -53,14 +52,14 @@ export default function Testimonials() {
             className="space-y-6"
           >
             <h3 className="text-3xl md:text-4xl font-bold text-ink leading-tight">
-              Cultivating the Next Generation of Tech and Agri Leaders
+              Cultivating the Next Generation of Tech and Agribusiness Leaders
             </h3>
             <div className="space-y-4 text-lg text-gray-600 leading-relaxed">
               <p>
-                Paradise Hub is a premier learning and innovation center dedicated to bridging the gap between technology and agriculture. We empower the next generation of African leaders by providing specialized training in AI-Powered Business Automation, Sustainable Farm Management, and Agro-Tech Innovation.
+                Paradise Hub is a premier learning and innovation center dedicated to bridging the gap between technology and agriculture. We empower the next generation of African leaders by providing specialized training in AI-Powered Business Automation, Sustainable Farm Management, and Agribusiness Innovation.
               </p>
               <p>
-                Our mission is to cultivate talent and foster innovation that drives sustainable growth across the continent. Through our gamified e-learning platform and hands-on approach, we ensure our learners are equipped with the skills needed to thrive in the modern economy.
+                Our mission is to cultivate talent and foster innovation that drives sustainable growth across the continent. Through our interactive e-learning platform and hands-on approach, we ensure our learners are equipped with the skills needed to thrive in the modern economy.
               </p>
             </div>
           </motion.div>
@@ -75,7 +74,7 @@ export function Footer({ aiImage }: { aiImage?: string }) {
     <footer className="bg-ink text-white pt-32 pb-12 px-4 relative">
       <div className="max-w-7xl mx-auto">
         {/* Newsletter Section - Overlapping */}
-        <div className="absolute top-0 left-4 right-4 -translate-y-1/2 bg-primary rounded-[40px] p-8 md:p-12 text-center shadow-[12px_12px_0px_0px_rgba(17,24,39,1)] max-w-5xl mx-auto border-4 border-ink">
+        <div className="absolute top-0 left-4 right-4 -translate-y-1/2 bg-primary rounded-[40px] p-8 md:p-12 text-center shadow-[12px_12px_0px_0px_rgba(17,24,39,1)] max-w-5xl mx-auto border-4 border-ink my-12">
           <h3 className="text-4xl md:text-5xl font-bold mb-4">Subscribe to Paradise Updates</h3>
           <p className="text-white/90 mb-8 max-w-2xl mx-auto text-lg">
             We bring together industry leaders to share insights, spark ideas, and help you level up.
@@ -95,13 +94,13 @@ export function Footer({ aiImage }: { aiImage?: string }) {
         <div className="grid md:grid-cols-4 gap-16 mb-24 pt-48">
           <div className="col-span-2">
             <div className="flex items-center gap-2 mb-8">
-              <BrandLogo wrapperClassName="w-10 h-10 rounded-lg shadow-inner border-2 border-white/20" imgClassName="w-full h-full" />
+              <BrandLogo wrapperClassName="w-10 h-10 rounded-[50%] bg-white shadow-md border-2 border-white" imgClassName="w-full h-full" />
               <span className="font-display font-bold text-2xl tracking-tight">
                 Paradise <span className="text-primary-light">Hub</span>
               </span>
             </div>
             <p className="text-gray-400 text-lg max-w-sm leading-relaxed mb-8">
-              Empowering the next generation of African leaders through gamified e-learning in technology and agriculture.
+              Empowering the next generation of African leaders through interactive e-learning in technology and agribusiness.
             </p>
             <div className="flex gap-4">
               <SocialIcon icon={<Facebook size={20} />} />
@@ -117,7 +116,7 @@ export function Footer({ aiImage }: { aiImage?: string }) {
             <ul className="space-y-4 text-gray-400">
               <li><FooterLink href="#">Sustainable Farm Management</FooterLink></li>
               <li><FooterLink href="#">AI-Powered Business Automation</FooterLink></li>
-              <li><FooterLink href="#">Agro-Tech Innovation</FooterLink></li>
+              <li><FooterLink href="#">Agribusiness Innovation</FooterLink></li>
             </ul>
           </div>
 

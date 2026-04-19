@@ -3,7 +3,9 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   ChevronDown, 
-  ChevronUp, 
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Play, 
   FileText, 
   CheckCircle2, 
@@ -114,43 +116,68 @@ export default function CoursePlayer({ course, onBack, onAwardPoints }: CoursePl
       <motion.aside 
         initial={false}
         animate={{ 
-          width: isSidebarOpen ? (window.innerWidth <= 1024 ? 300 : 350) : 0,
-          x: isSidebarOpen ? 0 : (window.innerWidth <= 1024 ? -300 : 0)
+          width: isSidebarOpen ? (window.innerWidth <= 1024 ? 300 : 350) : 80,
         }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
         className={cn(
           "border-r border-gray-100 flex flex-col bg-gray-50 relative z-[70]",
-          window.innerWidth <= 1024 && "fixed inset-y-0 left-0 shadow-2xl"
+          window.innerWidth <= 1024 && isSidebarOpen && "fixed inset-y-0 left-0 shadow-2xl"
         )}
       >
-        <div className="p-6 border-b border-gray-100 bg-white">
+        {/* Header */}
+        <div className={cn(
+          "border-b border-gray-100 bg-white transition-all",
+          isSidebarOpen ? "p-6" : "p-3"
+        )}>
           <div className="flex items-center justify-between mb-6">
-            <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <ArrowLeft size={20} />
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors shrink-0"
+            >
+              {isSidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
             </button>
-            <div className="flex items-center gap-2">
-              <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
-              <span className="font-display font-bold text-xl tracking-tight text-ink">
-                Paradise <span className="text-primary">Hub</span>
-              </span>
-            </div>
+            {isSidebarOpen && (
+              <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <ArrowLeft size={20} />
+              </button>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-bold text-gray-400 uppercase tracking-widest">
-              <span>Course Progress</span>
-              <span>{progressPercent}%</span>
-            </div>
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${progressPercent}%` }}
-                className="h-full bg-primary"
-              />
-            </div>
-          </div>
+          {isSidebarOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="flex items-center gap-2 mb-6">
+                <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
+                <span className="font-display font-bold text-xl tracking-tight text-ink">
+                  Paradise <span className="text-primary">Hub</span>
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  <span>Course Progress</span>
+                  <span>{progressPercent}%</span>
+                </div>
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progressPercent}%` }}
+                    className="h-full bg-primary"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
+        <div className={cn(
+          "flex-1 overflow-y-auto custom-scrollbar transition-all",
+          isSidebarOpen ? "p-4 space-y-4" : "p-2 space-y-2"
+        )}>
           {content.weeks.map((week, idx) => {
             const locked = isWeekLocked(idx);
             const isExpanded = expandedWeeks.includes(week.id);
@@ -161,36 +188,52 @@ export default function CoursePlayer({ course, onBack, onAwardPoints }: CoursePl
             const weekProgress = Math.round(((weekCompleted + weekPassed) / weekTotal) * 100);
             
             return (
-              <div key={week.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+              <div key={week.id} className={cn(
+                "bg-white border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow",
+                isSidebarOpen ? "rounded-2xl" : "rounded-lg"
+              )}>
                 <button 
                   onClick={() => !locked && toggleWeek(week.id)}
                   className={cn(
-                    "w-full p-4 flex items-center justify-between text-left transition-colors",
+                    "w-full flex items-center justify-between transition-colors",
+                    isSidebarOpen ? "p-4 text-left" : "p-2 justify-center",
                     locked ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"
                   )}
+                  title={week.title}
                 >
-                  <div className="flex-1 pr-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Week {week.id}</span>
-                      {locked && <Lock size={12} className="text-gray-400" />}
-                    </div>
-                    <h4 className="text-sm font-bold text-ink leading-tight mb-2">{week.title}</h4>
-                    {!locked && (
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-primary/40" style={{ width: `${weekProgress}%` }} />
+                  {isSidebarOpen ? (
+                    <>
+                      <div className="flex-1 pr-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Week {week.id}</span>
+                          {locked && <Lock size={12} className="text-gray-400" />}
                         </div>
-                        <span className="text-[9px] font-bold text-gray-400">{weekProgress}%</span>
+                        <h4 className="text-sm font-bold text-ink leading-tight mb-2">{week.title}</h4>
+                        {!locked && (
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-primary/40" style={{ width: `${weekProgress}%` }} />
+                            </div>
+                            <span className="text-[9px] font-bold text-gray-400">{weekProgress}%</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {isExpanded ? <ChevronUp size={18} className="text-primary" /> : <ChevronDown size={18} />}
-                  </div>
+                      <div className="flex items-center gap-3">
+                        {isExpanded ? <ChevronUp size={18} className="text-primary" /> : <ChevronDown size={18} />}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-[9px] font-bold text-primary">W{week.id}</span>
+                      <div className="w-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary/40" style={{ width: "100%", height: `${weekProgress}%` }} />
+                      </div>
+                    </div>
+                  )}
                 </button>
 
                 <AnimatePresence>
-                  {isExpanded && !locked && (
+                  {isExpanded && !locked && isSidebarOpen && (
                     <motion.div 
                       initial={{ height: 0 }}
                       animate={{ height: "auto" }}

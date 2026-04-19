@@ -1,4 +1,5 @@
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
+import { useState } from "react";
 import { 
   ArrowLeft, 
   Bell, 
@@ -12,7 +13,12 @@ import {
   ArrowRight,
   Facebook,
   Linkedin,
-  Users
+  Users,
+  User,
+  Settings,
+  HelpCircle,
+  GraduationCap,
+  LogOut
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import { cn } from "@/src/lib/utils";
@@ -41,20 +47,29 @@ interface CourseDetailsProps {
   onEnroll: (course: any) => void;
   isEnrolled?: boolean;
   paymentStatus?: 'pending' | 'verified';
+  onViewProfile?: () => void;
+  onViewCommunity?: () => void;
+  onViewLearning?: () => void;
+  onLogout?: () => void;
 }
 
-export default function CourseDetails({ course, onBack, onEnroll, isEnrolled, paymentStatus }: CourseDetailsProps) {
+export default function CourseDetails({ course, onBack, onEnroll, isEnrolled, paymentStatus, onViewProfile, onViewCommunity, onViewLearning, onLogout }: CourseDetailsProps) {
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Navbar */}
       <nav className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-[100]">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-ink rounded-lg flex items-center justify-center text-white font-display font-bold text-lg">
-            P
+        <div className="flex items-center gap-2 md:gap-8">
+          <div className="flex items-center gap-2">
+            <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
+            <span className="font-display font-bold text-xl tracking-tight hidden xs:block">
+              Paradise <span className="text-primary">Hub</span>
+            </span>
           </div>
-          <span className="font-display font-bold text-xl tracking-tight text-ink">
-            eHub
-          </span>
         </div>
         
         <div className="flex items-center gap-3 md:gap-6">
@@ -64,18 +79,207 @@ export default function CourseDetails({ course, onBack, onEnroll, isEnrolled, pa
             </div>
             <span className="text-xs md:text-sm font-bold">0 points</span>
           </div>
-          <button className="p-2 text-gray-400 hover:text-primary transition-colors relative">
+          <button 
+            onClick={() => {
+              setIsNotificationsOpen(!isNotificationsOpen);
+              setIsMenuOpen(false);
+              setIsProfileOpen(false);
+            }}
+            className="p-2 text-gray-400 hover:text-primary transition-colors relative"
+          >
             <Bell size={22} />
             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
           </button>
-          <button className="p-2 text-gray-400 hover:text-primary transition-colors">
+          <button 
+            onClick={() => {
+              setIsMenuOpen(!isMenuOpen);
+              setIsNotificationsOpen(false);
+              setIsProfileOpen(false);
+            }}
+            className="p-2 text-gray-400 hover:text-primary transition-colors"
+          >
             <Grid size={22} />
           </button>
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm md:text-base">
-            PA
+          <div className="relative">
+            <button
+              onClick={() => {
+                setIsProfileOpen(!isProfileOpen);
+                setIsNotificationsOpen(false);
+                setIsMenuOpen(false);
+              }}
+              className="flex items-center gap-2 md:gap-3 group"
+            >
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border-2 border-transparent group-hover:border-primary transition-all text-sm md:text-base">
+                PH
+              </div>
+              <div className="hidden lg:block text-left">
+                <div className="text-sm font-bold text-ink">Penina H.</div>
+                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Learner</div>
+              </div>
+            </button>
+
+            {/* Profile Dropdown */}
+            <AnimatePresence>
+              {isProfileOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsProfileOpen(false)} 
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 overflow-hidden"
+                  >
+                    {/* Dark Mode Toggle */}
+                    <div className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-10 h-5 rounded-full relative transition-colors duration-300 cursor-pointer",
+                          isDarkTheme ? "bg-primary" : "bg-gray-200"
+                        )} onClick={() => setIsDarkTheme(!isDarkTheme)}>
+                          <div className={cn(
+                            "absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-300",
+                            isDarkTheme ? "left-6" : "left-1"
+                          )} />
+                        </div>
+                        <span className="text-sm font-bold text-ink">View dark theme</span>
+                      </div>
+                    </div>
+
+                    <div className="h-px bg-gray-100 mx-2" />
+                    
+                    <button 
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        onViewProfile?.();
+                      }}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
+                    >
+                      <User size={18} className="text-gray-400" />
+                      <span className="text-sm font-bold">View profile</span>
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        onViewLearning?.();
+                      }}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
+                    >
+                      <GraduationCap size={18} className="text-gray-400" />
+                      <span className="text-sm font-bold">My Learning</span>
+                    </button>
+
+                    <button className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink">
+                      <Settings size={18} className="text-gray-400" />
+                      <span className="text-sm font-bold">Settings</span>
+                    </button>
+
+                    <div className="h-px bg-gray-100 mx-2" />
+
+                    <button className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink">
+                      <HelpCircle size={18} className="text-gray-400" />
+                      <span className="text-sm font-bold">Support</span>
+                    </button>
+
+                    <div className="h-px bg-gray-100 mx-2" />
+
+                    <button 
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        onLogout?.();
+                      }}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-red-500"
+                    >
+                      <LogOut size={18} />
+                      <span className="text-sm font-bold">Logout</span>
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </nav>
+
+      {/* Notifications Dropdown */}
+      <AnimatePresence>
+        {isNotificationsOpen && (
+          <>
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setIsNotificationsOpen(false)} 
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="absolute right-4 md:right-8 top-16 w-[320px] md:w-[400px] bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-50"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-bold text-ink">Notifications</h4>
+                <button className="text-xs text-primary font-bold hover:underline">Mark all as read</button>
+              </div>
+              <div className="py-12 text-center">
+                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Bell size={24} className="text-gray-300" />
+                </div>
+                <p className="text-sm text-gray-400">No active notifications</p>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Menu Dropdown */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <>
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setIsMenuOpen(false)} 
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="absolute right-4 md:right-8 top-16 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-50"
+            >
+              <div className="grid grid-cols-3 gap-y-8 gap-x-4">
+                <button 
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onViewCommunity?.();
+                  }}
+                  className="flex flex-col items-center gap-3 group"
+                >
+                  <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
+                    <Users size={20} />
+                  </div>
+                  <span className="text-xs font-bold text-ink">Incubation</span>
+                </button>
+                <button 
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onBack();
+                  }}
+                  className="flex flex-col items-center gap-3 group"
+                >
+                  <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
+                    <ArrowLeft size={20} />
+                  </div>
+                  <span className="text-xs font-bold text-ink">Dashboard</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Hero Banner */}
       <div className="relative bg-ink overflow-hidden">
@@ -131,11 +335,11 @@ export default function CourseDetails({ course, onBack, onEnroll, isEnrolled, pa
           <div className="lg:col-span-2 space-y-12 md:space-y-16">
             <section>
               <h2 className="text-3xl md:text-4xl font-display font-bold text-ink mb-8">
-                From Beginner to Design Pro
+                From Beginner to Pro
               </h2>
               <div className="space-y-6 text-gray-600 text-base md:text-lg leading-relaxed">
                 <p>{course.description}</p>
-                <p>Learn core design principles and how to tell compelling visual stories. You'll also build a portfolio, develop your own personal brand, and learn essential career skills to help you succeed.</p>
+                <p></p>
               </div>
             </section>
 
@@ -255,13 +459,13 @@ export default function CourseDetails({ course, onBack, onEnroll, isEnrolled, pa
           <div className="grid md:grid-cols-4 gap-16 mb-24">
             <div className="col-span-2">
               <div className="flex items-center gap-2 mb-8">
-                <BrandLogo wrapperClassName="w-10 h-10 rounded-lg shadow-inner" imgClassName="w-full h-full" />
+                <BrandLogo wrapperClassName="w-10 h-10 rounded-full shadow-inner bg-white" imgClassName="w-full h-full" />
                 <span className="font-display font-bold text-2xl tracking-tight">
                   Paradise <span className="text-primary-light">Hub</span>
                 </span>
               </div>
               <p className="text-gray-400 text-lg max-w-sm leading-relaxed mb-8">
-                Empowering the next generation of African leaders through gamified e-learning in technology and agriculture.
+                Empowering the next generation of African leaders through an interactive e-learning in technology and agribusiness.
               </p>
               <div className="flex gap-4">
                 <a href="#" className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all">
@@ -281,7 +485,7 @@ export default function CourseDetails({ course, onBack, onEnroll, isEnrolled, pa
               <ul className="space-y-4 text-gray-400">
                 <li><a href="#" className="hover:text-primary-light transition-colors">Sustainable Farm Management</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">AI-Powered Business Automation</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Agro-Tech Innovation</a></li>
+                <li><a href="#" className="hover:text-primary-light transition-colors">Agribusiness Innovation</a></li>
               </ul>
             </div>
 

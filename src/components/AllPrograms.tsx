@@ -151,7 +151,7 @@ export default function AllPrograms({ programs, onBack, onViewDetails, onEnroll 
                 </span>
               </div>
               <p className="text-gray-400 text-lg max-w-sm leading-relaxed mb-8">
-                Empowering the next generation of African leaders through gamified e-learning in technology and agriculture.
+                Empowering the next generation of African leaders through an interactive e-learning in technology and agribusiness.
               </p>
             </div>
 
@@ -160,7 +160,7 @@ export default function AllPrograms({ programs, onBack, onViewDetails, onEnroll 
               <ul className="space-y-4 text-gray-400">
                 <li><a href="#" className="hover:text-primary-light transition-colors">Sustainable Farm Management</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">AI-Powered Business Automation</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Agro-Tech Innovation</a></li>
+                <li><a href="#" className="hover:text-primary-light transition-colors">Agribusiness Innovation</a></li>
               </ul>
             </div>
 

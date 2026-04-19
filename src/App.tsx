@@ -91,6 +91,12 @@ export default function App() {
             setCurrentPage("all-programs");
           }}
           onPaymentSuccess={handlePaymentSuccess}
+          onViewProfile={() => setCurrentPage("profile")}
+          onViewCommunity={() => setCurrentPage("community")}
+          onLogout={() => {
+            setIsLoggedIn(false);
+            setCurrentPage("dashboard");
+          }}
         />
       );
     }
@@ -119,6 +125,14 @@ export default function App() {
             setSelectedCourse(null);
           }} 
           onEnroll={handleEnroll}
+          onViewProfile={() => setCurrentPage("profile")}
+          onViewCommunity={() => setCurrentPage("community")}
+          onViewLearning={() => setCurrentPage("learning")}
+          onLogout={() => {
+            setIsLoggedIn(false);
+            setCurrentPage("dashboard");
+            setSelectedCourse(null);
+          }}
         />
       );
     }
@@ -131,6 +145,14 @@ export default function App() {
             setSelectedCourse(null);
           }} 
           onAwardPoints={handleAwardPoints}
+          onViewProfile={() => setCurrentPage("profile")}
+          onViewCommunity={() => setCurrentPage("community")}
+          onViewLearning={() => setCurrentPage("learning")}
+          onLogout={() => {
+            setIsLoggedIn(false);
+            setCurrentPage("dashboard");
+            setSelectedCourse(null);
+          }}
         />
       );
     }
@@ -235,6 +257,8 @@ export default function App() {
       </AnimatePresence>
 
       <main>
+        <Testimonials />
+        
         <Hero 
           onStartClick={() => setShowAuth("signup")}
         />
@@ -247,8 +271,6 @@ export default function App() {
         >
           <CourseList />
         </motion.div>
-
-        <Testimonials />
       </main>
 
       <Footer aiImage={aiImages?.footerImage} />

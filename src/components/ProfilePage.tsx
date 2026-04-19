@@ -99,7 +99,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                       <label className="text-sm font-bold text-ink">First Name*</label>
                       <input 
                         type="text" 
-                        defaultValue="PENINAH"
+                        defaultValue="USER"
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                       />
                     </div>
@@ -107,7 +107,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                       <label className="text-sm font-bold text-ink">Last Name*</label>
                       <input 
                         type="text" 
-                        defaultValue="ALHASSAN"
+                        defaultValue="NAME"
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                       />
                     </div>
@@ -659,7 +659,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                 </span>
               </div>
               <p className="text-gray-400 text-lg max-w-sm leading-relaxed mb-8">
-                Empowering the next generation of African leaders through gamified e-learning in technology and agriculture.
+                Empowering the next generation of African leaders through an interactive e-learning in technology and agribusiness.
               </p>
             </div>
 
@@ -668,7 +668,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
               <ul className="space-y-4 text-gray-400">
                 <li><a href="#" className="hover:text-primary-light transition-colors">Sustainable Farm Management</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">AI-Powered Business Automation</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Agro-Tech Innovation</a></li>
+                <li><a href="#" className="hover:text-primary-light transition-colors">Agribusiness Innovation</a></li>
               </ul>
             </div>
 

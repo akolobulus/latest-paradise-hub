@@ -34,7 +34,7 @@ const RECOMMENDED_PROGRAMS = [
     title: "Sustainable Farm Management",
     headline: "Eco-Friendly Farming for the Future",
     description: "Master modern farming techniques, sustainable practices, and livestock management for the 21st century.",
-    image: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?q=80&w=1200&auto=format&fit=crop",
+    image: "/farm-management.jpg",
     startDate: "11 May 2026",
     duration: "12 weeks",
     commitment: "15-20 hrs/week",
@@ -61,7 +61,7 @@ const RECOMMENDED_PROGRAMS = [
     title: "AI-Powered Business Automation",
     headline: "Lead the Future of Tech with AI",
     description: "Master the use of AI, low-code tools, and digital automation to streamline business processes and drive modern innovation.",
-    image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=1200&auto=format&fit=crop",
+    image: "/ai-automation.jpg",
     startDate: "18 May 2026",
     duration: "24 weeks",
     commitment: "20-30 hrs/week",
@@ -85,10 +85,10 @@ const RECOMMENDED_PROGRAMS = [
   },
   {
     id: 3,
-    title: "Agro-Tech Innovation",
+    title: "Agribusiness Innovation",
     headline: "The Ultimate Hybrid Career",
     description: "Harness the power of IoT, satellite imagery, and data analytics to revolutionize modern farming and ensure food security.",
-    image: "https://images.unsplash.com/photo-1581092921461-eab62e97a780?q=80&w=1200&auto=format&fit=crop",
+    image: "/agribusiness-innovation.jpg",
     startDate: "25 May 2026",
     duration: "16 weeks",
     commitment: "15-25 hrs/week",
@@ -115,7 +115,7 @@ const RECOMMENDED_PROGRAMS = [
     title: "Agri Value Chain Optimization",
     headline: "Maximize Profit from Farm to Table",
     description: "Learn the end-to-end business of agriculture, from sustainable farm management to profitable value chain optimization.",
-    image: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?q=80&w=1200&auto=format&fit=crop",
+    image: "/farm-management.jpg",
     startDate: "01 June 2026",
     duration: "10 weeks",
     commitment: "12-18 hrs/week",
@@ -142,7 +142,7 @@ const RECOMMENDED_PROGRAMS = [
     title: "Low-Code App Development",
     headline: "Build Apps Without Coding",
     description: "Build world-class software solutions using low-code platforms and lead digital transformation in your organization.",
-    image: "https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=1200&auto=format&fit=crop",
+    image: "/ai-automation.jpg",
     startDate: "08 June 2026",
     duration: "8 weeks",
     commitment: "10-15 hrs/week",
@@ -167,10 +167,10 @@ const RECOMMENDED_PROGRAMS = [
 ];
 
 const EXPLORE_CARDS = [
-  { title: "Start Learning", icon: <BookOpen />, desc: "Access your program and stay on track with your learning journey here.", color: "bg-primary", image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=400&auto=format&fit=crop" },
-  { title: "Connect to Incubation", icon: <Users />, desc: "Collaborate with fellow learners to get peer support and celebrate successes.", color: "bg-green-500", image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=400&auto=format&fit=crop" },
-  { title: "Earn Rewards", icon: <Trophy />, desc: "Check how many Legacy Points you have earned and how you can redeem them.", color: "bg-orange-500", image: "https://images.unsplash.com/photo-1533227268428-f9ed0900fb3b?q=80&w=400&auto=format&fit=crop" },
-  { title: "Need Support?", icon: <HelpCircle />, desc: "Chat with our AI learner support expert, LEA, or contact our support team directly.", color: "bg-primary-light", image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=400&auto=format&fit=crop" },
+  { title: "Start Learning", icon: <BookOpen />, desc: "Access your program and stay on track with your learning journey here.", color: "bg-primary", image: "/start-learning.jpg" },
+  { title: "Connect to Incubation", icon: <Users />, desc: "Collaborate with fellow learners to get peer support and celebrate successes.", color: "bg-green-500", image: "/connect-incubation.jpg" },
+  { title: "Earn Rewards", icon: <Trophy />, desc: "Check how many Legacy Points you have earned and how you can redeem them.", color: "bg-orange-500", image: "/earn-rewards.jpg" },
+  { title: "Need Support?", icon: <HelpCircle />, desc: "Chat with our AI learner support expert, LEA, or contact our support team directly.", color: "bg-primary-light", image: "/need-support.jpg" },
 ];
 
 const DASHBOARD_VIDEOS = [
@@ -178,13 +178,13 @@ const DASHBOARD_VIDEOS = [
     id: 1,
     title: "Welcome Video",
     description: "This is your gateway to learning, community, and opportunity at Paradise Hub. Here, you can keep up with your learning through your personal profile and access the community.",
-    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=400&auto=format&fit=crop"
+    image: "/welcome-hero.jpg"
   },
   {
     id: 2,
     title: "Orientation Video",
     description: "This video will guide you through onboarding and help you unlock the full potential of the Hub at Paradise Hub. Be sure to refer back to this video to help you along your orientation experience.",
-    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=400&auto=format&fit=crop"
+    image: "/hello-welcome.jpg"
   }
 ];
 
@@ -506,7 +506,7 @@ export default function Dashboard({ points, onLogout, onViewProfile, onViewCours
                 Your Learning Journey <br className="hidden md:block" /> Starts Here
               </h1>
               <p className="text-white/70 text-sm md:text-xl mb-0">
-                Track your progress, achieve your goals, and master the future of Agro-Tech.
+                Track your progress, achieve your goals, and master the future of Agribusiness.
               </p>
             </motion.div>
           </div>
@@ -756,13 +756,13 @@ export default function Dashboard({ points, onLogout, onViewProfile, onViewCours
           <div className="grid md:grid-cols-4 gap-16 mb-24">
             <div className="col-span-2">
               <div className="flex items-center gap-2 mb-8">
-                <BrandLogo wrapperClassName="w-10 h-10 rounded-lg shadow-inner" imgClassName="w-full h-full" />
+                <BrandLogo wrapperClassName="w-10 h-10 rounded-full shadow-inner bg-white" imgClassName="w-full h-full" />
                 <span className="font-display font-bold text-2xl tracking-tight">
                   Paradise <span className="text-primary-light">Hub</span>
                 </span>
               </div>
               <p className="text-gray-400 text-lg max-w-sm leading-relaxed mb-8">
-                Empowering the next generation of African leaders through gamified e-learning in technology and agriculture.
+                Empowering the next generation of African leaders through an interactive e-learning in technology and agribusiness.
               </p>
               <div className="flex gap-4">
                 <a href="#" className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all">
@@ -782,7 +782,7 @@ export default function Dashboard({ points, onLogout, onViewProfile, onViewCours
               <ul className="space-y-4 text-gray-400">
                 <li><a href="#" className="hover:text-primary-light transition-colors">Sustainable Farm Management</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">AI-Powered Business Automation</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Agro-Tech Innovation</a></li>
+                <li><a href="#" className="hover:text-primary-light transition-colors">Agribusiness Innovation</a></li>
               </ul>
             </div>
 

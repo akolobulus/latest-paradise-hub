@@ -6,21 +6,21 @@ const pathways = [
   {
     title: "AI-Powered Business Automation",
     description: "Master the use of AI, low-code tools, and digital automation to streamline business processes and drive modern innovation.",
-    image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=400&auto=format&fit=crop",
+    image: "/ai-automation.jpg",
     bgColor: "bg-[#EDE9FE]",
     textColor: "text-ink",
   },
   {
     title: "Sustainable Farm Management",
     description: "Learn the end-to-end business of agriculture, from sustainable farm management to profitable value chain optimization.",
-    image: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?q=80&w=400&auto=format&fit=crop",
+    image: "/farm-management.jpg",
     bgColor: "bg-[#D9F99D]",
     textColor: "text-ink",
   },
   {
-    title: "Agro-Tech Innovation",
-    description: "Harness the power of IoT, satellite imagery, and data analytics to revolutionize modern farming and ensure food security.",
-    image: "https://images.unsplash.com/photo-1581092921461-eab62e97a780?q=80&w=400&auto=format&fit=crop",
+    title: "Agrobusiness Innovation",
+    description: "Where technology meets the soil: Leveraging IoT and advanced analytics to scale food production and secure the global supply chain.",
+    image: "/agribusiness-innovation.jpg",
     bgColor: "bg-white",
     textColor: "text-ink",
   }
@@ -28,7 +28,7 @@ const pathways = [
 
 export default function CourseList() {
   return (
-    <section id="courses" className="py-32 px-4 bg-primary"> {/* Paradise Hub Deep Green */}
+    <section id="courses" className="my-12 py-32 px-4 bg-primary"> {/* Paradise Hub Deep Green */}
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-20">
           <motion.h2 

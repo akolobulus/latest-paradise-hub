@@ -46,7 +46,7 @@ const INITIAL_POSTS: Post[] = [
     id: "1",
     author: {
       name: "Sarah Chen",
-      role: "AgroTech Specialist",
+      role: "Agrobusiness Specialist",
       avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
       isVerified: true
     },
@@ -56,7 +56,7 @@ const INITIAL_POSTS: Post[] = [
     comments: 18,
     shares: 5,
     timestamp: "2h ago",
-    category: "AgroTech"
+    category: "Agrobusiness"
   },
   {
     id: "2",
@@ -91,7 +91,7 @@ const INITIAL_POSTS: Post[] = [
 
 const CHANNELS = [
   { name: "general", icon: Hash },
-  { name: "agrotech", icon: Hash },
+  { name: "agribusiness", icon: Hash },
   { name: "career-advice", icon: Hash },
   { name: "showcase", icon: Hash },
   { name: "leaderboard", icon: Trophy },
@@ -100,7 +100,7 @@ const CHANNELS = [
 ];
 
 const TRENDING = [
-  "#AgroTech2024",
+  "#Agribusiness2026",
   "#NoCodeRevolution",
   "#ParadiseHub",
   "#AutomationTips",
@@ -529,7 +529,7 @@ export default function CommunityHub({ onBack, points, initialChannel = "general
           <h3 className="text-sm font-bold text-ink mb-4">Upcoming Events</h3>
           <div className="space-y-4">
             {[
-              { title: "AgroTech Webinar", date: "Tomorrow, 2 PM", type: "Live" },
+              { title: "Agribusiness Webinar", date: "Tomorrow, 2 PM", type: "Live" },
               { title: "No-Code Workshop", date: "Friday, 10 AM", type: "Workshop" }
             ].map((event, i) => (
               <div key={i} className="flex gap-3 items-start">
