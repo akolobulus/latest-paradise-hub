@@ -23,6 +23,7 @@ import {
 import BrandLogo from "./BrandLogo";
 import { cn } from "@/src/lib/utils";
 import { COURSE_CONTENTS, Week, Lesson, Quiz } from "@/src/data/courseContent";
+import { supabase } from "@/src/lib/supabase";
 
 interface CoursePlayerProps {
   course: any;
@@ -41,6 +42,16 @@ export default function CoursePlayer({ course, onBack, onAwardPoints }: CoursePl
   const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
+  const [session, setSession] = useState<any>(null);
+
+  // Get current user session
+  useEffect(() => {
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+    };
+    getSession();
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -60,14 +71,37 @@ export default function CoursePlayer({ course, onBack, onAwardPoints }: CoursePl
     );
   };
 
-  const handleLessonComplete = () => {
+  const handleLessonComplete = async () => {
     if (activeLesson && !completedLessons.includes(activeLesson.id)) {
-      setCompletedLessons(prev => [...prev, activeLesson.id]);
-      onAwardPoints(50); // Award 50 points for completing a lesson
+      try {
+        // Sync to Supabase if user is logged in
+        if (session) {
+          const { error } = await supabase.from('lesson_progress').insert({
+            user_id: session.user.id,
+            course_id: course.id,
+            lesson_id: activeLesson.id
+          });
+          if (error) throw error;
+
+          // Award points via RPC function
+          await supabase.rpc('increment_points', { 
+            amount: 50, 
+            row_id: session.user.id 
+          });
+        }
+
+        setCompletedLessons(prev => [...prev, activeLesson.id]);
+        onAwardPoints(50); // Award 50 points for completing a lesson
+      } catch (error) {
+        console.error('Error marking lesson complete:', error);
+        // Still update local state if sync fails
+        setCompletedLessons(prev => [...prev, activeLesson.id]);
+        onAwardPoints(50);
+      }
     }
   };
 
-  const handleQuizSubmit = (quiz: Quiz) => {
+  const handleQuizSubmit = async (quiz: Quiz) => {
     let score = 0;
     quiz.questions.forEach(q => {
       if (q.type === 'multiple-choice' && quizAnswers[q.id] === q.correctAnswer) {
@@ -81,9 +115,34 @@ export default function CoursePlayer({ course, onBack, onAwardPoints }: CoursePl
 
     const passed = score >= quiz.passingGrade;
     setQuizResult({ score, passed });
+    
     if (passed && !passedQuizzes.includes(quiz.id)) {
-      setPassedQuizzes(prev => [...prev, quiz.id]);
-      onAwardPoints(200); // Award 200 points for passing a quiz
+      try {
+        // Sync to Supabase if user is logged in
+        if (session) {
+          const { error } = await supabase.from('quiz_results').insert({
+            user_id: session.user.id,
+            quiz_id: quiz.id,
+            score: score,
+            passed: true
+          });
+          if (error) throw error;
+
+          // Award points via RPC function
+          await supabase.rpc('increment_points', { 
+            amount: 200, 
+            row_id: session.user.id 
+          });
+        }
+
+        setPassedQuizzes(prev => [...prev, quiz.id]);
+        onAwardPoints(200); // Award 200 points for passing a quiz
+      } catch (error) {
+        console.error('Error saving quiz result:', error);
+        // Still update local state if sync fails
+        setPassedQuizzes(prev => [...prev, quiz.id]);
+        onAwardPoints(200);
+      }
     }
   };
 

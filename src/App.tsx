@@ -14,43 +14,144 @@ import MyLearning from "./components/MyLearning";
 import CoursePlayer from "./components/CoursePlayer";
 import CommunityHub from "./components/CommunityHub";
 import { generateAgroTechImages } from "./lib/imageGen";
+import { supabase } from "./lib/supabase";
 
 export default function App() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [aiImages, setAiImages] = useState<{ heroImage: string; footerImage: string } | null>(null);
   const [showAuth, setShowAuth] = useState<"login" | "signup" | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [session, setSession] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<"dashboard" | "profile" | "course" | "all-programs" | "learning" | "course-player" | "community">("dashboard");
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [enrolledPrograms, setEnrolledPrograms] = useState<any[]>([]);
   const [points, setPoints] = useState(0);
   const [communityChannel, setCommunityChannel] = useState("general");
 
+  // 1. Listen for Auth Changes on mount
+  useEffect(() => {
+    setIsLoading(true);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsLoggedIn(!!session);
+      if (session) fetchUserData(session.user.id);
+      setIsLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setIsLoggedIn(!!session);
+      if (session) {
+        fetchUserData(session.user.id);
+      } else {
+        // User logged out, reset state
+        setEnrolledPrograms([]);
+        setPoints(0);
+        setCurrentPage("dashboard");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // 2. Fetch User Data from Supabase
+  const fetchUserData = async (userId: string) => {
+    try {
+      // Fetch Points
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('points')
+        .eq('id', userId)
+        .single();
+      if (profile) setPoints(profile.points);
+
+      // Fetch Enrollments (map course_ids back to course objects)
+      const { data: enrollments } = await supabase
+        .from('enrollments')
+        .select('*')
+        .eq('user_id', userId);
+      
+      if (enrollments) {
+        // You would map course_ids back to your full course objects here
+        // For now, we'll just store the enrollment data
+        setEnrolledPrograms(enrollments.map(e => ({ 
+          ...e, 
+          paymentStatus: e.payment_status 
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
+
   const handleAwardPoints = (amount: number) => {
     setPoints(prev => prev + amount);
   };
 
-  const handleEnroll = (course: any) => {
-    // Check if already enrolled
-    if (enrolledPrograms.some(p => p.id === course.id)) {
+  // 3. Update the handleEnroll function to push to DB
+  const handleEnroll = async (course: any) => {
+    if (!session) {
+      setShowAuth("login");
+      return;
+    }
+
+    if (enrolledPrograms.some(p => p.id === course.id || p.course_id === course.id)) {
       setCurrentPage("learning");
       return;
     }
-    
-    const newEnrollment = {
-      ...course,
-      paymentStatus: 'pending', // Default to pending as per requirements
-      enrolledAt: new Date().toISOString()
-    };
-    
-    setEnrolledPrograms(prev => [...prev, newEnrollment]);
-    setCurrentPage("learning");
+
+    try {
+      const { error } = await supabase
+        .from('enrollments')
+        .insert({
+          user_id: session.user.id,
+          course_id: course.id,
+          payment_status: 'pending'
+        });
+
+      if (error) throw error;
+
+      const newEnrollment = { 
+        ...course, 
+        course_id: course.id,
+        user_id: session.user.id,
+        payment_status: 'pending',
+        paymentStatus: 'pending',
+        enrolledAt: new Date().toISOString() 
+      };
+      setEnrolledPrograms(prev => [...prev, newEnrollment]);
+      setCurrentPage("learning");
+    } catch (error) {
+      console.error('Error enrolling in course:', error);
+    }
   };
 
-  const handlePaymentSuccess = (courseId: number) => {
-    setEnrolledPrograms(prev => 
-      prev.map(p => p.id === courseId ? { ...p, paymentStatus: 'verified' } : p)
-    );
+  // 4. Update Payment Success
+  const handlePaymentSuccess = async (courseId: number) => {
+    if (!session) return;
+
+    try {
+      await supabase
+        .from('enrollments')
+        .update({ payment_status: 'verified' })
+        .match({ user_id: session.user.id, course_id: courseId });
+
+      setEnrolledPrograms(prev => 
+        prev.map(p => (p.id === courseId || p.course_id === courseId) 
+          ? { ...p, paymentStatus: 'verified', payment_status: 'verified' } 
+          : p)
+      );
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+    }
+  };
+
+  // 5. Logout function
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setIsLoggedIn(false);
+    setCurrentPage("dashboard");
   };
 
   useEffect(() => {
@@ -93,10 +194,7 @@ export default function App() {
           onPaymentSuccess={handlePaymentSuccess}
           onViewProfile={() => setCurrentPage("profile")}
           onViewCommunity={() => setCurrentPage("community")}
-          onLogout={() => {
-            setIsLoggedIn(false);
-            setCurrentPage("dashboard");
-          }}
+          onLogout={handleLogout}
         />
       );
     }
@@ -129,8 +227,7 @@ export default function App() {
           onViewCommunity={() => setCurrentPage("community")}
           onViewLearning={() => setCurrentPage("learning")}
           onLogout={() => {
-            setIsLoggedIn(false);
-            setCurrentPage("dashboard");
+            handleLogout();
             setSelectedCourse(null);
           }}
         />
@@ -149,8 +246,7 @@ export default function App() {
           onViewCommunity={() => setCurrentPage("community")}
           onViewLearning={() => setCurrentPage("learning")}
           onLogout={() => {
-            setIsLoggedIn(false);
-            setCurrentPage("dashboard");
+            handleLogout();
             setSelectedCourse(null);
           }}
         />
@@ -168,10 +264,7 @@ export default function App() {
     return (
       <Dashboard 
         points={points}
-        onLogout={() => {
-          setIsLoggedIn(false);
-          setCurrentPage("dashboard");
-        }} 
+        onLogout={handleLogout} 
         onViewProfile={() => setCurrentPage("profile")}
         onViewCourse={(course) => {
           setSelectedCourse(course);
@@ -248,8 +341,8 @@ export default function App() {
               initialMode={showAuth} 
               onBack={() => setShowAuth(null)} 
               onLoginSuccess={() => {
-                setIsLoggedIn(true);
                 setShowAuth(null);
+                // Session will be set by auth state listener
               }}
             />
           </motion.div>

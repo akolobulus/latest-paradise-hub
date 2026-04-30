@@ -15,15 +15,54 @@ import {
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import { cn } from "@/src/lib/utils";
+import { supabase } from "@/src/lib/supabase";
 
 export default function AuthPage({ initialMode = "login", onBack, onLoginSuccess }: { initialMode?: "login" | "signup", onBack: () => void, onLoginSuccess: () => void }) {
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Form states
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock successful login/signup
-    onLoginSuccess();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      if (mode === "signup") {
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: `${firstName} ${lastName}`.trim() }
+          }
+        });
+        if (signUpError) throw signUpError;
+        alert("Check your email for the confirmation link!");
+        // Clear form
+        setEmail("");
+        setPassword("");
+        setFirstName("");
+        setLastName("");
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) throw signInError;
+        onLoginSuccess();
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -129,10 +168,20 @@ export default function AuthPage({ initialMode = "login", onBack, onLoginSuccess
             <h2 className="text-3xl lg:text-4xl font-display font-bold mb-3 text-ink">
               {mode === "login" ? "Welcome back!" : "Sign up for Paradise Hub"}
             </h2>
-            <p className="text-gray-600 font-medium">
+            <p className="text-gray-500 font-medium">
               {mode === "login" ? "Please enter your details." : "Join our talent community today!"}
             </p>
           </div>
+
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-2xl"
+            >
+              <p className="text-red-700 font-bold text-sm">{error}</p>
+            </motion.div>
+          )}
 
           {/* Social Sign In */}
           <div className="space-y-4 mb-8">
@@ -172,12 +221,31 @@ export default function AuthPage({ initialMode = "login", onBack, onLoginSuccess
               >
                 {mode === "signup" && (
                   <div className="grid grid-cols-2 gap-4">
-                    <InputField label="First Name" placeholder="John" icon={<User size={18} />} />
-                    <InputField label="Last Name" placeholder="Doe" icon={<User size={18} />} />
+                    <InputField 
+                      label="First Name" 
+                      placeholder="John" 
+                      icon={<User size={18} />}
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
+                    <InputField 
+                      label="Last Name" 
+                      placeholder="Doe" 
+                      icon={<User size={18} />}
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
                   </div>
                 )}
                 
-                <InputField label="Email" type="email" placeholder="name@example.com" icon={<Mail size={18} />} />
+                <InputField 
+                  label="Email" 
+                  type="email" 
+                  placeholder="name@example.com" 
+                  icon={<Mail size={18} />}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
                 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -193,6 +261,8 @@ export default function AuthPage({ initialMode = "login", onBack, onLoginSuccess
                     <input 
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       className="w-full pl-12 pr-12 py-4 bg-gray-50/50 rounded-2xl border-2 border-gray-100 focus:border-primary focus:bg-white outline-none transition-all font-medium text-ink placeholder:text-gray-400"
                     />
                     <button 
@@ -216,9 +286,22 @@ export default function AuthPage({ initialMode = "login", onBack, onLoginSuccess
               </motion.div>
             </AnimatePresence>
 
-            <button className="w-full py-4 bg-primary text-white rounded-2xl font-bold text-lg brutal-border-hover shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
-              {mode === "login" ? "Sign In" : "Create Account"}
-              <Sparkles size={20} />
+            <button 
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-4 bg-primary text-white rounded-2xl font-bold text-lg brutal-border-hover shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  {mode === "login" ? "Signing in..." : "Creating account..."}
+                </>
+              ) : (
+                <>
+                  {mode === "login" ? "Sign In" : "Create Account"}
+                  <Sparkles size={20} />
+                </>
+              )}
             </button>
           </form>
 
@@ -258,7 +341,7 @@ function SocialButton({ icon }: { icon: React.ReactNode }) {
   );
 }
 
-function InputField({ label, placeholder, type = "text", icon }: { label: string, placeholder: string, type?: string, icon: React.ReactNode }) {
+function InputField({ label, placeholder, type = "text", icon, value, onChange }: { label: string, placeholder: string, type?: string, icon: React.ReactNode, value?: string, onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
   return (
     <div className="space-y-2">
       <label className="text-sm font-bold text-ink">{label}</label>
@@ -269,6 +352,8 @@ function InputField({ label, placeholder, type = "text", icon }: { label: string
         <input 
           type={type}
           placeholder={placeholder}
+          value={value}
+          onChange={onChange}
           className="w-full pl-12 pr-4 py-4 bg-gray-50/50 rounded-2xl border-2 border-gray-100 focus:border-primary focus:bg-white outline-none transition-all font-medium text-ink placeholder:text-gray-400"
         />
       </div>
