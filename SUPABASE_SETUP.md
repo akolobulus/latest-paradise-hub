@@ -55,11 +55,31 @@ create table public.quiz_results (
   unique(user_id, quiz_id)
 );
 
+-- 5. Posts Table (Community Hub Feed)
+create table public.posts (
+  id uuid default gen_random_uuid() primary key,
+  author_id uuid references public.profiles(id) on delete cascade not null,
+  channel text not null, -- e.g., 'general', 'agribusiness', 'career-advice', 'showcase'
+  content text not null,
+  image_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 6. Post Likes Table (Track who liked what)
+create table public.post_likes (
+  post_id uuid references public.posts(id) on delete cascade not null,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  primary key (post_id, user_id)
+);
+
 -- Enable Row Level Security (RLS)
 alter table public.profiles enable row level security;
 alter table public.enrollments enable row level security;
 alter table public.lesson_progress enable row level security;
 alter table public.quiz_results enable row level security;
+alter table public.posts enable row level security;
+alter table public.post_likes enable row level security;
 
 -- Security Policies (Users can only see/edit their own data)
 create policy "Users can view own profile" on profiles for select using ( auth.uid() = id );
@@ -74,6 +94,19 @@ create policy "Users can insert own progress" on lesson_progress for insert with
 
 create policy "Users can view own quiz results" on quiz_results for select using ( auth.uid() = user_id );
 create policy "Users can insert own quiz results" on quiz_results for insert with check ( auth.uid() = user_id );
+
+-- Policies for Community Posts
+create policy "Anyone can view posts" on posts for select using (true);
+create policy "Users can insert their own posts" on posts for insert with check (auth.uid() = author_id);
+
+-- Policies for Post Likes
+create policy "Anyone can view likes" on post_likes for select using (true);
+create policy "Users can toggle their own likes" on post_likes for insert with check (auth.uid() = user_id);
+create policy "Users can untoggle their own likes" on post_likes for delete using (auth.uid() = user_id);
+
+-- Enable Realtime for Community Feed (real-time posts & likes updates)
+alter publication supabase_realtime add table posts;
+alter publication supabase_realtime add table post_likes;
 
 -- Trigger to automatically create a profile when a user signs up
 create function public.handle_new_user()
@@ -148,7 +181,17 @@ $$ language plpgsql;
 
 ---
 
-## Step 5: Enable Authentication Providers (Optional)
+## Step 5: Test Community Feed (Real-time Posts)
+
+1. Log in and navigate to the Community Hub
+2. Create a new post in any channel
+3. The post should appear immediately in the feed
+4. Like a post - the like count should increment in real-time
+5. In another browser/tab, open the same channel and see new posts appear instantly without page refresh
+
+---
+
+## Step 6: Enable Authentication Providers (Optional)
 
 For social sign-in (Google, GitHub, LinkedIn):
 
@@ -211,7 +254,20 @@ These credentials are required for the frontend to connect to Supabase.
 - **passed**: Boolean indicating if quiz was passed
 - **completed_at**: Completion timestamp
 
----
+### posts
+
+- **id**: UUID (primary key)
+- **author_id**: UUID (references profiles.id)
+- **channel**: Text field (e.g., 'general', 'agribusiness', 'career-advice')
+- **content**: Post text content
+- **image_url**: Optional URL for post image
+- **created_at**: Post creation timestamp
+
+### post_likes
+
+- **post_id**: UUID (references posts.id) - part of composite key
+- **user_id**: UUID (references profiles.id) - part of composite key
+- **created_at**: When the like was created
 
 ## Security Best Practices
 
@@ -257,16 +313,24 @@ These credentials are required for the frontend to connect to Supabase.
 - Check RLS policy: "Users can view own enrollments"
 - Verify enrollment was inserted with correct user_id
 
----
+### "Real-time posts not updating"
+
+- Ensure Realtime is enabled for `posts` and `post_likes` tables
+- Check that you ran: `alter publication supabase_realtime add table posts;`
+- Verify browser connection is stable
+- Check browser console for Supabase errors
+- Realtime subscriptions require active session (user logged in)
 
 ## Next Steps
 
 1. ✅ Run the SQL schema
 2. ✅ Test authentication flow
 3. ✅ Test enrollment and progress tracking
-4. 📋 Configure email notifications (future enhancement)
-5. 📋 Set up admin dashboard for course management
-6. 📋 Implement payment provider integration with Paystack
+4. ✅ Set up community feed with real-time posts
+5. 📋 Implement post comments/replies (future enhancement)
+6. 📋 Configure email notifications (future enhancement)
+7. 📋 Set up admin dashboard for course management
+8. 📋 Implement payment provider integration with Paystack
 
 ---
 
