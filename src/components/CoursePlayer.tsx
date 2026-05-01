@@ -23,6 +23,7 @@ import {
 import BrandLogo from "./BrandLogo";
 import { cn } from "@/src/lib/utils";
 import { COURSE_CONTENTS, Week, Lesson, Quiz } from "@/src/data/courseContent";
+import { fetchCourseContent } from "@/src/lib/courseApi";
 import { supabase } from "@/src/lib/supabase";
 
 interface CoursePlayerProps {
@@ -32,10 +33,16 @@ interface CoursePlayerProps {
 }
 
 export default function CoursePlayer({ course, onBack, onAwardPoints }: CoursePlayerProps) {
-  const content = COURSE_CONTENTS[course.id] || COURSE_CONTENTS[101]; // Fallback to 101 for demo
+  // Dynamic database content
+  const [dbContent, setDbContent] = useState<any[]>([]);
+  const [isLoadingContent, setIsLoadingContent] = useState(true);
+  
+  // Use database content if available, otherwise fallback to hardcoded
+  const content = { weeks: dbContent.length > 0 ? dbContent : (COURSE_CONTENTS[course.id] || COURSE_CONTENTS[101]).weeks };
+  
   const [activeWeek, setActiveWeek] = useState<number>(0);
-  const [activeLesson, setActiveLesson] = useState<Lesson | null>(content.weeks[0].lessons[0]);
-  const [expandedWeeks, setExpandedWeeks] = useState<number[]>([0]);
+  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+  const [expandedWeeks, setExpandedWeeks] = useState<string[]>([]);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [passedQuizzes, setPassedQuizzes] = useState<string[]>([]);
   const [showQuiz, setShowQuiz] = useState(false);
@@ -53,6 +60,38 @@ export default function CoursePlayer({ course, onBack, onAwardPoints }: CoursePl
     getSession();
   }, []);
 
+  // Fetch Course Content from Supabase
+  useEffect(() => {
+    const loadContent = async () => {
+      setIsLoadingContent(true);
+      try {
+        const dbData = await fetchCourseContent(course.id);
+        if (dbData && dbData.length > 0) {
+          setDbContent(dbData);
+          setActiveLesson(dbData[0].lessons[0]);
+          setExpandedWeeks([dbData[0].id]);
+        } else {
+          // Fallback to hardcoded if no database content
+          const fallbackContent = COURSE_CONTENTS[course.id] || COURSE_CONTENTS[101];
+          setDbContent(fallbackContent.weeks);
+          setActiveLesson(fallbackContent.weeks[0]?.lessons[0]);
+          setExpandedWeeks([fallbackContent.weeks[0]?.id]);
+        }
+      } catch (error) {
+        console.error("Error loading course content:", error);
+        // Fallback to hardcoded on error
+        const fallbackContent = COURSE_CONTENTS[course.id] || COURSE_CONTENTS[101];
+        setDbContent(fallbackContent.weeks);
+        setActiveLesson(fallbackContent.weeks[0]?.lessons[0]);
+        setExpandedWeeks([fallbackContent.weeks[0]?.id]);
+      } finally {
+        setIsLoadingContent(false);
+      }
+    };
+
+    loadContent();
+  }, [course.id]);
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth <= 1024) {
@@ -65,7 +104,7 @@ export default function CoursePlayer({ course, onBack, onAwardPoints }: CoursePl
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const toggleWeek = (weekId: number) => {
+  const toggleWeek = (weekId: string) => {
     setExpandedWeeks(prev => 
       prev.includes(weekId) ? prev.filter(id => id !== weekId) : [...prev, weekId]
     );
@@ -154,7 +193,24 @@ export default function CoursePlayer({ course, onBack, onAwardPoints }: CoursePl
 
   const totalItems = content.weeks.reduce((acc, w) => acc + w.lessons.length + (w.quiz ? 1 : 0), 0);
   const completedItems = completedLessons.length + passedQuizzes.length;
-  const progressPercent = Math.round((completedItems / totalItems) * 100);
+  const progressPercent = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
+
+  if (isLoadingContent) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (content.weeks.length === 0) {
+    return (
+      <div className="flex flex-col h-screen items-center justify-center bg-white gap-4">
+        <h2 className="text-2xl font-bold text-ink">Course Content Coming Soon</h2>
+        <button onClick={onBack} className="px-6 py-2 bg-primary text-white rounded-full font-bold">Go Back</button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-white overflow-hidden">
