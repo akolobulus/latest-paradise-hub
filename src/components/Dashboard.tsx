@@ -201,6 +201,7 @@ const MOCK_NOTIFICATIONS = [
 
 interface DashboardProps {
   points: number;
+  user?: { full_name?: string; email?: string };
   onLogout: () => void;
   onViewProfile: () => void;
   onViewCourse: (course: any) => void;
@@ -210,7 +211,7 @@ interface DashboardProps {
   onViewCommunity: () => void;
 }
 
-export default function Dashboard({ points, onLogout, onViewProfile, onViewCourse, onViewAllPrograms, onEnroll, onViewLearning, onViewCommunity }: DashboardProps) {
+export default function Dashboard({ points, user, onLogout, onViewProfile, onViewCourse, onViewAllPrograms, onEnroll, onViewLearning, onViewCommunity }: DashboardProps) {
   const [activeVideoSlide, setActiveVideoSlide] = useState(0);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -219,6 +220,18 @@ export default function Dashboard({ points, onLogout, onViewProfile, onViewCours
 
   const nextVideo = () => setActiveVideoSlide((prev) => (prev + 1) % DASHBOARD_VIDEOS.length);
   const prevVideo = () => setActiveVideoSlide((prev) => (prev - 1 + DASHBOARD_VIDEOS.length) % DASHBOARD_VIDEOS.length);
+
+  // Helper to get initials from full name
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+  };
+
+  // Format user display name (first name only)
+  const getUserDisplayName = () => {
+    if (!user?.full_name) return "Learner";
+    return user.full_name.split(" ")[0];
+  };
 
   return (
     <div className={cn(
@@ -394,10 +407,10 @@ export default function Dashboard({ points, onLogout, onViewProfile, onViewCours
                 className="flex items-center gap-2 md:gap-3 group"
               >
                 <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border-2 border-transparent group-hover:border-primary transition-all text-sm md:text-base">
-                  PH
+                  {getInitials(user?.full_name)}
                 </div>
                 <div className="hidden lg:block text-left">
-                  <div className="text-sm font-bold text-ink">Penina H.</div>
+                  <div className="text-sm font-bold text-ink">{user?.full_name || "Learner"}</div>
                   <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Learner</div>
                 </div>
               </button>

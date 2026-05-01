@@ -264,6 +264,7 @@ export default function App() {
     return (
       <Dashboard 
         points={points}
+        user={session?.user.user_metadata}
         onLogout={handleLogout} 
         onViewProfile={() => setCurrentPage("profile")}
         onViewCourse={(course) => {
