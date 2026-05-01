@@ -1,4 +1,3 @@
-
 export interface Lesson {
   id: string;
   title: string;
@@ -51,10 +50,4 @@ export const COURSE_CONTENTS: Record<number, CourseContent> = {
   4: { courseId: 4, weeks: [] },
   5: { courseId: 5, weeks: [] },
   101: { courseId: 101, weeks: [] }, // Demo course
-};
-          { id: "5-2", title: "Building Your First App", type: 'text', content: "Step-by-step guide to creating a simple application..." },
-        ]
-      }
-    ]
-  }
 };

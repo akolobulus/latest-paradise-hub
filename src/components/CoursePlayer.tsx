@@ -30,12 +30,17 @@ interface CoursePlayerProps {
   course: any;
   onBack: () => void;
   onAwardPoints: (amount: number) => void;
+  onViewProfile?: () => void;
 }
 
-export default function CoursePlayer({ course, onBack, onAwardPoints }: CoursePlayerProps) {
+export default function CoursePlayer({ course, onBack, onAwardPoints, onViewProfile }: CoursePlayerProps) {
   // Dynamic database content
   const [dbContent, setDbContent] = useState<any[]>([]);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
+  
+  // User profile data
+  const [profile, setProfile] = useState<any>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   
   // Use database content if available, otherwise fallback to hardcoded
   const content = { weeks: dbContent.length > 0 ? dbContent : (COURSE_CONTENTS[course.id] || COURSE_CONTENTS[101]).weeks };
@@ -51,14 +56,50 @@ export default function CoursePlayer({ course, onBack, onAwardPoints }: CoursePl
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [session, setSession] = useState<any>(null);
 
-  // Get current user session
+  // Get current user session and profile
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
+    const setupUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setIsLoadingProfile(false);
+          return;
+        }
+        
+        setSession({ user });
+        
+        // Fetch user profile from database
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (data) {
+          setProfile(data);
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
     };
-    getSession();
+    
+    setupUser();
   }, []);
+  
+  // Helper function to get user initials
+  const getInitials = (name: string | undefined) => {
+    if (!name) return "L";
+    const parts = name.split(" ");
+    return (parts[0]?.[0] + (parts[1]?.[0] || "")).toUpperCase();
+  };
+  
+  // Helper function to get display name
+  const getUserDisplayName = () => {
+    if (profile?.full_name) return profile.full_name.split(" ")[0];
+    return "Learner";
+  };
 
   // Fetch Course Content from Supabase
   useEffect(() => {
