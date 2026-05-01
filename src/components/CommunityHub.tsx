@@ -25,6 +25,7 @@ import BrandLogo from "./BrandLogo";
 import { cn } from "@/src/lib/utils";
 import { LeaderboardList } from "./Leaderboard";
 import { supabase } from "@/src/lib/supabase";
+import { calculateTrendingTopics, TrendingTopic, formatNumber } from "@/src/lib/trendingUtils";
 
 interface Post {
   id: string;
@@ -89,6 +90,11 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
 
+  // Real-time data state
+  const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
+  const [totalMembers, setTotalMembers] = useState(0);
+  const [onlineMembers, setOnlineMembers] = useState(0);
+
   // Edit & Delete State
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
@@ -110,6 +116,7 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
       await fetchPosts();
+      await fetchMemberStats();
     };
 
     setupCommunity();
@@ -119,6 +126,8 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
       .channel('public:posts')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
         fetchPosts();
+        calculateTrendingTopicsFromAllPosts();
+        fetchMemberStats();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_likes' }, () => {
         fetchPosts();
@@ -176,11 +185,55 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
             : false
         }));
         setPosts(mappedPosts);
+        
+        // Calculate trending topics from ALL posts (not just active channel)
+        calculateTrendingTopicsFromAllPosts();
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
     } finally {
       setIsLoadingPosts(false);
+    }
+  };
+
+  // Fetch all posts to calculate trending topics
+  const calculateTrendingTopicsFromAllPosts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('content')
+        .limit(100); // Get recent posts
+
+      if (!error && data) {
+        const trending = calculateTrendingTopics(data, 5);
+        setTrendingTopics(trending);
+      }
+    } catch (error) {
+      console.error('Error calculating trending topics:', error);
+    }
+  };
+
+  // Fetch member stats
+  const fetchMemberStats = async () => {
+    try {
+      // Get total members from profiles table
+      const { count: totalCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      setTotalMembers(totalCount || 0);
+
+      // For "online" members, we can approximate based on recent activity
+      // Get users who had activity in the last 30 minutes
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const { count: onlineCount } = await supabase
+        .from('posts')
+        .select('author_id', { count: 'exact', head: true })
+        .gte('created_at', thirtyMinutesAgo);
+
+      setOnlineMembers(onlineCount || 0);
+    } catch (error) {
+      console.error('Error fetching member stats:', error);
     }
   };
 
@@ -483,9 +536,9 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                   <div className="flex gap-4">
                     <img 
-                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.id || 'guest'}`} 
-                      className="w-10 h-10 rounded-full bg-gray-100"
-                      alt="Avatar"
+                      src={userProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.id || 'guest'}`}
+                      className="w-10 h-10 rounded-full bg-gray-100 object-cover"
+                      alt="Your Avatar"
                     />
                     <div className="flex-1">
                       <textarea
@@ -686,12 +739,16 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
             Trending Topics
           </h3>
           <div className="space-y-3">
-            {TRENDING.map((tag) => (
-              <div key={tag} className="group cursor-pointer">
-                <p className="text-sm font-bold text-gray-600 group-hover:text-primary transition-colors">{tag}</p>
-                <p className="text-[10px] text-gray-400">1.2k posts this week</p>
-              </div>
-            ))}
+            {trendingTopics.length > 0 ? (
+              trendingTopics.map((topic, idx) => (
+                <div key={idx} className="group cursor-pointer">
+                  <p className="text-sm font-bold text-gray-600 group-hover:text-primary transition-colors">{topic.tag}</p>
+                  <p className="text-[10px] text-gray-400">{formatNumber(topic.count)} posts this week</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-gray-400">No trending topics yet</p>
+            )}
           </div>
         </div>
 
@@ -702,12 +759,12 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
           </h3>
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
-              <p className="text-xl font-bold text-ink">12.4k</p>
+              <p className="text-xl font-bold text-ink">{formatNumber(totalMembers)}</p>
               <p className="text-[10px] font-bold text-gray-400 uppercase">Members</p>
             </div>
             <div>
-              <p className="text-xl font-bold text-ink">842</p>
-              <p className="text-[10px] font-bold text-gray-400 uppercase">Online</p>
+              <p className="text-xl font-bold text-ink">{formatNumber(onlineMembers)}</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase">Active</p>
             </div>
           </div>
           <button className="w-full mt-6 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-light transition-colors">

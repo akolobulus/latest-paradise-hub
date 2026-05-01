@@ -22,11 +22,13 @@ import {
   LogOut,
   Gem,
   MoreHorizontal,
-  GraduationCap
+  GraduationCap,
+  Check
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import BrandLogo from "./BrandLogo";
 import { cn } from "@/src/lib/utils";
+import { calculateProfileCompletion, getProfileSections, ProfileData } from "@/src/lib/profileCompletion";
 
 const RECOMMENDED_PROGRAMS = [
   {
@@ -202,7 +204,7 @@ const MOCK_NOTIFICATIONS = [
 interface DashboardProps {
   points: number;
   user?: { full_name?: string; email?: string };
-  userProfile?: { full_name?: string; avatar_url?: string | null } | null;
+  userProfile?: ProfileData | null;
   onLogout: () => void;
   onLogoClick?: () => void;
   onViewProfile: () => void;
@@ -211,20 +213,27 @@ interface DashboardProps {
   onEnroll: (course: any) => void;
   onViewLearning: () => void;
   onViewCommunity: () => void;
+  onAboutClick?: () => void;
+  onSupportClick?: () => void;
+  onPrivacyClick?: () => void;
 }
 
-export default function Dashboard({ points, user, userProfile, onLogout, onLogoClick, onViewProfile, onViewCourse, onViewAllPrograms, onEnroll, onViewLearning, onViewCommunity }: DashboardProps) {
+export default function Dashboard({ points, user, userProfile, onLogout, onLogoClick, onViewProfile, onViewCourse, onViewAllPrograms, onEnroll, onViewLearning, onViewCommunity, onAboutClick, onSupportClick, onPrivacyClick }: DashboardProps) {
   const [activeVideoSlide, setActiveVideoSlide] = useState(0);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
+
+  // Calculate profile completion percentage
+  const profileCompletion = useMemo(() => calculateProfileCompletion(userProfile || null), [userProfile]);
+  const profileSections = useMemo(() => getProfileSections(userProfile || null), [userProfile]);
 
   // Helper to get initials from full name
   const getInitials = (name?: string) => {
     if (!name) return "U";
     return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
   };
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
 
   const nextVideo = () => setActiveVideoSlide((prev) => (prev + 1) % DASHBOARD_VIDEOS.length);
   const prevVideo = () => setActiveVideoSlide((prev) => (prev - 1 + DASHBOARD_VIDEOS.length) % DASHBOARD_VIDEOS.length);
@@ -695,22 +704,34 @@ export default function Dashboard({ points, user, userProfile, onLogout, onLogoC
           <div className="bg-white rounded-[32px] md:rounded-[40px] p-8 md:p-12 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
             <h3 className="text-lg md:text-xl font-bold mb-6 md:mb-8">Complete Your Profile</h3>
             <div className="relative w-32 h-32 md:w-40 md:h-40 mb-6 md:mb-8">
-              <svg className="w-full h-full" viewBox="0 0 100 100">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                 <circle className="text-gray-100 stroke-current" strokeWidth="8" cx="50" cy="50" r="40" fill="transparent"></circle>
-                <circle className="text-primary stroke-current" strokeWidth="8" strokeLinecap="round" cx="50" cy="50" r="40" fill="transparent" strokeDasharray="251.2" strokeDashoffset="251.2"></circle>
+                <circle 
+                  className="text-primary stroke-current transition-all duration-1000" 
+                  strokeWidth="8" 
+                  strokeLinecap="round" 
+                  cx="50" 
+                  cy="50" 
+                  r="40" 
+                  fill="transparent" 
+                  strokeDasharray="251.2"
+                  strokeDashoffset={251.2 - (251.2 * profileCompletion) / 100}
+                ></circle>
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-2xl md:text-3xl font-display font-bold">0%</span>
+                <span className="text-2xl md:text-3xl font-display font-bold">{profileCompletion}%</span>
               </div>
             </div>
             <ul className="text-left w-full space-y-2 md:space-y-3 mb-6 md:mb-8">
-              <ProfileStep label="Personal Info" completed={false} />
-              <ProfileStep label="Education Info" completed={false} />
-              <ProfileStep label="Work Info" completed={false} />
-              <ProfileStep label="Demographic Info" completed={false} />
+              {profileSections.map((section, idx) => (
+                <ProfileStep key={idx} label={section.label} completed={section.completed} />
+              ))}
             </ul>
-            <button className="w-full py-2.5 md:py-3 rounded-xl border-2 border-primary text-primary font-bold text-sm hover:bg-primary hover:text-white transition-all">
-              Add Personal Info
+            <button 
+              onClick={onViewProfile}
+              className="w-full py-2.5 md:py-3 rounded-xl border-2 border-primary text-primary font-bold text-sm hover:bg-primary hover:text-white transition-all"
+            >
+              {profileCompletion === 100 ? "Profile Complete!" : "Add Personal Info"}
             </button>
           </div>
         </section>
@@ -808,9 +829,9 @@ export default function Dashboard({ points, user, userProfile, onLogout, onLogoC
             <div>
               <h4 className="text-xl font-bold mb-8">Company</h4>
               <ul className="space-y-4 text-gray-400">
-                <li><a href="#" className="hover:text-primary-light transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Support</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Privacy Policy</a></li>
+                <li><button onClick={onAboutClick} className="hover:text-primary-light transition-colors">About Us</button></li>
+                <li><button onClick={onSupportClick} className="hover:text-primary-light transition-colors">Support</button></li>
+                <li><button onClick={onPrivacyClick} className="hover:text-primary-light transition-colors">Privacy Policy</button></li>
               </ul>
             </div>
           </div>
@@ -832,10 +853,10 @@ function ProfileStep({ label, completed }: { label: string; completed: boolean }
   return (
     <li className="flex items-center gap-3">
       <div className={cn(
-        "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+        "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
         completed ? "bg-primary border-primary text-white" : "border-gray-200"
       )}>
-        {completed && <ArrowRight size={12} />}
+        {completed && <Check size={12} />}
       </div>
       <span className={cn("text-sm font-medium", completed ? "text-ink" : "text-gray-400")}>{label}</span>
     </li>

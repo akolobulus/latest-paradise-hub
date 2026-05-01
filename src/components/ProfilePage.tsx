@@ -22,33 +22,54 @@ import {
 import BrandLogo from "./BrandLogo";
 import { cn } from "@/src/lib/utils";
 import { supabase } from "@/src/lib/supabase";
+import { calculateProfileCompletion, getProfileSections, ProfileData } from "@/src/lib/profileCompletion";
 
 interface ProfilePageProps {
   onBack: () => void;
-  onProfileUpdate?: (profile: UserProfile) => void;
+  onProfileUpdate?: (profile: ProfileData) => void;
 }
 
 type Tab = "Personal Information" | "Education Info" | "Work Info" | "Demographic Info";
-
-interface UserProfile {
-  id: string;
-  full_name: string;
-  email: string;
-  points: number;
-  avatar_url: string | null;
-}
 
 export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProps) {
   const [activeTab, setActiveTab] = useState<Tab>("Personal Information");
   const [editingSection, setEditingSection] = useState<string | null>(null);
   
   // Supabase State
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [editForm, setEditForm] = useState({ firstName: "", lastName: "" });
+  
+  // Form state for all fields
+  const [editForm, setEditForm] = useState({
+    firstName: "",
+    lastName: "",
+    title: "",
+    gender: "",
+    about_me: "",
+    languages: [] as string[],
+    phone_number: "",
+    whatsapp_number: "",
+    interests: [] as string[],
+    country_of_origin: "",
+    state_of_origin: "",
+    city_of_origin: "",
+    country_of_residence: "",
+    state_of_residence: "",
+    city_of_residence: "",
+    social_profiles: {
+      linkedin: "",
+      facebook: "",
+      twitter: "",
+      youtube: "",
+      github: "",
+      tiktok: ""
+    }
+  });
 
   const tabs: Tab[] = ["Personal Information", "Education Info", "Work Info", "Demographic Info"];
+  const profileCompletion = calculateProfileCompletion(profile);
+  const profileSections = getProfileSections(profile);
 
   useEffect(() => {
     fetchProfile();
@@ -69,11 +90,32 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
       
       if (data) {
         setProfile(data);
-        // Split full name for the edit form
+        // Initialize form with profile data
         const names = (data.full_name || "").split(" ");
         setEditForm({
           firstName: names[0] || "",
-          lastName: names.slice(1).join(" ") || ""
+          lastName: names.slice(1).join(" ") || "",
+          title: data.title || "",
+          gender: data.gender || "",
+          about_me: data.about_me || "",
+          languages: data.languages || [],
+          phone_number: data.phone_number || "",
+          whatsapp_number: data.whatsapp_number || "",
+          interests: data.interests || [],
+          country_of_origin: data.country_of_origin || "",
+          state_of_origin: data.state_of_origin || "",
+          city_of_origin: data.city_of_origin || "",
+          country_of_residence: data.country_of_residence || "",
+          state_of_residence: data.state_of_residence || "",
+          city_of_residence: data.city_of_residence || "",
+          social_profiles: data.social_profiles || {
+            linkedin: "",
+            facebook: "",
+            twitter: "",
+            youtube: "",
+            github: "",
+            tiktok: ""
+          }
         });
       }
     } catch (error) {
@@ -88,16 +130,40 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
     
     try {
       const fullName = `${editForm.firstName} ${editForm.lastName}`.trim();
+      const updateData = {
+        full_name: fullName,
+        title: editForm.title,
+        gender: editForm.gender,
+        about_me: editForm.about_me,
+        languages: editForm.languages,
+        phone_number: editForm.phone_number,
+        whatsapp_number: editForm.whatsapp_number,
+        interests: editForm.interests,
+        country_of_origin: editForm.country_of_origin,
+        state_of_origin: editForm.state_of_origin,
+        city_of_origin: editForm.city_of_origin,
+        country_of_residence: editForm.country_of_residence,
+        state_of_residence: editForm.state_of_residence,
+        city_of_residence: editForm.city_of_residence,
+        social_profiles: editForm.social_profiles,
+      };
+
       const { error } = await supabase
         .from('profiles')
-        .update({ full_name: fullName })
+        .update(updateData)
         .eq('id', profile.id);
 
       if (error) throw error;
 
-      // Update local state to reflect changes instantly
-      setProfile({ ...profile, full_name: fullName });
+      // Update local state
+      const updatedProfile = { ...profile, ...updateData } as ProfileData;
+      setProfile(updatedProfile);
       setEditingSection(null);
+      
+      // Notify parent component
+      if (onProfileUpdate) {
+        onProfileUpdate(updatedProfile);
+      }
     } catch (error) {
       console.error("Error saving profile:", error);
       alert("Failed to update profile.");
@@ -261,7 +327,11 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-ink">Gender*</label>
                       <div className="relative">
-                        <select className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white">
+                        <select 
+                          value={editForm.gender}
+                          onChange={(e) => setEditForm({...editForm, gender: e.target.value})}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white"
+                        >
                           <option>Select the gender</option>
                           <option>Male</option>
                           <option>Female</option>
@@ -276,6 +346,8 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                     <label className="text-sm font-bold text-ink">Title</label>
                     <input 
                       type="text" 
+                      value={editForm.title}
+                      onChange={(e) => setEditForm({...editForm, title: e.target.value})}
                       placeholder="What is your title?"
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                     />
@@ -288,6 +360,8 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-ink">Tell us something about you</label>
                     <textarea 
+                      value={editForm.about_me}
+                      onChange={(e) => setEditForm({...editForm, about_me: e.target.value})}
                       placeholder="Write a brief introduction to show on your profile..."
                       className="w-full h-40 px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
                     />
@@ -320,11 +394,12 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                       </div>
                       <input 
                         type="text" 
-                        defaultValue="+234"
+                        value={editForm.phone_number}
+                        onChange={(e) => setEditForm({...editForm, phone_number: e.target.value})}
+                        placeholder="+234"
                         className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                       />
                     </div>
-                    <p className="text-xs text-red-500">Please enter a valid phone number</p>
                   </div>
 
                   <div className="space-y-2">
@@ -336,11 +411,12 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                       </div>
                       <input 
                         type="text" 
-                        defaultValue="+234"
+                        value={editForm.whatsapp_number}
+                        onChange={(e) => setEditForm({...editForm, whatsapp_number: e.target.value})}
+                        placeholder="+234"
                         className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                       />
                     </div>
-                    <p className="text-xs text-red-500">Please enter a valid WhatsApp number</p>
                   </div>
 
                   <label className="flex items-center gap-3 cursor-pointer group">
@@ -360,12 +436,12 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                   <p className="text-sm text-gray-500">Add your social links</p>
                   <div className="space-y-4">
                     {[
-                      { label: "LinkedIn", icon: <Linkedin size={18} />, placeholder: "https://linkedin.com/in/" },
-                      { label: "Facebook", icon: <Facebook size={18} />, placeholder: "https://facebook.com/" },
-                      { label: "X (Twitter)", icon: <Twitter size={18} />, placeholder: "https://twitter.com/" },
-                      { label: "Youtube", icon: <Youtube size={18} />, placeholder: "https://youtube.com/" },
-                      { label: "TikTok", icon: <Globe size={18} />, placeholder: "https://tiktok.com/" },
-                      { label: "GitHub", icon: <Github size={18} />, placeholder: "https://github.com/" },
+                      { key: "linkedin", label: "LinkedIn", icon: <Linkedin size={18} />, placeholder: "https://linkedin.com/in/" },
+                      { key: "facebook", label: "Facebook", icon: <Facebook size={18} />, placeholder: "https://facebook.com/" },
+                      { key: "twitter", label: "X (Twitter)", icon: <Twitter size={18} />, placeholder: "https://twitter.com/" },
+                      { key: "youtube", label: "Youtube", icon: <Youtube size={18} />, placeholder: "https://youtube.com/" },
+                      { key: "tiktok", label: "TikTok", icon: <Globe size={18} />, placeholder: "https://tiktok.com/" },
+                      { key: "github", label: "GitHub", icon: <Github size={18} />, placeholder: "https://github.com/" },
                     ].map((social) => (
                       <div key={social.label} className="space-y-2">
                         <label className="text-sm font-bold text-ink">{social.label}</label>
@@ -375,6 +451,14 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                           </div>
                           <input 
                             type="text" 
+                            value={editForm.social_profiles[social.key as keyof typeof editForm.social_profiles] || ""}
+                            onChange={(e) => setEditForm({
+                              ...editForm, 
+                              social_profiles: {
+                                ...editForm.social_profiles, 
+                                [social.key]: e.target.value
+                              }
+                            })}
                             placeholder={social.placeholder}
                             className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                           />
@@ -387,10 +471,12 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
 
               {editingSection === "Interests" && (
                 <div className="space-y-6">
-                  <p className="text-sm text-gray-500">Add your interests</p>
+                  <p className="text-sm text-gray-500">Add your interests (comma-separated)</p>
                   <div className="space-y-2">
                     <input 
                       type="text" 
+                      value={editForm.interests.join(", ")}
+                      onChange={(e) => setEditForm({...editForm, interests: e.target.value.split(",").map(i => i.trim()).filter(i => i)})}
                       placeholder="Enter your interests"
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                     />
@@ -404,28 +490,45 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-ink">Country of Origin</label>
                       <div className="relative">
-                        <select className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white text-gray-400">
-                          <option>Search</option>
+                        <select 
+                          value={editForm.country_of_origin}
+                          onChange={(e) => setEditForm({...editForm, country_of_origin: e.target.value})}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white"
+                        >
+                          <option value="">Search</option>
+                          <option>Nigeria</option>
+                          <option>Ghana</option>
+                          <option>Kenya</option>
                         </select>
-                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-ink">State of Origin</label>
                       <div className="relative">
-                        <select className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white text-gray-400">
-                          <option>Search</option>
+                        <select 
+                          value={editForm.state_of_origin}
+                          onChange={(e) => setEditForm({...editForm, state_of_origin: e.target.value})}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white"
+                        >
+                          <option value="">Search</option>
+                          <option>Lagos</option>
+                          <option>Oyo</option>
+                          <option>FCT</option>
                         </select>
-                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-ink">City of Origin</label>
                       <div className="relative">
-                        <select className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white text-gray-400">
-                          <option>Search</option>
-                        </select>
-                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input 
+                          type="text"
+                          value={editForm.city_of_origin}
+                          onChange={(e) => setEditForm({...editForm, city_of_origin: e.target.value})}
+                          placeholder="Enter city"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        />
                       </div>
                     </div>
                   </div>
@@ -434,28 +537,45 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-ink">Country of Residence</label>
                       <div className="relative">
-                        <select className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white text-gray-400">
-                          <option>Search</option>
+                        <select 
+                          value={editForm.country_of_residence}
+                          onChange={(e) => setEditForm({...editForm, country_of_residence: e.target.value})}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white"
+                        >
+                          <option value="">Search</option>
+                          <option>Nigeria</option>
+                          <option>Ghana</option>
+                          <option>Kenya</option>
                         </select>
-                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-ink">State of Residence</label>
                       <div className="relative">
-                        <select className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white text-gray-400">
-                          <option>Search</option>
+                        <select 
+                          value={editForm.state_of_residence}
+                          onChange={(e) => setEditForm({...editForm, state_of_residence: e.target.value})}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white"
+                        >
+                          <option value="">Search</option>
+                          <option>Lagos</option>
+                          <option>Oyo</option>
+                          <option>FCT</option>
                         </select>
-                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-ink">City of Residence</label>
                       <div className="relative">
-                        <select className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white text-gray-400">
-                          <option>Search</option>
-                        </select>
-                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input 
+                          type="text"
+                          value={editForm.city_of_residence}
+                          onChange={(e) => setEditForm({...editForm, city_of_residence: e.target.value})}
+                          placeholder="Enter city"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        />
                       </div>
                     </div>
                   </div>
@@ -472,7 +592,7 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                 Cancel
               </button>
               <button 
-                onClick={editingSection === "Basic Info" ? handleSaveProfile : () => setEditingSection(null)}
+                onClick={handleSaveProfile}
                 disabled={isUploading}
                 className="px-8 py-3 rounded-full bg-primary text-white font-bold hover:bg-primary-light transition-colors shadow-lg shadow-primary/20 disabled:opacity-50"
               >
@@ -620,7 +740,7 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
           <div className="order-first lg:order-last space-y-8">
             {/* Completion Card */}
             <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm">
-              <h3 className="text-lg font-bold text-ink mb-6">Personal Info</h3>
+              <h3 className="text-lg font-bold text-ink mb-6">Profile Completion</h3>
               
               <div className="flex items-center gap-8">
                 <div className="relative w-24 h-24 md:w-32 md:h-32">
@@ -638,7 +758,7 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                       className="text-primary transition-all duration-1000" 
                       strokeWidth="10" 
                       strokeDasharray="251.2"
-                      strokeDashoffset={profile?.full_name && profile?.avatar_url ? "125.6" : "200.96"} 
+                      strokeDashoffset={251.2 - (251.2 * profileCompletion) / 100}
                       strokeLinecap="round"
                       stroke="currentColor" 
                       fill="transparent" 
@@ -649,28 +769,21 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-xl md:text-2xl font-bold text-ink">
-                      {profile?.full_name && profile?.avatar_url ? "50%" : "20%"}
+                      {profileCompletion}%
                     </span>
                   </div>
                 </div>
 
                 <div className="flex-1 space-y-3">
-                  {[
-                    { label: "Basic Info", done: !!profile?.full_name },
-                    { label: "Avatar", done: !!profile?.avatar_url },
-                    { label: "About Me", done: false },
-                    { label: "Languages", done: false },
-                    { label: "Social Profiles", done: false },
-                    { label: "Interests", done: false },
-                  ].map((item) => (
-                    <div key={item.label} className="flex items-center gap-3">
+                  {profileSections.map((section) => (
+                    <div key={section.label} className="flex items-center gap-3">
                       <div className={cn(
                         "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
-                        item.done ? "bg-primary border-primary" : "border-gray-400"
+                        section.completed ? "bg-primary border-primary" : "border-gray-400"
                       )}>
-                        {item.done && <Check size={12} className="text-white" />}
+                        {section.completed && <Check size={12} className="text-white" />}
                       </div>
-                      <span className="text-sm font-medium text-gray-600 truncate">{item.label}</span>
+                      <span className="text-sm font-medium text-gray-600 truncate">{section.label}</span>
                     </div>
                   ))}
                 </div>

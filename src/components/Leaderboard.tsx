@@ -1,16 +1,22 @@
 import { motion } from "motion/react";
 import { Trophy, Medal, Crown, Flame, TrendingUp } from "lucide-react";
+import { useState, useEffect } from "react";
 import { cn } from "@/src/lib/utils";
+import { supabase } from "@/src/lib/supabase";
 
-const LEADERBOARD_DATA = [
-  { id: 1, name: "Chidi Okafor", points: 15420, streak: 42, avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" },
-  { id: 2, name: "Amaka Eze", points: 14850, streak: 28, avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?q=80&w=200&auto=format&fit=crop" },
-  { id: 3, name: "Tunde Balogun", points: 13900, streak: 15, avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200&auto=format&fit=crop" },
-  { id: 4, name: "Zainab Yusuf", points: 12400, streak: 12, avatar: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?q=80&w=200&auto=format&fit=crop" },
-  { id: 5, name: "Olumide Adeyemi", points: 11200, streak: 8, avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop" },
+interface LeaderboardMember {
+  id: string;
+  name: string;
+  points: number;
+  streak: number;
+  avatar: string;
+}
+
+const DEFAULT_DATA: LeaderboardMember[] = [
+  { id: "1", name: "Loading...", points: 0, streak: 0, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=loading" },
 ];
 
-export function LeaderboardList({ data = LEADERBOARD_DATA }: { data?: typeof LEADERBOARD_DATA }) {
+export function LeaderboardList({ data = DEFAULT_DATA }: { data?: LeaderboardMember[] }) {
   return (
     <motion.div 
       initial="hidden"
@@ -75,6 +81,50 @@ export function LeaderboardList({ data = LEADERBOARD_DATA }: { data?: typeof LEA
 }
 
 export default function Leaderboard() {
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardMember[]>(DEFAULT_DATA);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, points, avatar_url')
+          .order('points', { ascending: false })
+          .limit(5);
+
+        if (!error && data) {
+          const mappedData: LeaderboardMember[] = data.map((user: any) => ({
+            id: user.id,
+            name: user.full_name || 'Learner',
+            points: user.points || 0,
+            streak: Math.floor((user.points || 0) / 100), // Approximate streak from points
+            avatar: user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`
+          }));
+          setLeaderboardData(mappedData);
+        }
+      } catch (error) {
+        console.error('Error fetching leaderboard:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
+
+    // Subscribe to profile changes
+    const sub = supabase
+      .channel('public:profiles')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchLeaderboard();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(sub);
+    };
+  }, []);
+
   return (
     <section id="leaderboard" className="py-32 px-4 bg-background overflow-hidden">
       <div className="max-w-7xl mx-auto">
@@ -135,7 +185,11 @@ export default function Leaderboard() {
                 </div>
               </div>
 
-              <LeaderboardList />
+              {isLoading ? (
+                <div className="text-center py-8 text-white/70">Loading leaderboard...</div>
+              ) : (
+                <LeaderboardList data={leaderboardData} />
+              )}
 
               <button className="w-full mt-10 py-4 rounded-2xl bg-white/5 border border-white/10 font-bold hover:bg-white/10 transition-all">
                 View Full Leaderboard

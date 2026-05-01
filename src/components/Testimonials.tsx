@@ -72,11 +72,17 @@ export default function Testimonials() {
 export function Footer({ 
   aiImage, 
   isLoggedIn,
-  onLogoClick 
+  onLogoClick,
+  onAboutClick,
+  onSupportClick,
+  onPrivacyClick
 }: { 
   aiImage?: string,
   isLoggedIn?: boolean,
-  onLogoClick?: () => void
+  onLogoClick?: () => void,
+  onAboutClick?: () => void,
+  onSupportClick?: () => void,
+  onPrivacyClick?: () => void
 }) {
   return (
     <footer className="bg-ink text-white pt-32 pb-12 px-4 relative">
@@ -131,9 +137,9 @@ export function Footer({
           <div>
             <h4 className="text-xl font-bold mb-8">Company</h4>
             <ul className="space-y-4 text-gray-400">
-              <li><FooterLink href="#">About Us</FooterLink></li>
-              <li><FooterLink href="#">Support</FooterLink></li>
-              <li><FooterLink href="#">Privacy Policy</FooterLink></li>
+              <li><button onClick={onAboutClick} className="hover:text-primary-light transition-colors">About Us</button></li>
+              <li><button onClick={onSupportClick} className="hover:text-primary-light transition-colors">Support</button></li>
+              <li><button onClick={onPrivacyClick} className="hover:text-primary-light transition-colors">Privacy Policy</button></li>
             </ul>
           </div>
         </div>

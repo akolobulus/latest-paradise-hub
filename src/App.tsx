@@ -253,6 +253,27 @@ export default function App() {
               setCurrentPage("landing");
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
+            onAboutClick={() => {
+              setCurrentPage("landing");
+              setTimeout(() => {
+                const el = document.getElementById('about');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 100);
+            }}
+            onSupportClick={() => {
+              setCurrentPage("landing");
+              setTimeout(() => {
+                const el = document.getElementById('about');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 100);
+            }}
+            onPrivacyClick={() => {
+              setCurrentPage("landing");
+              setTimeout(() => {
+                const el = document.getElementById('about');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 100);
+            }}
           />
         </div>
       );
@@ -380,6 +401,27 @@ export default function App() {
           setCommunityChannel("general");
           setCurrentPage("community");
         }}
+        onAboutClick={() => {
+          setCurrentPage("landing");
+          setTimeout(() => {
+            const el = document.getElementById('about');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        }}
+        onSupportClick={() => {
+          setCurrentPage("landing");
+          setTimeout(() => {
+            const el = document.getElementById('about');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        }}
+        onPrivacyClick={() => {
+          setCurrentPage("landing");
+          setTimeout(() => {
+            const el = document.getElementById('about');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        }}
       />
     );
   }
@@ -483,6 +525,18 @@ export default function App() {
         onLogoClick={() => {
           setCurrentPage("landing");
           window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onAboutClick={() => {
+          const el = document.getElementById('about');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onSupportClick={() => {
+          const el = document.getElementById('about');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onPrivacyClick={() => {
+          const el = document.getElementById('about');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
       />
 

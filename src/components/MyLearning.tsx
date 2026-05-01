@@ -49,7 +49,7 @@ interface MyLearningProps {
   onLogout?: () => void;
 }
 
-export default function MyLearning({ enrolledPrograms, userProfile, onBack, onLogoClick, onViewCourse, onViewAllPrograms, onPaymentSuccess, onViewProfile, onViewCommunity, onLogout }: MyLearningProps) {
+export default function MyLearning({ enrolledPrograms = [], userProfile, onBack, onLogoClick, onViewCourse, onViewAllPrograms, onPaymentSuccess, onViewProfile, onViewCommunity, onLogout }: MyLearningProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -335,7 +335,7 @@ export default function MyLearning({ enrolledPrograms, userProfile, onBack, onLo
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                   {pendingPrograms.map((program) => {
                     // Extract numeric amount from string like "₦5,000" or "11k naira only"
-                    let amountStr = program.accessFee.toLowerCase();
+                    const amountStr = String(program.accessFee || "0").toLowerCase();
                     let numericValue = 0;
                     
                     if (amountStr.includes('k')) {
