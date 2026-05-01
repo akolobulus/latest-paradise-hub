@@ -17,7 +17,9 @@ import {
   ArrowLeft,
   Bell,
   Filter,
-  Trophy
+  Trophy,
+  Edit2,
+  Trash2
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import { cn } from "@/src/lib/utils";

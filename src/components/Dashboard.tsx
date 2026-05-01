@@ -514,7 +514,7 @@ export default function Dashboard({ points, user, onLogout, onViewProfile, onVie
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <span className="text-primary-light font-bold tracking-widest uppercase text-[10px] md:text-sm mb-2 md:mb-4 block">Welcome to the Hub</span>
+              <span className="text-primary-light font-bold tracking-widest uppercase text-[10px] md:text-sm mb-2 md:mb-4 block">Welcome to the Hub, {getUserDisplayName()}</span>
               <h1 className="text-2xl md:text-6xl font-display font-bold text-white mb-4 md:mb-6 leading-tight">
                 Your Learning Journey <br className="hidden md:block" /> Starts Here
               </h1>
