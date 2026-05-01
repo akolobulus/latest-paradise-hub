@@ -28,12 +28,17 @@ import { supabase } from "@/src/lib/supabase";
 
 interface CoursePlayerProps {
   course: any;
+  userProfile?: { full_name?: string; avatar_url?: string | null } | null;
   onBack: () => void;
+  onLogoClick?: () => void;
   onAwardPoints: (amount: number) => void;
   onViewProfile?: () => void;
+  onViewCommunity?: () => void;
+  onViewLearning?: () => void;
+  onLogout?: () => void;
 }
 
-export default function CoursePlayer({ course, onBack, onAwardPoints, onViewProfile }: CoursePlayerProps) {
+export default function CoursePlayer({ course, userProfile, onBack, onLogoClick, onAwardPoints, onViewProfile, onViewCommunity, onViewLearning, onLogout }: CoursePlayerProps) {
   // Dynamic database content
   const [dbContent, setDbContent] = useState<any[]>([]);
   const [isLoadingContent, setIsLoadingContent] = useState(true);

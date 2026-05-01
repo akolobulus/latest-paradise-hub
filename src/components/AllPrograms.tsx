@@ -11,17 +11,19 @@ import { cn } from "@/src/lib/utils";
 
 interface AllProgramsProps {
   programs: any[];
+  userProfile?: { full_name?: string; avatar_url?: string | null } | null;
   onBack: () => void;
+  onLogoClick?: () => void;
   onViewDetails: (program: any) => void;
   onEnroll: (program: any) => void;
 }
 
-export default function AllPrograms({ programs, onBack, onViewDetails, onEnroll }: AllProgramsProps) {
+export default function AllPrograms({ programs, userProfile, onBack, onLogoClick, onViewDetails, onEnroll }: AllProgramsProps) {
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Navbar */}
       <nav className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-[100]">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onLogoClick}>
           <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
           <span className="font-display font-bold text-xl tracking-tight text-ink">
             Paradise <span className="text-primary">Hub</span>

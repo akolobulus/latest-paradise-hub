@@ -43,7 +43,9 @@ interface CourseDetailsProps {
       status: "Available" | "TBA";
     }[];
   };
+  userProfile?: { full_name?: string; avatar_url?: string | null } | null;
   onBack: () => void;
+  onLogoClick?: () => void;
   onEnroll: (course: any) => void;
   isEnrolled?: boolean;
   paymentStatus?: 'pending' | 'verified';
@@ -53,18 +55,24 @@ interface CourseDetailsProps {
   onLogout?: () => void;
 }
 
-export default function CourseDetails({ course, onBack, onEnroll, isEnrolled, paymentStatus, onViewProfile, onViewCommunity, onViewLearning, onLogout }: CourseDetailsProps) {
+export default function CourseDetails({ course, userProfile, onBack, onLogoClick, onEnroll, isEnrolled, paymentStatus, onViewProfile, onViewCommunity, onViewLearning, onLogout }: CourseDetailsProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(false);
+
+  // Helper to get initials from full name
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+  };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Navbar */}
       <nav className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-[100]">
         <div className="flex items-center gap-2 md:gap-8">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onLogoClick}>
             <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
             <span className="font-display font-bold text-xl tracking-tight hidden xs:block">
               Paradise <span className="text-primary">Hub</span>
@@ -109,11 +117,15 @@ export default function CourseDetails({ course, onBack, onEnroll, isEnrolled, pa
               }}
               className="flex items-center gap-2 md:gap-3 group"
             >
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border-2 border-transparent group-hover:border-primary transition-all text-sm md:text-base">
-                PH
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border-2 border-transparent group-hover:border-primary transition-all text-sm md:text-base overflow-hidden">
+                {userProfile?.avatar_url ? (
+                  <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(userProfile?.full_name)
+                )}
               </div>
               <div className="hidden lg:block text-left">
-                <div className="text-sm font-bold text-ink">Penina H.</div>
+                <div className="text-sm font-bold text-ink">{userProfile?.full_name || "Learner"}</div>
                 <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Learner</div>
               </div>
             </button>
@@ -465,7 +477,7 @@ export default function CourseDetails({ course, onBack, onEnroll, isEnrolled, pa
                 </span>
               </div>
               <p className="text-gray-400 text-lg max-w-sm leading-relaxed mb-8">
-                Empowering the next generation of African leaders through an interactive e-learning in technology and agribusiness.
+                Empowering the next generation of African leaders through an interactive e-learning agribusiness technology.
               </p>
               <div className="flex gap-4">
                 <a href="#" className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all">
@@ -483,9 +495,9 @@ export default function CourseDetails({ course, onBack, onEnroll, isEnrolled, pa
             <div>
               <h4 className="text-xl font-bold mb-8">Career Tracks</h4>
               <ul className="space-y-4 text-gray-400">
+                <li><a href="#" className="hover:text-primary-light transition-colors">Agribusiness Innovation</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">Sustainable Farm Management</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">AI-Powered Business Automation</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Agribusiness Innovation</a></li>
               </ul>
             </div>
 
@@ -494,7 +506,6 @@ export default function CourseDetails({ course, onBack, onEnroll, isEnrolled, pa
               <ul className="space-y-4 text-gray-400">
                 <li><a href="#" className="hover:text-primary-light transition-colors">About Us</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">Support</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Careers</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">Privacy Policy</a></li>
               </ul>
             </div>

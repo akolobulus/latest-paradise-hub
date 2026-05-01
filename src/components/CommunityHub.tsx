@@ -74,11 +74,13 @@ const TRENDING = [
 
 interface CommunityHubProps {
   onBack: () => void;
+  onLogoClick?: () => void;
   points: number;
+  userProfile?: { full_name?: string; avatar_url?: string | null } | null;
   initialChannel?: string;
 }
 
-export default function CommunityHub({ onBack, points, initialChannel = "general" }: CommunityHubProps) {
+export default function CommunityHub({ onBack, onLogoClick, points, userProfile, initialChannel = "general" }: CommunityHubProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [activeChannel, setActiveChannel] = useState(initialChannel);
   const [newPostContent, setNewPostContent] = useState("");
@@ -91,6 +93,12 @@ export default function CommunityHub({ onBack, points, initialChannel = "general
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+
+  // Helper to get initials from full name
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+  };
 
   useEffect(() => {
     setActiveChannel(initialChannel);
@@ -293,7 +301,7 @@ export default function CommunityHub({ onBack, points, initialChannel = "general
               className="fixed inset-y-0 left-0 w-72 bg-white z-[70] lg:hidden flex flex-col shadow-2xl"
             >
               <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onLogoClick}>
                   <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
                   <span className="font-display font-bold text-xl tracking-tight text-ink">
                     Incubation
@@ -344,12 +352,29 @@ export default function CommunityHub({ onBack, points, initialChannel = "general
             <span className="text-sm font-bold">Back to Dashboard</span>
           </button>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onLogoClick}>
             <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
             <span className="font-display font-bold text-xl tracking-tight text-ink">
               Incubation <span className="text-primary">Hub</span>
             </span>
           </div>
+
+          {/* User Profile Card in Sidebar */}
+          {userProfile && (
+            <div className="mt-6 pt-6 border-t border-gray-100 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm overflow-hidden">
+                {userProfile.avatar_url ? (
+                  <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(userProfile.full_name)
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-bold text-ink truncate">{userProfile.full_name || "Learner"}</div>
+                <div className="text-xs text-gray-400">{points} points</div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -425,6 +450,15 @@ export default function CommunityHub({ onBack, points, initialChannel = "general
               <Bell size={20} />
               <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
             </button>
+            {userProfile && (
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs border-2 border-transparent hover:border-primary transition-all overflow-hidden cursor-pointer">
+                {userProfile.avatar_url ? (
+                  <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(userProfile.full_name)
+                )}
+              </div>
+            )}
           </div>
         </header>
 

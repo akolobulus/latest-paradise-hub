@@ -5,19 +5,31 @@ import { cn } from "@/src/lib/utils";
 import BrandLogo from "./BrandLogo";
 
 export default function Navbar({ 
+  isLoggedIn,
+  userProfile,
   onLoginClick, 
+  onProfileClick,
   onIncubationClick,
   onHomeClick,
   onCoursesClick,
   onAboutClick
 }: { 
-  onLoginClick?: () => void, 
+  isLoggedIn?: boolean,
+  userProfile?: { full_name?: string, avatar_url?: string | null } | null,
+  onLoginClick?: () => void,
+  onProfileClick?: () => void, 
   onIncubationClick?: () => void,
   onHomeClick?: () => void,
   onCoursesClick?: () => void,
   onAboutClick?: () => void
 }) {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Helper to get initials from full name
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-6">
@@ -46,7 +58,7 @@ export default function Navbar({
             <button onClick={onAboutClick} className="text-gray-600 hover:text-primary font-semibold transition-colors">About</button>
           </div>
 
-          {/* Right Side: Stats & Login */}
+          {/* Right Side: Stats & Login/Avatar */}
           <div className="hidden md:flex items-center gap-4">
             <div className="h-8 w-px bg-gray-100 mx-2" />
             
@@ -62,13 +74,26 @@ export default function Navbar({
               </div>
             </div>
 
-            <button 
-              onClick={onLoginClick}
-              className="bg-[#064E3B] text-white px-8 py-2.5 rounded-full font-bold hover:bg-ink transition-all flex items-center gap-2 shadow-lg shadow-primary/10"
-            >
-              <User size={18} />
-              Login
-            </button>
+            {isLoggedIn && userProfile ? (
+              <button 
+                onClick={onProfileClick}
+                className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm overflow-hidden border border-gray-200 hover:border-primary transition-colors"
+              >
+                {userProfile.avatar_url ? (
+                  <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(userProfile.full_name)
+                )}
+              </button>
+            ) : (
+              <button 
+                onClick={onLoginClick}
+                className="bg-[#064E3B] text-white px-8 py-2.5 rounded-full font-bold hover:bg-ink transition-all flex items-center gap-2 shadow-lg shadow-primary/10"
+              >
+                <User size={18} />
+                Login
+              </button>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -129,15 +154,37 @@ export default function Navbar({
             About
           </button>
           <hr className="border-gray-100" />
-          <button 
-            onClick={() => {
-              onLoginClick?.();
-              setIsOpen(false);
-            }}
-            className="bg-primary text-white px-6 py-3 rounded-xl font-medium w-full"
-          >
-            Login
-          </button>
+          {isLoggedIn && userProfile ? (
+            <button 
+              onClick={() => {
+                onProfileClick?.();
+                setIsOpen(false);
+              }}
+              className="w-full flex items-center gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm overflow-hidden border border-primary/20">
+                {userProfile.avatar_url ? (
+                  <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(userProfile.full_name)
+                )}
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-ink">{userProfile.full_name || 'Profile'}</p>
+                <p className="text-xs text-gray-500">View Profile</p>
+              </div>
+            </button>
+          ) : (
+            <button 
+              onClick={() => {
+                onLoginClick?.();
+                setIsOpen(false);
+              }}
+              className="bg-primary text-white px-6 py-3 rounded-xl font-medium w-full"
+            >
+              Login
+            </button>
+          )}
         </motion.div>
       )}
     </nav>

@@ -38,7 +38,9 @@ interface EnrolledProgram {
 
 interface MyLearningProps {
   enrolledPrograms: EnrolledProgram[];
+  userProfile?: { full_name?: string; avatar_url?: string | null } | null;
   onBack: () => void;
+  onLogoClick?: () => void;
   onViewCourse: (course: any) => void;
   onViewAllPrograms: (programs: any[]) => void;
   onPaymentSuccess: (courseId: number) => void;
@@ -47,11 +49,17 @@ interface MyLearningProps {
   onLogout?: () => void;
 }
 
-export default function MyLearning({ enrolledPrograms, onBack, onViewCourse, onViewAllPrograms, onPaymentSuccess, onViewProfile, onViewCommunity, onLogout }: MyLearningProps) {
+export default function MyLearning({ enrolledPrograms, userProfile, onBack, onLogoClick, onViewCourse, onViewAllPrograms, onPaymentSuccess, onViewProfile, onViewCommunity, onLogout }: MyLearningProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(false);
+
+  // Helper to get initials from full name
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+  };
   
   const pendingPrograms = enrolledPrograms.filter(p => p.paymentStatus === 'pending');
   const verifiedPrograms = enrolledPrograms.filter(p => p.paymentStatus === 'verified');
@@ -64,7 +72,7 @@ export default function MyLearning({ enrolledPrograms, onBack, onViewCourse, onV
       {/* Navbar */}
       <nav className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-[100]">
         <div className="flex items-center gap-2 md:gap-8">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onLogoClick}>
             <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
             <span className="font-display font-bold text-xl tracking-tight hidden xs:block">
               Paradise <span className="text-primary">Hub</span>
@@ -109,11 +117,15 @@ export default function MyLearning({ enrolledPrograms, onBack, onViewCourse, onV
               }}
               className="flex items-center gap-2 md:gap-3 group"
             >
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border-2 border-transparent group-hover:border-primary transition-all text-sm md:text-base">
-                PH
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border-2 border-transparent group-hover:border-primary transition-all text-sm md:text-base overflow-hidden">
+                {userProfile?.avatar_url ? (
+                  <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(userProfile?.full_name)
+                )}
               </div>
               <div className="hidden lg:block text-left">
-                <div className="text-sm font-bold text-ink">Penina H.</div>
+                <div className="text-sm font-bold text-ink">{userProfile?.full_name || "Learner"}</div>
                 <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Learner</div>
               </div>
             </button>

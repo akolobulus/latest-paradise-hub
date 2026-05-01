@@ -4,26 +4,27 @@ import { cn } from "@/src/lib/utils";
 
 const pathways = [
   {
-    title: "AI-Powered Business Automation",
-    description: "Master the use of AI, low-code tools, and digital automation to streamline business processes and drive modern innovation.",
-    image: "/ai-automation.jpg",
-    bgColor: "bg-[#EDE9FE]",
+    title: "Agribusiness Innovation",
+    description: "Smart farming for a growing world: Driving efficiency through data and automation to build a more resilient global food future.",
+    image: "/agribusiness-innovation.jpg",
+    bgColor: "bg-white",
     textColor: "text-ink",
   },
-  {
+   {
     title: "Sustainable Farm Management",
-    description: "Learn the end-to-end business of agriculture, from sustainable farm management to profitable value chain optimization.",
+    description: "Mastering modern agriculture: Bridging eco-friendly farming practices with strategic business growth and value chain success.",
     image: "/farm-management.jpg",
     bgColor: "bg-[#D9F99D]",
     textColor: "text-ink",
   },
   {
-    title: "Agrobusiness Innovation",
-    description: "Where technology meets the soil: Leveraging IoT and advanced analytics to scale food production and secure the global supply chain.",
-    image: "/agribusiness-innovation.jpg",
-    bgColor: "bg-white",
+    title: "AI-Powered Business Automation",
+    description: "Work smarter, not harder: Use AI and low-code tools to eliminate manual tasks, optimize workflows, and scale business impact.",
+    image: "/ai-automation.jpg",
+    bgColor: "bg-[#EDE9FE]",
     textColor: "text-ink",
-  }
+  },
+  
 ];
 
 export default function CourseList() {
@@ -47,7 +48,7 @@ export default function CourseList() {
             className="text-xl text-white/80 max-w-3xl mx-auto leading-relaxed"
           >
             The career growth you want, without putting your life on hold. <br className="hidden md:block" />
-            Paradise Hub currently offers specialized Tech and Agribusiness courses designed for the next generation of leaders.
+            Paradise Hub currently offers specialized Agribusiness and Tech courses designed for the next generation of leaders.
           </motion.p>
         </div>
 

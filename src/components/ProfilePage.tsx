@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Camera, 
   Edit2, 
-  Link as LinkIcon, 
   X, 
   Upload, 
   ChevronDown, 
@@ -14,8 +13,6 @@ import {
   Youtube, 
   Github,
   Globe,
-  Phone,
-  MapPin,
   Heart,
   Check,
   ArrowLeft,
@@ -28,6 +25,7 @@ import { supabase } from "@/src/lib/supabase";
 
 interface ProfilePageProps {
   onBack: () => void;
+  onProfileUpdate?: (profile: UserProfile) => void;
 }
 
 type Tab = "Personal Information" | "Education Info" | "Work Info" | "Demographic Info";
@@ -40,13 +38,14 @@ interface UserProfile {
   avatar_url: string | null;
 }
 
-export default function ProfilePage({ onBack }: ProfilePageProps) {
+export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProps) {
   const [activeTab, setActiveTab] = useState<Tab>("Personal Information");
   const [editingSection, setEditingSection] = useState<string | null>(null);
   
   // Supabase State
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
   const [editForm, setEditForm] = useState({ firstName: "", lastName: "" });
 
   const tabs: Tab[] = ["Personal Information", "Education Info", "Work Info", "Demographic Info"];
@@ -105,6 +104,58 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
     }
   };
 
+  // Avatar Upload Handler
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setIsUploading(true);
+      
+      if (!event.target.files || event.target.files.length === 0) {
+        throw new Error('You must select an image to upload.');
+      }
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      // Path format: user_id/random_string.extension (Matches our RLS policy)
+      const filePath = `${profile?.id}/${Math.random()}.${fileExt}`;
+
+      // 1. Upload the file to the 'avatars' bucket
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // 2. Get the public URL for the newly uploaded image
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // 3. Update the user's profile with the new avatar_url
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', profile?.id);
+
+      if (updateError) throw updateError;
+
+      // 4. Update the local UI state and notify parent
+      setProfile(prev => {
+        const updatedProfile = prev ? { ...prev, avatar_url: publicUrl } : null;
+        // Notify parent component that profile was updated
+        if (updatedProfile && onProfileUpdate) {
+          onProfileUpdate(updatedProfile);
+        }
+        return updatedProfile;
+      });
+      
+    } catch (error: any) {
+      console.error("Error uploading avatar:", error);
+      alert(error.message || "Failed to upload avatar.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   // Helper to get initials from full name
   const getInitials = (name?: string) => {
     if (!name) return "U";
@@ -147,28 +198,44 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
               {editingSection === "Basic Info" && (
                 <div className="space-y-6">
                   <div className="flex flex-col md:flex-row gap-8 items-center">
-                    <div className="w-32 h-32 rounded-full bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 text-2xl font-bold relative group cursor-pointer overflow-hidden">
+                    
+                    {/* Display current Avatar */}
+                    <div className="w-32 h-32 rounded-full bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 text-2xl font-bold relative overflow-hidden shrink-0">
                       {profile?.avatar_url ? (
                         <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                       ) : (
                         getInitials(profile?.full_name)
                       )}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                        <Camera size={24} className="text-white" />
-                      </div>
+                      {isUploading && (
+                        <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
                     </div>
+                    
+                    {/* File Upload Box */}
                     <div className="flex-1 w-full">
-                      <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-colors cursor-pointer group">
+                      <label className={cn(
+                        "border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-colors group w-full",
+                        isUploading ? "opacity-50 cursor-not-allowed" : "hover:border-primary/50 cursor-pointer"
+                      )}>
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          disabled={isUploading}
+                          className="hidden"
+                        />
                         <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                           <Upload size={20} />
                         </div>
                         <div className="text-center">
                           <p className="text-sm font-bold text-ink">
-                            <span className="text-primary">Click to upload</span> or drag and drop
+                            {isUploading ? "Uploading..." : <><span className="text-primary">Click to upload</span> or drag and drop</>}
                           </p>
                           <p className="text-xs text-gray-400 mt-1">PNG, JPG or JPEG</p>
                         </div>
-                      </div>
+                      </label>
                     </div>
                   </div>
 
@@ -400,14 +467,16 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
               <button 
                 onClick={() => setEditingSection(null)}
                 className="px-8 py-3 rounded-full border border-primary text-primary font-bold hover:bg-primary/5 transition-colors"
+                disabled={isUploading}
               >
                 Cancel
               </button>
               <button 
                 onClick={editingSection === "Basic Info" ? handleSaveProfile : () => setEditingSection(null)}
-                className="px-8 py-3 rounded-full bg-primary text-white font-bold hover:bg-primary-light transition-colors shadow-lg shadow-primary/20"
+                disabled={isUploading}
+                className="px-8 py-3 rounded-full bg-primary text-white font-bold hover:bg-primary-light transition-colors shadow-lg shadow-primary/20 disabled:opacity-50"
               >
-                Save
+                {isUploading ? "Uploading..." : "Save"}
               </button>
             </div>
           </motion.div>
@@ -440,7 +509,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
           <button className="p-1.5 text-gray-400">
             <Grid size={20} />
           </button>
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs overflow-hidden">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs overflow-hidden border border-gray-200">
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
             ) : (
@@ -488,7 +557,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
         <div className="flex flex-col md:flex-row items-center md:items-end gap-4 md:gap-6 pb-8">
           <div className="relative group">
             <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white p-1 shadow-xl">
-              <div className="w-full h-full rounded-full bg-gray-50 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 overflow-hidden">
+              <div className="w-full h-full rounded-full bg-gray-50 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setEditingSection("Basic Info")}>
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
@@ -497,6 +566,9 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                     <span className="text-[10px] font-bold mt-1">Add Photo</span>
                   </>
                 )}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <Camera size={24} className="text-white" />
+                </div>
               </div>
             </div>
           </div>
@@ -566,7 +638,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                       className="text-primary transition-all duration-1000" 
                       strokeWidth="10" 
                       strokeDasharray="251.2"
-                      strokeDashoffset={profile?.full_name ? "125.6" : "251.2"} 
+                      strokeDashoffset={profile?.full_name && profile?.avatar_url ? "125.6" : "200.96"} 
                       strokeLinecap="round"
                       stroke="currentColor" 
                       fill="transparent" 
@@ -577,7 +649,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-xl md:text-2xl font-bold text-ink">
-                      {profile?.full_name ? "50%" : "0%"}
+                      {profile?.full_name && profile?.avatar_url ? "50%" : "20%"}
                     </span>
                   </div>
                 </div>
@@ -585,6 +657,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                 <div className="flex-1 space-y-3">
                   {[
                     { label: "Basic Info", done: !!profile?.full_name },
+                    { label: "Avatar", done: !!profile?.avatar_url },
                     { label: "About Me", done: false },
                     { label: "Languages", done: false },
                     { label: "Social Profiles", done: false },
@@ -592,12 +665,12 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                   ].map((item) => (
                     <div key={item.label} className="flex items-center gap-3">
                       <div className={cn(
-                        "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                        "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
                         item.done ? "bg-primary border-primary" : "border-gray-400"
                       )}>
                         {item.done && <Check size={12} className="text-white" />}
                       </div>
-                      <span className="text-sm font-medium text-gray-600">{item.label}</span>
+                      <span className="text-sm font-medium text-gray-600 truncate">{item.label}</span>
                     </div>
                   ))}
                 </div>

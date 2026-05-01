@@ -52,11 +52,11 @@ export default function Testimonials() {
             className="space-y-6"
           >
             <h3 className="text-3xl md:text-4xl font-bold text-ink leading-tight">
-              Cultivating the Next Generation of Tech and Agribusiness Leaders
+              Cultivating the Next Generation of Agribusiness and TechLeaders
             </h3>
             <div className="space-y-4 text-lg text-gray-600 leading-relaxed">
               <p>
-                Paradise Hub is a premier learning and innovation center dedicated to bridging the gap between technology and agriculture. We empower the next generation of African leaders by providing specialized training in AI-Powered Business Automation, Sustainable Farm Management, and Agribusiness Innovation.
+                Paradise Hub is a premier learning and innovation center dedicated to bridging the gap between Agribusiness and Technology. We empower the next generation of African leaders by providing specialized training in Agribusiness Innovation, Sustainable Farm Management, and AI-Powered Business Automation.
               </p>
               <p>
                 Our mission is to cultivate talent and foster innovation that drives sustainable growth across the continent. Through our interactive e-learning platform and hands-on approach, we ensure our learners are equipped with the skills needed to thrive in the modern economy.
@@ -69,7 +69,15 @@ export default function Testimonials() {
   );
 }
 
-export function Footer({ aiImage }: { aiImage?: string }) {
+export function Footer({ 
+  aiImage, 
+  isLoggedIn,
+  onLogoClick 
+}: { 
+  aiImage?: string,
+  isLoggedIn?: boolean,
+  onLogoClick?: () => void
+}) {
   return (
     <footer className="bg-ink text-white pt-32 pb-12 px-4 relative">
       <div className="max-w-7xl mx-auto">
@@ -93,7 +101,7 @@ export function Footer({ aiImage }: { aiImage?: string }) {
 
         <div className="grid md:grid-cols-4 gap-16 mb-24 pt-48">
           <div className="col-span-2">
-            <div className="flex items-center gap-2 mb-8">
+            <div className="flex items-center gap-2 mb-8 cursor-pointer hover:opacity-80 transition-opacity" onClick={onLogoClick}>
               <BrandLogo wrapperClassName="w-10 h-10 rounded-[50%] bg-white shadow-md border-2 border-white" imgClassName="w-full h-full" />
               <span className="font-display font-bold text-2xl tracking-tight">
                 Paradise <span className="text-primary-light">Hub</span>
@@ -114,9 +122,9 @@ export function Footer({ aiImage }: { aiImage?: string }) {
           <div>
             <h4 className="text-xl font-bold mb-8">Career Tracks</h4>
             <ul className="space-y-4 text-gray-400">
+              <li><FooterLink href="#">Agribusiness Innovation</FooterLink></li>
               <li><FooterLink href="#">Sustainable Farm Management</FooterLink></li>
               <li><FooterLink href="#">AI-Powered Business Automation</FooterLink></li>
-              <li><FooterLink href="#">Agribusiness Innovation</FooterLink></li>
             </ul>
           </div>
 
@@ -125,7 +133,6 @@ export function Footer({ aiImage }: { aiImage?: string }) {
             <ul className="space-y-4 text-gray-400">
               <li><FooterLink href="#">About Us</FooterLink></li>
               <li><FooterLink href="#">Support</FooterLink></li>
-              <li><FooterLink href="#">Careers</FooterLink></li>
               <li><FooterLink href="#">Privacy Policy</FooterLink></li>
             </ul>
           </div>

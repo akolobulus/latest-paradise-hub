@@ -202,7 +202,9 @@ const MOCK_NOTIFICATIONS = [
 interface DashboardProps {
   points: number;
   user?: { full_name?: string; email?: string };
+  userProfile?: { full_name?: string; avatar_url?: string | null } | null;
   onLogout: () => void;
+  onLogoClick?: () => void;
   onViewProfile: () => void;
   onViewCourse: (course: any) => void;
   onViewAllPrograms: (programs: any[]) => void;
@@ -211,8 +213,14 @@ interface DashboardProps {
   onViewCommunity: () => void;
 }
 
-export default function Dashboard({ points, user, onLogout, onViewProfile, onViewCourse, onViewAllPrograms, onEnroll, onViewLearning, onViewCommunity }: DashboardProps) {
+export default function Dashboard({ points, user, userProfile, onLogout, onLogoClick, onViewProfile, onViewCourse, onViewAllPrograms, onEnroll, onViewLearning, onViewCommunity }: DashboardProps) {
   const [activeVideoSlide, setActiveVideoSlide] = useState(0);
+
+  // Helper to get initials from full name
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+  };
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -220,12 +228,6 @@ export default function Dashboard({ points, user, onLogout, onViewProfile, onVie
 
   const nextVideo = () => setActiveVideoSlide((prev) => (prev + 1) % DASHBOARD_VIDEOS.length);
   const prevVideo = () => setActiveVideoSlide((prev) => (prev - 1 + DASHBOARD_VIDEOS.length) % DASHBOARD_VIDEOS.length);
-
-  // Helper to get initials from full name
-  const getInitials = (name?: string) => {
-    if (!name) return "U";
-    return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
-  };
 
   // Format user display name (first name only)
   const getUserDisplayName = () => {
@@ -242,7 +244,7 @@ export default function Dashboard({ points, user, onLogout, onViewProfile, onVie
       <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 px-4 py-3">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3 md:gap-8">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onLogoClick}>
               <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
               <span className="font-display font-bold text-xl tracking-tight hidden xs:block">
                 Paradise <span className="text-primary">Hub</span>
@@ -406,11 +408,15 @@ export default function Dashboard({ points, user, onLogout, onViewProfile, onVie
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center gap-2 md:gap-3 group"
               >
-                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border-2 border-transparent group-hover:border-primary transition-all text-sm md:text-base">
-                  {getInitials(user?.full_name)}
+                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border-2 border-transparent group-hover:border-primary transition-all text-sm md:text-base overflow-hidden">
+                  {userProfile?.avatar_url ? (
+                    <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    getInitials(userProfile?.full_name || user?.full_name)
+                  )}
                 </div>
                 <div className="hidden lg:block text-left">
-                  <div className="text-sm font-bold text-ink">{user?.full_name || "Learner"}</div>
+                  <div className="text-sm font-bold text-ink">{userProfile?.full_name || user?.full_name || "Learner"}</div>
                   <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Learner</div>
                 </div>
               </button>
@@ -804,7 +810,6 @@ export default function Dashboard({ points, user, onLogout, onViewProfile, onVie
               <ul className="space-y-4 text-gray-400">
                 <li><a href="#" className="hover:text-primary-light transition-colors">About Us</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">Support</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Careers</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">Privacy Policy</a></li>
               </ul>
             </div>

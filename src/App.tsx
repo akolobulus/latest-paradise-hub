@@ -16,6 +16,14 @@ import CommunityHub from "./components/CommunityHub";
 import { generateAgroTechImages } from "./lib/imageGen";
 import { supabase } from "./lib/supabase";
 
+interface UserProfile {
+  id: string;
+  full_name: string;
+  email: string;
+  points: number;
+  avatar_url: string | null;
+}
+
 export default function App() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [aiImages, setAiImages] = useState<{ heroImage: string; footerImage: string } | null>(null);
@@ -23,11 +31,12 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [session, setSession] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState<"dashboard" | "profile" | "course" | "all-programs" | "learning" | "course-player" | "community">("dashboard");
+  const [currentPage, setCurrentPage] = useState<"landing" | "dashboard" | "profile" | "course" | "all-programs" | "learning" | "course-player" | "community">("dashboard");
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [enrolledPrograms, setEnrolledPrograms] = useState<any[]>([]);
   const [points, setPoints] = useState(0);
   const [communityChannel, setCommunityChannel] = useState("general");
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   // 1. Listen for Auth Changes on mount
   useEffect(() => {
@@ -48,6 +57,7 @@ export default function App() {
         // User logged out, reset state
         setEnrolledPrograms([]);
         setPoints(0);
+        setUserProfile(null);
         setCurrentPage("dashboard");
       }
     });
@@ -58,13 +68,16 @@ export default function App() {
   // 2. Fetch User Data from Supabase
   const fetchUserData = async (userId: string) => {
     try {
-      // Fetch Points
+      // Fetch Profile with avatar_url
       const { data: profile } = await supabase
         .from('profiles')
-        .select('points')
+        .select('*')
         .eq('id', userId)
         .single();
-      if (profile) setPoints(profile.points);
+      if (profile) {
+        setPoints(profile.points);
+        setUserProfile(profile);
+      }
 
       // Fetch Enrollments (map course_ids back to course objects)
       const { data: enrollments } = await supabase
@@ -175,14 +188,90 @@ export default function App() {
   }, []);
 
   if (isLoggedIn) {
+    if (currentPage === "landing") {
+      return (
+        <div className="relative min-h-screen selection:bg-primary selection:text-white">
+          {/* Custom Cursor */}
+          <motion.div 
+            className="fixed top-0 left-0 w-8 h-8 rounded-full border-2 border-primary pointer-events-none z-[100] hidden md:block"
+            animate={{ x: mousePos.x - 16, y: mousePos.y - 16 }}
+            transition={{ type: "spring", damping: 20, stiffness: 150, mass: 0.5 }}
+          />
+          <motion.div 
+            className="fixed top-0 left-0 w-2 h-2 bg-primary rounded-full pointer-events-none z-[100] hidden md:block"
+            animate={{ x: mousePos.x - 4, y: mousePos.y - 4 }}
+            transition={{ type: "spring", damping: 30, stiffness: 200, mass: 0.2 }}
+          />
+
+          <Navbar 
+            isLoggedIn={isLoggedIn}
+            userProfile={userProfile}
+            onLoginClick={() => setShowAuth("login")} 
+            onProfileClick={() => setCurrentPage("profile")}
+            onIncubationClick={() => {
+              setCommunityChannel("general");
+              setCurrentPage("community");
+            }}
+            onHomeClick={() => setCurrentPage("dashboard")}
+            onCoursesClick={() => {
+              const el = document.getElementById('courses');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            onAboutClick={() => {
+              const el = document.getElementById('about');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+          />
+          
+          <main>
+            <Testimonials />
+            
+            <Hero 
+              isLoggedIn={isLoggedIn}
+              userProfile={userProfile}
+              onStartClick={() => setShowAuth("signup")}
+              onDashboardClick={() => {
+                setCurrentPage("dashboard");
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+            
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 1 }}
+              viewport={{ once: true }}
+            >
+              <CourseList />
+            </motion.div>
+          </main>
+
+          <Footer 
+            aiImage={aiImages?.footerImage}
+            isLoggedIn={isLoggedIn}
+            onLogoClick={() => {
+              setCurrentPage("landing");
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        </div>
+      );
+    }
     if (currentPage === "profile") {
-      return <ProfilePage onBack={() => setCurrentPage("dashboard")} />;
+      return (
+        <ProfilePage 
+          onBack={() => setCurrentPage("dashboard")}
+          onProfileUpdate={(updatedProfile) => setUserProfile(updatedProfile)}
+        />
+      );
     }
     if (currentPage === "learning") {
       return (
         <MyLearning 
+          userProfile={userProfile}
           enrolledPrograms={enrolledPrograms}
           onBack={() => setCurrentPage("dashboard")}
+          onLogoClick={() => setCurrentPage("landing")}
           onViewCourse={(course) => {
             setSelectedCourse(course);
             setCurrentPage("course-player");
@@ -201,8 +290,10 @@ export default function App() {
     if (currentPage === "all-programs") {
       return (
         <AllPrograms 
+          userProfile={userProfile}
           programs={selectedCourse || []} 
           onBack={() => setCurrentPage("dashboard")}
+          onLogoClick={() => setCurrentPage("landing")}
           onViewDetails={(course) => {
             setSelectedCourse(course);
             setCurrentPage("course");
@@ -215,13 +306,15 @@ export default function App() {
       const enrollment = enrolledPrograms.find(p => p.id === selectedCourse.id);
       return (
         <CourseDetails 
+          userProfile={userProfile}
           course={selectedCourse} 
           isEnrolled={!!enrollment}
           paymentStatus={enrollment?.paymentStatus}
           onBack={() => {
             setCurrentPage("dashboard");
             setSelectedCourse(null);
-          }} 
+          }}
+          onLogoClick={() => setCurrentPage("landing")} 
           onEnroll={handleEnroll}
           onViewProfile={() => setCurrentPage("profile")}
           onViewCommunity={() => setCurrentPage("community")}
@@ -236,11 +329,13 @@ export default function App() {
     if (currentPage === "course-player" && selectedCourse) {
       return (
         <CoursePlayer 
+          userProfile={userProfile}
           course={selectedCourse} 
           onBack={() => {
             setCurrentPage("learning");
             setSelectedCourse(null);
-          }} 
+          }}
+          onLogoClick={() => setCurrentPage("landing")} 
           onAwardPoints={handleAwardPoints}
           onViewProfile={() => setCurrentPage("profile")}
           onViewCommunity={() => setCurrentPage("community")}
@@ -255,7 +350,9 @@ export default function App() {
     if (currentPage === "community") {
       return (
         <CommunityHub 
-          onBack={() => setCurrentPage("dashboard")} 
+          userProfile={userProfile}
+          onBack={() => setCurrentPage("dashboard")}
+          onLogoClick={() => setCurrentPage("landing")} 
           points={points} 
           initialChannel={communityChannel} 
         />
@@ -265,7 +362,9 @@ export default function App() {
       <Dashboard 
         points={points}
         user={session?.user.user_metadata}
-        onLogout={handleLogout} 
+        userProfile={userProfile}
+        onLogout={handleLogout}
+        onLogoClick={() => setCurrentPage("landing")}
         onViewProfile={() => setCurrentPage("profile")}
         onViewCourse={(course) => {
           setSelectedCourse(course);
@@ -300,7 +399,10 @@ export default function App() {
       />
 
       <Navbar 
+        isLoggedIn={isLoggedIn}
+        userProfile={userProfile}
         onLoginClick={() => setShowAuth("login")} 
+        onProfileClick={() => setCurrentPage("profile")}
         onIncubationClick={() => {
           if (isLoggedIn) {
             setCommunityChannel("general");
@@ -354,7 +456,15 @@ export default function App() {
         <Testimonials />
         
         <Hero 
+          isLoggedIn={isLoggedIn}
+          userProfile={userProfile}
           onStartClick={() => setShowAuth("signup")}
+          onDashboardClick={() => {
+            if (isLoggedIn) {
+              setCurrentPage("dashboard");
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
         />
         
         <motion.div
@@ -367,7 +477,14 @@ export default function App() {
         </motion.div>
       </main>
 
-      <Footer aiImage={aiImages?.footerImage} />
+      <Footer 
+        aiImage={aiImages?.footerImage}
+        isLoggedIn={isLoggedIn}
+        onLogoClick={() => {
+          setCurrentPage("landing");
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
 
       {/* Floating Action Button for Support */}
       <motion.button
