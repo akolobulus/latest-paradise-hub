@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
@@ -99,16 +100,19 @@ export default function CommunityHub({ onBack, points, initialChannel = "general
 
     setupCommunity();
 
-    // Subscribe to new posts and likes in real-time
+    // Subscribe to new posts in real-time
     const channelSub = supabase
       .channel('public:posts')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => {
+        // Fetch new posts when someone posts
         fetchPosts();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'post_likes' }, () => {
+        // Refresh likes when someone likes a post
         fetchPosts();
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'post_likes' }, () => {
+        // Refresh likes when someone unlikes a post
         fetchPosts();
       })
       .subscribe();
@@ -116,7 +120,7 @@ export default function CommunityHub({ onBack, points, initialChannel = "general
     return () => {
       supabase.removeChannel(channelSub);
     };
-  }, [activeChannel]);
+  }, []);
 
   const fetchPosts = async () => {
     try {
@@ -135,7 +139,7 @@ export default function CommunityHub({ onBack, points, initialChannel = "general
         `)
         .order('created_at', { ascending: false });
 
-      // Filter by channel unless we are in 'general' or 'leaderboard'
+      // Filter by channel unless we are in 'general' or 'leaderboard' which shows everything
       if (activeChannel !== 'general' && activeChannel !== 'leaderboard') {
         query = query.eq('channel', activeChannel);
       }
@@ -195,7 +199,8 @@ export default function CommunityHub({ onBack, points, initialChannel = "general
       }
     } catch (error) {
       console.error('Error toggling like:', error);
-      await fetchPosts(); // Revert optimistic update on error
+      // Revert optimistic update on error
+      await fetchPosts();
     }
   };
 
@@ -416,139 +421,139 @@ export default function CommunityHub({ onBack, points, initialChannel = "general
             ) : (
               <>
                 {/* Create Post Card */}
-                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                  <div className="flex gap-4">
-                    <img 
-                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.id || 'guest'}`} 
-                      className="w-10 h-10 rounded-full bg-gray-100"
-                      alt="Avatar"
-                    />
-                    <div className="flex-1">
-                      <textarea
-                        placeholder={`What's on your mind, learner? Share in #${activeChannel}...`}
-                        value={newPostContent}
-                        onChange={(e) => setNewPostContent(e.target.value)}
-                        className="w-full bg-gray-50 rounded-2xl p-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[100px] resize-none"
-                        disabled={!currentUser}
-                      />
-                      {!currentUser && (
-                        <p className="text-xs text-gray-400 mt-2">Please log in to create posts</p>
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+              <div className="flex gap-4">
+                <img 
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.id || 'guest'}`} 
+                  className="w-10 h-10 rounded-full bg-gray-100"
+                  alt="Avatar"
+                />
+                <div className="flex-1">
+                  <textarea
+                    placeholder={`What's on your mind, learner? Share in #${activeChannel}...`}
+                    value={newPostContent}
+                    onChange={(e) => setNewPostContent(e.target.value)}
+                    className="w-full bg-gray-50 rounded-2xl p-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[100px] resize-none"
+                    disabled={!currentUser}
+                  />
+                  {!currentUser && (
+                    <p className="text-xs text-gray-400 mt-2">Please log in to create posts</p>
+                  )}
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center gap-2">
+                      <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors" disabled={!currentUser}>
+                        <ImageIcon size={20} />
+                      </button>
+                    </div>
+                    <button
+                      onClick={handleCreatePost}
+                      disabled={!newPostContent.trim() || isPosting || !currentUser}
+                      className={cn(
+                        "px-6 py-2 rounded-full font-bold text-sm transition-all flex items-center gap-2",
+                        newPostContent.trim() && currentUser
+                          ? "bg-primary text-white shadow-lg shadow-primary/20 hover:scale-105" 
+                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
                       )}
-                      <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center gap-2">
-                          <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors" disabled={!currentUser}>
-                            <ImageIcon size={20} />
-                          </button>
+                    >
+                      {isPosting ? (
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <span>Post</span>
+                          <Send size={16} />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Posts Feed */}
+            <div className="space-y-6">
+              {isLoadingPosts ? (
+                <div className="text-center p-10 text-gray-400 font-medium">
+                  Loading posts...
+                </div>
+              ) : posts.length === 0 ? (
+                <div className="text-center p-10 text-gray-400 font-medium">
+                  Be the first to post in this channel!
+                </div>
+              ) : (
+                <AnimatePresence initial={false}>
+                  {posts.map((post) => (
+                  <motion.div
+                    key={post.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex gap-3">
+                        <img 
+                          src={post.author.avatar} 
+                          className="w-10 h-10 rounded-full bg-gray-100"
+                          alt={post.author.name}
+                        />
+                        <div>
+                          <div className="flex items-center gap-1">
+                            <h4 className="font-bold text-ink text-sm">{post.author.name}</h4>
+                            {post.author.isVerified && (
+                              <div className="w-3.5 h-3.5 bg-primary rounded-full flex items-center justify-center">
+                                <Plus size={8} className="text-white" />
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{post.author.role}</p>
                         </div>
-                        <button
-                          onClick={handleCreatePost}
-                          disabled={!newPostContent.trim() || isPosting || !currentUser}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-primary bg-primary/5 px-2 py-1 rounded-md hidden sm:block">
+                          #{post.category}
+                        </span>
+                        <span className="text-xs text-gray-400">{post.timestamp}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        {post.content}
+                      </p>
+                      
+                      {post.image && (
+                        <div className="rounded-2xl overflow-hidden border border-gray-100">
+                          <img 
+                            src={post.image} 
+                            className="w-full h-auto object-cover max-h-[400px]"
+                            alt="Post visual"
+                          />
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-6 pt-4 border-t border-gray-50">
+                        <button 
+                          onClick={() => handleLike(post.id, !!post.isLiked)}
                           className={cn(
-                            "px-6 py-2 rounded-full font-bold text-sm transition-all flex items-center gap-2",
-                            newPostContent.trim() && currentUser
-                              ? "bg-primary text-white shadow-lg shadow-primary/20 hover:scale-105" 
-                              : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            "flex items-center gap-2 text-sm font-bold transition-colors",
+                            post.isLiked ? "text-red-500" : "text-gray-400 hover:text-red-500"
                           )}
                         >
-                          {isPosting ? (
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          ) : (
-                            <>
-                              <span>Post</span>
-                              <Send size={16} />
-                            </>
-                          )}
+                          <Heart size={18} fill={post.isLiked ? "currentColor" : "none"} />
+                          <span>{post.likes}</span>
+                        </button>
+                        <button className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-primary transition-colors">
+                          <MessageSquare size={18} />
+                          <span>{post.comments}</span>
                         </button>
                       </div>
                     </div>
-                  </div>
-                </div>
-
-                {/* Posts Feed */}
-                <div className="space-y-6">
-                  {isLoadingPosts ? (
-                    <div className="text-center p-10 text-gray-400 font-medium">
-                      Loading posts...
-                    </div>
-                  ) : posts.length === 0 ? (
-                    <div className="text-center p-10 text-gray-400 font-medium">
-                      Be the first to post in this channel!
-                    </div>
-                  ) : (
-                    <AnimatePresence initial={false}>
-                      {posts.map((post) => (
-                      <motion.div
-                        key={post.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex gap-3">
-                            <img 
-                              src={post.author.avatar} 
-                              className="w-10 h-10 rounded-full bg-gray-100"
-                              alt={post.author.name}
-                            />
-                            <div>
-                              <div className="flex items-center gap-1">
-                                <h4 className="font-bold text-ink text-sm">{post.author.name}</h4>
-                                {post.author.isVerified && (
-                                  <div className="w-3.5 h-3.5 bg-primary rounded-full flex items-center justify-center">
-                                    <Plus size={8} className="text-white" />
-                                  </div>
-                                )}
-                              </div>
-                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{post.author.role}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs font-bold text-primary bg-primary/5 px-2 py-1 rounded-md hidden sm:block">
-                              #{post.category}
-                            </span>
-                            <span className="text-xs text-gray-400">{post.timestamp}</span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                            {post.content}
-                          </p>
-                          
-                          {post.image && (
-                            <div className="rounded-2xl overflow-hidden border border-gray-100">
-                              <img 
-                                src={post.image} 
-                                className="w-full h-auto object-cover max-h-[400px]"
-                                alt="Post visual"
-                              />
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-6 pt-4 border-t border-gray-50">
-                            <button 
-                              onClick={() => handleLike(post.id, !!post.isLiked)}
-                              className={cn(
-                                "flex items-center gap-2 text-sm font-bold transition-colors",
-                                post.isLiked ? "text-red-500" : "text-gray-400 hover:text-red-500"
-                              )}
-                            >
-                              <Heart size={18} fill={post.isLiked ? "currentColor" : "none"} />
-                              <span>{post.likes}</span>
-                            </button>
-                            <button className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-primary transition-colors">
-                              <MessageSquare size={18} />
-                              <span>{post.comments}</span>
-                            </button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                    </AnimatePresence>
-                  )}
-                </div>
-              </>
-            )}
+                  </motion.div>
+                ))}
+                </AnimatePresence>
+              )}
+            </div>
+          </>
+        )}
           </div>
         </div>
       </main>
