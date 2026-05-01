@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Camera, 
@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import { cn } from "@/src/lib/utils";
+import { supabase } from "@/src/lib/supabase";
 
 interface ProfilePageProps {
   onBack: () => void;
@@ -31,11 +32,84 @@ interface ProfilePageProps {
 
 type Tab = "Personal Information" | "Education Info" | "Work Info" | "Demographic Info";
 
+interface UserProfile {
+  id: string;
+  full_name: string;
+  email: string;
+  points: number;
+  avatar_url: string | null;
+}
+
 export default function ProfilePage({ onBack }: ProfilePageProps) {
   const [activeTab, setActiveTab] = useState<Tab>("Personal Information");
   const [editingSection, setEditingSection] = useState<string | null>(null);
+  
+  // Supabase State
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [editForm, setEditForm] = useState({ firstName: "", lastName: "" });
 
   const tabs: Tab[] = ["Personal Information", "Education Info", "Work Info", "Demographic Info"];
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      
+      if (data) {
+        setProfile(data);
+        // Split full name for the edit form
+        const names = (data.full_name || "").split(" ");
+        setEditForm({
+          firstName: names[0] || "",
+          lastName: names.slice(1).join(" ") || ""
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profile) return;
+    
+    try {
+      const fullName = `${editForm.firstName} ${editForm.lastName}`.trim();
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: fullName })
+        .eq('id', profile.id);
+
+      if (error) throw error;
+
+      // Update local state to reflect changes instantly
+      setProfile({ ...profile, full_name: fullName });
+      setEditingSection(null);
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      alert("Failed to update profile.");
+    }
+  };
+
+  // Helper to get initials from full name
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+  };
 
   const renderModal = () => {
     if (!editingSection) return null;
@@ -73,9 +147,13 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
               {editingSection === "Basic Info" && (
                 <div className="space-y-6">
                   <div className="flex flex-col md:flex-row gap-8 items-center">
-                    <div className="w-32 h-32 rounded-full bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 text-2xl font-bold relative group cursor-pointer">
-                      PA
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 rounded-full transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <div className="w-32 h-32 rounded-full bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 text-2xl font-bold relative group cursor-pointer overflow-hidden">
+                      {profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        getInitials(profile?.full_name)
+                      )}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                         <Camera size={24} className="text-white" />
                       </div>
                     </div>
@@ -99,7 +177,8 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                       <label className="text-sm font-bold text-ink">First Name*</label>
                       <input 
                         type="text" 
-                        defaultValue="USER"
+                        value={editForm.firstName}
+                        onChange={(e) => setEditForm({...editForm, firstName: e.target.value})}
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                       />
                     </div>
@@ -107,7 +186,8 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                       <label className="text-sm font-bold text-ink">Last Name*</label>
                       <input 
                         type="text" 
-                        defaultValue="NAME"
+                        value={editForm.lastName}
+                        onChange={(e) => setEditForm({...editForm, lastName: e.target.value})}
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                       />
                     </div>
@@ -324,7 +404,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                 Cancel
               </button>
               <button 
-                onClick={() => setEditingSection(null)}
+                onClick={editingSection === "Basic Info" ? handleSaveProfile : () => setEditingSection(null)}
                 className="px-8 py-3 rounded-full bg-primary text-white font-bold hover:bg-primary-light transition-colors shadow-lg shadow-primary/20"
               >
                 Save
@@ -352,7 +432,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
             <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center">
               <div className="w-2 h-2 bg-orange-500 rounded-full" />
             </div>
-            <span className="text-xs font-bold">0</span>
+            <span className="text-xs font-bold">{profile?.points?.toLocaleString() || 0}</span>
           </div>
           <button className="p-1.5 text-gray-400">
             <Bell size={20} />
@@ -360,8 +440,12 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
           <button className="p-1.5 text-gray-400">
             <Grid size={20} />
           </button>
-          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xs">
-            PA
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs overflow-hidden">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              getInitials(profile?.full_name)
+            )}
           </div>
         </div>
       </nav>
@@ -404,15 +488,23 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
         <div className="flex flex-col md:flex-row items-center md:items-end gap-4 md:gap-6 pb-8">
           <div className="relative group">
             <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white p-1 shadow-xl">
-              <div className="w-full h-full rounded-full bg-gray-50 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200">
-                <Camera size={32} />
-                <span className="text-[10px] font-bold mt-1">Add Photo</span>
+              <div className="w-full h-full rounded-full bg-gray-50 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 overflow-hidden">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <>
+                    <Camera size={32} />
+                    <span className="text-[10px] font-bold mt-1">Add Photo</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
           <div className="flex-1 text-center md:text-left">
-            <h2 className="text-2xl md:text-3xl font-bold text-ink tracking-tight">PENINAH ALHASSAN</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-ink tracking-tight uppercase">
+              {isLoading ? "LOADING..." : profile?.full_name || "LEARNER"}
+            </h2>
           </div>
 
           <div className="flex items-center gap-3">
@@ -470,14 +562,29 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                       cx="50" 
                       cy="50" 
                     />
+                    <circle 
+                      className="text-primary transition-all duration-1000" 
+                      strokeWidth="10" 
+                      strokeDasharray="251.2"
+                      strokeDashoffset={profile?.full_name ? "125.6" : "251.2"} 
+                      strokeLinecap="round"
+                      stroke="currentColor" 
+                      fill="transparent" 
+                      r="40" 
+                      cx="50" 
+                      cy="50" 
+                    />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xl md:text-2xl font-bold text-ink">0%</span>
+                    <span className="text-xl md:text-2xl font-bold text-ink">
+                      {profile?.full_name ? "50%" : "0%"}
+                    </span>
                   </div>
                 </div>
 
                 <div className="flex-1 space-y-3">
                   {[
+                    { label: "Basic Info", done: !!profile?.full_name },
                     { label: "About Me", done: false },
                     { label: "Languages", done: false },
                     { label: "Social Profiles", done: false },

@@ -134,12 +134,13 @@ export default function CommunityHub({ onBack, points, initialChannel = "general
           image_url,
           channel,
           created_at,
-          profiles!inner (id, full_name, avatar_url),
+          author_id,
+          profiles (id, full_name, avatar_url),
           post_likes (user_id)
         `)
         .order('created_at', { ascending: false });
 
-      // Filter by channel unless we are in 'general' or 'leaderboard' which shows everything
+      // Filter by channel unless we are in 'general' or 'leaderboard'
       if (activeChannel !== 'general' && activeChannel !== 'leaderboard') {
         query = query.eq('channel', activeChannel);
       }
@@ -150,19 +151,23 @@ export default function CommunityHub({ onBack, points, initialChannel = "general
         const mappedPosts: Post[] = data.map((post: any) => ({
           id: post.id,
           author: {
-            id: post.profiles.id,
-            name: post.profiles.full_name || 'Anonymous Learner',
+            id: post.author_id,
+            // Fallbacks in case the user doesn't have a profile yet
+            name: post.profiles?.full_name || 'Learner',
             role: 'Learner',
-            avatar: post.profiles.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.profiles.full_name || post.id}`
+            avatar: post.profiles?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author_id}`
           },
           content: post.content,
           image: post.image_url,
-          likes: post.post_likes.length,
+          // Handle cases where post_likes might be null
+          likes: post.post_likes ? post.post_likes.length : 0,
           comments: 0,
           shares: 0,
           timestamp: timeAgo(post.created_at),
           category: post.channel,
-          isLiked: user ? post.post_likes.some((like: any) => like.user_id === user.id) : false
+          isLiked: user && post.post_likes 
+            ? post.post_likes.some((like: any) => like.user_id === user.id) 
+            : false
         }));
         setPosts(mappedPosts);
       }
@@ -211,21 +216,50 @@ export default function CommunityHub({ onBack, points, initialChannel = "general
     }
     
     setIsPosting(true);
+    const contentToPost = newPostContent;
+    const targetChannel = activeChannel === 'leaderboard' ? 'general' : activeChannel;
+    
+    // 1. Optimistic UI Update (Shows instantly)
+    const tempId = `temp-${Date.now()}`;
+    const newPost: Post = {
+      id: tempId,
+      author: {
+        id: currentUser.id,
+        name: currentUser.user_metadata?.full_name || 'You',
+        role: 'Learner',
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.id}`
+      },
+      content: contentToPost,
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      timestamp: "Just now",
+      category: targetChannel,
+      isLiked: false
+    };
+
+    setPosts(prev => [newPost, ...prev]);
+    setNewPostContent(""); // Clear input immediately
     
     try {
+      // 2. Actually push to Supabase
       const { error } = await supabase.from('posts').insert({
         author_id: currentUser.id,
-        content: newPostContent,
-        channel: activeChannel === 'leaderboard' ? 'general' : activeChannel
+        content: contentToPost,
+        channel: targetChannel
       });
 
       if (error) throw error;
 
-      setNewPostContent("");
+      // 3. Re-sync with database to get the real UUID and relationships
       await fetchPosts();
     } catch (error) {
       console.error('Error creating post:', error);
       alert('Failed to create post. Please try again.');
+      
+      // Revert the optimistic update on failure
+      setPosts(prev => prev.filter(p => p.id !== tempId));
+      setNewPostContent(contentToPost); 
     } finally {
       setIsPosting(false);
     }
