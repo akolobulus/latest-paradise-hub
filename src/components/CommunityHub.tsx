@@ -100,6 +100,17 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
 
+  // --- New States for Threads & DMs ---
+  const [activeView, setActiveView] = useState<"channel" | "thread" | "dm">("channel");
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [showAllDms, setShowAllDms] = useState(false);
+  const [activeDmUser, setActiveDmUser] = useState<any>(null);
+  const [activeThreadPost, setActiveThreadPost] = useState<Post | null>(null);
+  const [threadComments, setThreadComments] = useState<any[]>([]);
+  const [newThreadComment, setNewThreadComment] = useState("");
+  const [dmMessages, setDmMessages] = useState<any[]>([]);
+  const [newDmContent, setNewDmContent] = useState("");
+
   // Helper to get initials from full name
   const getInitials = (name?: string) => {
     if (!name) return "U";
@@ -118,6 +129,24 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
     };
     setupUser();
   }, []);
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchUsersList();
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (activeThreadPost) {
+      fetchThreadComments(activeThreadPost.id);
+    }
+  }, [activeThreadPost]);
+
+  useEffect(() => {
+    if (activeDmUser) {
+      fetchDmMessages(activeDmUser.id);
+    }
+  }, [activeDmUser]);
 
   // Fetch posts and set up Realtime EVERY TIME the activeChannel changes
   useEffect(() => {
@@ -166,7 +195,8 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
           created_at,
           author_id,
           profiles (id, full_name, avatar_url),
-          post_likes (user_id)
+          post_likes (user_id),
+          post_comments (id)
         `)
         .eq('channel', targetChannel) // FIX: This strictly isolates every room
         .order('created_at', { ascending: false });
@@ -186,7 +216,7 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
           content: post.content,
           image: post.image_url,
           likes: post.post_likes ? post.post_likes.length : 0,
-          comments: 0,
+          comments: post.post_comments ? post.post_comments.length : 0,
           shares: 0,
           timestamp: timeAgo(post.created_at),
           category: post.channel,
@@ -244,6 +274,89 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
       setOnlineMembers(onlineCount || 0);
     } catch (error) {
       console.error('Error fetching member stats:', error);
+    }
+  };
+
+  const fetchUsersList = async () => {
+    if (!currentUser) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .neq('id', currentUser.id)
+        .order('full_name', { ascending: true });
+
+      if (!error && data) setUsersList(data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const fetchThreadComments = async (postId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('post_comments')
+        .select('id, content, created_at, author_id, profiles (id, full_name, avatar_url)')
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true });
+
+      if (!error && data) setThreadComments(data);
+    } catch (error) {
+      console.error('Error fetching thread comments:', error);
+    }
+  };
+
+  const fetchDmMessages = async (userId: string) => {
+    if (!currentUser) return;
+    try {
+      const { data, error } = await supabase
+        .from('direct_messages')
+        .select('id, content, created_at, sender_id, receiver_id')
+        .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${currentUser.id}))`)
+        .order('created_at', { ascending: true });
+
+      if (!error && data) setDmMessages(data);
+    } catch (error) {
+      console.error('Error fetching direct messages:', error);
+    }
+  };
+
+  const sendThreadComment = async () => {
+    if (!newThreadComment.trim() || !currentUser || !activeThreadPost) return;
+
+    try {
+      const content = newThreadComment;
+      setNewThreadComment("");
+      const { error } = await supabase.from('post_comments').insert({
+        post_id: activeThreadPost.id,
+        author_id: currentUser.id,
+        content,
+      });
+      if (error) throw error;
+      await fetchThreadComments(activeThreadPost.id);
+      await fetchPosts();
+    } catch (error) {
+      console.error('Error sending thread comment:', error);
+      setNewThreadComment(newThreadComment);
+    }
+  };
+
+  const sendDirectMessage = async () => {
+    if (!newDmContent.trim() || !currentUser || !activeDmUser) return;
+
+    try {
+      const content = newDmContent;
+      setNewDmContent("");
+      const { error } = await supabase.from('direct_messages').insert({
+        sender_id: currentUser.id,
+        receiver_id: activeDmUser.id,
+        content,
+      });
+      if (error) throw error;
+      await fetchDmMessages(activeDmUser.id);
+    } catch (error) {
+      console.error('Error sending DM:', error);
+      setNewDmContent(newDmContent);
     }
   };
 
@@ -386,6 +499,7 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
                         key={channel.name}
                         onClick={() => {
                           setActiveChannel(channel.name);
+                          setActiveView("channel");
                           setIsMobileMenuOpen(false);
                         }}
                         className={cn(
@@ -399,6 +513,50 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
                         <span>{channel.name}</span>
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Direct Messages</h3>
+                  <div className="space-y-3 px-4">
+                    {usersList.slice(0, showAllDms ? usersList.length : 3).map((user) => (
+                      <div 
+                        key={user.id}
+                        onClick={() => {
+                          setActiveView("dm");
+                          setActiveDmUser(user);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={cn(
+                          "flex items-center gap-3 group cursor-pointer p-2 rounded-xl transition-all",
+                          activeView === "dm" && activeDmUser?.id === user.id ? "bg-primary/5" : "hover:bg-gray-50"
+                        )}
+                      >
+                        <div className="relative">
+                          <img 
+                            src={user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
+                            className="w-8 h-8 rounded-full bg-gray-100 object-cover"
+                            alt={user.full_name}
+                          />
+                          <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
+                        </div>
+                        <span className={cn(
+                          "text-sm font-medium transition-colors truncate",
+                          activeView === "dm" && activeDmUser?.id === user.id ? "text-primary font-bold" : "text-gray-600 group-hover:text-primary"
+                        )}>
+                          {user.full_name || "Learner"}
+                        </span>
+                      </div>
+                    ))}
+
+                    {usersList.length > 3 && (
+                      <button 
+                        onClick={() => setShowAllDms(!showAllDms)}
+                        className="w-full text-left px-2 py-1 text-xs font-bold text-primary hover:underline"
+                      >
+                        {showAllDms ? "Show Less" : `View ${usersList.length - 3} More`}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -450,7 +608,10 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
               {CHANNELS.map((channel) => (
                 <button
                   key={channel.name}
-                  onClick={() => setActiveChannel(channel.name)}
+                  onClick={() => {
+                    setActiveChannel(channel.name);
+                    setActiveView("channel");
+                  }}
                   className={cn(
                     "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold transition-all",
                     activeChannel === channel.name 
@@ -468,19 +629,43 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
           <div>
             <h3 className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Direct Messages</h3>
             <div className="space-y-3 px-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-3 group cursor-pointer">
+              {usersList.slice(0, showAllDms ? usersList.length : 3).map((user) => (
+                <div 
+                  key={user.id}
+                  onClick={() => {
+                    setActiveView("dm");
+                    setActiveDmUser(user);
+                  }}
+                  className={cn(
+                    "flex items-center gap-3 group cursor-pointer p-2 rounded-xl transition-all",
+                    activeView === "dm" && activeDmUser?.id === user.id ? "bg-primary/5" : "hover:bg-gray-50"
+                  )}
+                >
                   <div className="relative">
                     <img 
-                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=User${i}`} 
-                      className="w-8 h-8 rounded-full bg-gray-100"
-                      alt="User"
+                      src={user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
+                      className="w-8 h-8 rounded-full bg-gray-100 object-cover"
+                      alt={user.full_name}
                     />
                     <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
                   </div>
-                  <span className="text-sm font-medium text-gray-600 group-hover:text-primary transition-colors">Member {i}</span>
+                  <span className={cn(
+                    "text-sm font-medium transition-colors truncate",
+                    activeView === "dm" && activeDmUser?.id === user.id ? "text-primary font-bold" : "text-gray-600 group-hover:text-primary"
+                  )}>
+                    {user.full_name || "Learner"}
+                  </span>
                 </div>
               ))}
+
+              {usersList.length > 3 && (
+                <button 
+                  onClick={() => setShowAllDms(!showAllDms)}
+                  className="w-full text-left px-2 py-1 text-xs font-bold text-primary hover:underline"
+                >
+                  {showAllDms ? "Show Less" : `View ${usersList.length - 3} More`}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -531,7 +716,113 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
         {/* Scrollable Feed */}
         <div className="flex-1 overflow-y-auto bg-gray-50/50 p-6 custom-scrollbar">
           <div className="max-w-2xl mx-auto space-y-6">
-            {activeChannel === "leaderboard" ? (
+            {activeView === "dm" && activeDmUser ? (
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 min-h-[500px] flex flex-col">
+                <button 
+                  onClick={() => setActiveView("channel")}
+                  className="mb-6 flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-primary"
+                >
+                  <ArrowLeft size={16} /> Back to #{activeChannel}
+                </button>
+                <div className="flex items-center gap-4 pb-4 border-b border-gray-100 mb-4">
+                  <img 
+                    src={activeDmUser.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${activeDmUser.id}`} 
+                    className="w-12 h-12 rounded-full bg-gray-100 object-cover"
+                    alt={activeDmUser.full_name}
+                  />
+                  <div>
+                    <h2 className="font-bold text-lg text-ink">{activeDmUser.full_name}</h2>
+                    <p className="text-xs text-gray-400">Direct Message</p>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+                  {dmMessages.length === 0 ? (
+                    <p className="text-sm text-gray-400 italic text-center mt-10">No direct messages yet. Start the conversation.</p>
+                  ) : (
+                    dmMessages.map((message) => (
+                      <div 
+                        key={message.id}
+                        className={cn(
+                          "rounded-3xl p-4 border max-w-[80%]",
+                          message.sender_id === currentUser?.id ? "bg-primary/5 border-primary/20 self-end" : "bg-gray-50 border-gray-100 self-start"
+                        )}
+                      >
+                        <p className="text-sm text-gray-700">{message.content}</p>
+                        <p className="mt-2 text-[10px] text-gray-400">{timeAgo(message.created_at)}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="mt-auto relative">
+                  <textarea 
+                    value={newDmContent}
+                    onChange={(e) => setNewDmContent(e.target.value)}
+                    placeholder={`Message @${activeDmUser.full_name}...`}
+                    className="w-full bg-gray-50 rounded-2xl p-4 pr-16 text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none min-h-[100px]"
+                  />
+                  <button 
+                    onClick={sendDirectMessage}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-primary"
+                  >
+                    <Send size={18} />
+                  </button>
+                </div>
+              </div>
+            ) : activeView === "thread" && activeThreadPost ? (
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                <button 
+                  onClick={() => setActiveView("channel")}
+                  className="mb-6 flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-primary"
+                >
+                  <ArrowLeft size={16} /> Back to #{activeChannel}
+                </button>
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-start gap-4">
+                    <img 
+                      src={activeThreadPost.author.avatar} 
+                      className="w-12 h-12 rounded-full bg-gray-100 object-cover"
+                      alt={activeThreadPost.author.name}
+                    />
+                    <div>
+                      <p className="font-bold text-ink">{activeThreadPost.author.name}</p>
+                      <p className="text-sm text-gray-500">{activeThreadPost.content}</p>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-400">{activeThreadPost.comments} replies</div>
+                </div>
+
+                <div className="space-y-4 mb-6">
+                  {threadComments.length === 0 ? (
+                    <p className="text-sm text-gray-400 italic">No replies yet. Be the first to reply.</p>
+                  ) : (
+                    threadComments.map((comment) => (
+                      <div key={comment.id} className="bg-gray-50 rounded-3xl p-4 border border-gray-100">
+                        <p className="text-sm font-bold text-ink">{comment.profiles?.full_name || 'Learner'}</p>
+                        <p className="text-sm text-gray-600 mt-1">{comment.content}</p>
+                        <p className="mt-2 text-[10px] text-gray-400">{timeAgo(comment.created_at)}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="mt-auto relative">
+                  <textarea 
+                    value={newThreadComment}
+                    onChange={(e) => setNewThreadComment(e.target.value)}
+                    placeholder="Write a reply..."
+                    className="w-full bg-gray-50 rounded-2xl p-4 pr-16 text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none min-h-[100px]"
+                  />
+                  <button 
+                    onClick={sendThreadComment}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-primary"
+                  >
+                    <Send size={18} />
+                  </button>
+                </div>
+              </div>
+            ) : activeChannel === "leaderboard" ? (
               <div className="bg-ink text-white rounded-[40px] p-8 md:p-12 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] -z-0" />
                 <div className="flex items-center justify-between mb-10 relative z-10">
@@ -727,10 +1018,16 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
                               <Heart size={18} fill={post.isLiked ? "currentColor" : "none"} />
                               <span>{post.likes}</span>
                             </button>
-                            <button className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-primary transition-colors">
+                            <button 
+                            onClick={() => {
+                              setActiveView("thread");
+                              setActiveThreadPost(post);
+                            }}
+                            className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-primary transition-colors"
+                          >
                               <MessageSquare size={18} />
                               <span>{post.comments}</span>
-                            </button>
+                          </button>
                           </div>
                         </div>
                       </motion.div>
