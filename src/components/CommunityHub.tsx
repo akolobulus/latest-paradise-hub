@@ -19,7 +19,8 @@ import {
   Filter,
   Trophy,
   Edit2,
-  Trash2
+  Trash2,
+  X // Added X icon for the modal close button
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import { cn } from "@/src/lib/utils";
@@ -116,6 +117,9 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
   const [newThreadComment, setNewThreadComment] = useState("");
   const [dmMessages, setDmMessages] = useState<any[]>([]);
   const [newDmContent, setNewDmContent] = useState("");
+  
+  // --- State for Profile Pop-up Modal ---
+  const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null);
 
   // Helper to get initials from full name
   const getInitials = (name?: string) => {
@@ -528,6 +532,75 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden" onClick={() => setOpenDropdownId(null)}>
+      
+      {/* Profile Pop-up Modal */}
+      <AnimatePresence>
+        {selectedUserProfile && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedUserProfile(null)}
+              className="fixed inset-0 bg-black/40 z-[100] backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm bg-white rounded-3xl p-6 shadow-2xl z-[101]"
+            >
+              <button
+                onClick={() => setSelectedUserProfile(null)}
+                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-ink hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+              
+              <div className="flex flex-col items-center text-center mt-4">
+                <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-3xl mb-4 overflow-hidden shadow-inner border border-primary/20">
+                  {selectedUserProfile.avatar || selectedUserProfile.avatar_url ? (
+                    <img
+                      src={selectedUserProfile.avatar || selectedUserProfile.avatar_url}
+                      alt={selectedUserProfile.name || selectedUserProfile.full_name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    getInitials(selectedUserProfile.name || selectedUserProfile.full_name)
+                  )}
+                </div>
+                
+                <h3 className="text-2xl font-bold text-ink">{selectedUserProfile.name || selectedUserProfile.full_name}</h3>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1 bg-gray-100 px-3 py-1 rounded-full">
+                  {selectedUserProfile.role || "Learner"}
+                </p>
+                
+                {currentUser?.id !== selectedUserProfile.id && (
+                  <button
+                    onClick={() => {
+                      setSelectedUserProfile(null); // Close modal
+                      setActiveView("dm"); // Switch view
+                      
+                      // Map format so activeDmUser handles both post.author structures and regular user structures
+                      setActiveDmUser({
+                        id: selectedUserProfile.id,
+                        full_name: selectedUserProfile.name || selectedUserProfile.full_name,
+                        avatar_url: selectedUserProfile.avatar || selectedUserProfile.avatar_url
+                      });
+                      
+                      if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+                    }}
+                    className="mt-8 w-full py-3.5 bg-primary text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary-light transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    <MessageSquare size={18} />
+                    Message Directly
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -866,7 +939,10 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
                   <ArrowLeft size={16} /> Back to #{activeChannel}
                 </button>
                 <div className="flex items-center gap-4 pb-4 border-b border-gray-100 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-base overflow-hidden border border-primary/20 shadow-sm">
+                  <div 
+                    onClick={() => setSelectedUserProfile(activeDmUser)}
+                    className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-base overflow-hidden border border-primary/20 shadow-sm cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all"
+                  >
                     {activeDmUser.avatar_url ? (
                       <img src={activeDmUser.avatar_url} alt={activeDmUser.full_name} className="w-full h-full object-cover" />
                     ) : (
@@ -874,7 +950,12 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
                     )}
                   </div>
                   <div>
-                    <h2 className="font-bold text-lg text-ink">{activeDmUser.full_name}</h2>
+                    <h2 
+                      onClick={() => setSelectedUserProfile(activeDmUser)}
+                      className="font-bold text-lg text-ink cursor-pointer hover:text-primary transition-colors"
+                    >
+                      {activeDmUser.full_name}
+                    </h2>
                     <p className="text-xs text-gray-400">Direct Message</p>
                   </div>
                 </div>
@@ -925,11 +1006,17 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
                   <div className="flex items-start gap-4">
                     <img 
                       src={activeThreadPost.author.avatar} 
-                      className="w-12 h-12 rounded-full bg-gray-100 object-cover"
+                      className="w-12 h-12 rounded-full bg-gray-100 object-cover cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all"
                       alt={activeThreadPost.author.name}
+                      onClick={() => setSelectedUserProfile(activeThreadPost.author)}
                     />
                     <div>
-                      <p className="font-bold text-ink">{activeThreadPost.author.name}</p>
+                      <p 
+                        className="font-bold text-ink cursor-pointer hover:text-primary transition-colors"
+                        onClick={() => setSelectedUserProfile(activeThreadPost.author)}
+                      >
+                        {activeThreadPost.author.name}
+                      </p>
                       <p className="text-sm text-gray-500">{activeThreadPost.content}</p>
                     </div>
                   </div>
@@ -942,9 +1029,36 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
                   ) : (
                     threadComments.map((comment) => (
                       <div key={comment.id} className="bg-gray-50 rounded-3xl p-4 border border-gray-100">
-                        <p className="text-sm font-bold text-ink">{comment.profiles?.full_name || 'Learner'}</p>
-                        <p className="text-sm text-gray-600 mt-1">{comment.content}</p>
-                        <p className="mt-2 text-[10px] text-gray-400">{timeAgo(comment.created_at)}</p>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            onClick={() => setSelectedUserProfile({
+                              id: comment.author_id,
+                              name: comment.profiles?.full_name || 'Learner',
+                              avatar: comment.profiles?.avatar_url
+                            })}
+                            className="w-6 h-6 rounded-full bg-primary/10 overflow-hidden cursor-pointer hover:ring-1 hover:ring-primary/30"
+                          >
+                            {comment.profiles?.avatar_url ? (
+                              <img src={comment.profiles.avatar_url} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-primary">
+                                {getInitials(comment.profiles?.full_name)}
+                              </div>
+                            )}
+                          </div>
+                          <p 
+                            className="text-sm font-bold text-ink cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => setSelectedUserProfile({
+                              id: comment.author_id,
+                              name: comment.profiles?.full_name || 'Learner',
+                              avatar: comment.profiles?.avatar_url
+                            })}
+                          >
+                            {comment.profiles?.full_name || 'Learner'}
+                          </p>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-2 pl-8">{comment.content}</p>
+                        <p className="mt-2 text-[10px] text-gray-400 pl-8">{timeAgo(comment.created_at)}</p>
                       </div>
                     ))
                   )}
@@ -1049,12 +1163,18 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
                           <div className="flex gap-3">
                             <img 
                               src={post.author.avatar} 
-                              className="w-10 h-10 rounded-full bg-gray-100"
+                              className="w-10 h-10 rounded-full bg-gray-100 object-cover cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all"
                               alt={post.author.name}
+                              onClick={() => setSelectedUserProfile(post.author)}
                             />
                             <div>
                               <div className="flex items-center gap-1">
-                                <h4 className="font-bold text-ink text-sm">{post.author.name}</h4>
+                                <h4 
+                                  className="font-bold text-ink text-sm cursor-pointer hover:text-primary transition-colors"
+                                  onClick={() => setSelectedUserProfile(post.author)}
+                                >
+                                  {post.author.name}
+                                </h4>
                                 {post.author.isVerified && (
                                   <div className="w-3.5 h-3.5 bg-primary rounded-full flex items-center justify-center">
                                     <Plus size={8} className="text-white" />
