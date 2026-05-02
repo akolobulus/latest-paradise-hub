@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Camera, 
@@ -39,6 +39,9 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(3); // Mock notifications
   
   // Form state for all fields
   const [editForm, setEditForm] = useState({
@@ -127,6 +130,7 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
 
   const handleSaveProfile = async () => {
     if (!profile) return;
+    setIsSaving(true);
     
     try {
       const fullName = `${editForm.firstName} ${editForm.lastName}`.trim();
@@ -135,10 +139,10 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
         title: editForm.title,
         gender: editForm.gender,
         about_me: editForm.about_me,
-        languages: editForm.languages,
+        languages: editForm.languages.filter(Boolean),
         phone_number: editForm.phone_number,
         whatsapp_number: editForm.whatsapp_number,
-        interests: editForm.interests,
+        interests: editForm.interests.filter(Boolean),
         country_of_origin: editForm.country_of_origin,
         state_of_origin: editForm.state_of_origin,
         city_of_origin: editForm.city_of_origin,
@@ -153,25 +157,28 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
         .update(updateData)
         .eq('id', profile.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Update Error details:", error);
+        throw new Error(error.message);
+      }
 
-      // Update local state
       const updatedProfile = { ...profile, ...updateData } as ProfileData;
       setProfile(updatedProfile);
       setEditingSection(null);
       
-      // Notify parent component
       if (onProfileUpdate) {
         onProfileUpdate(updatedProfile);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving profile:", error);
-      alert("Failed to update profile.");
+      alert(`Failed to update profile: ${error.message || 'Check database columns'}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   // Avatar Upload Handler
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     try {
       setIsUploading(true);
       
@@ -371,14 +378,15 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
 
               {editingSection === "Languages" && (
                 <div className="space-y-6">
-                  <div className="flex justify-end">
-                    <button className="text-primary font-bold text-sm flex items-center gap-2 hover:underline">
-                      <Plus size={16} />
-                      Add Language
-                    </button>
-                  </div>
-                  <div className="py-12 text-center border border-dashed border-gray-100 rounded-2xl">
-                    <p className="text-sm text-gray-400">No languages added yet</p>
+                  <p className="text-sm text-gray-500">Add the languages you speak (comma-separated)</p>
+                  <div className="space-y-2">
+                    <input 
+                      type="text" 
+                      value={editForm.languages.join(", ")}
+                      onChange={(e) => setEditForm({...editForm, languages: e.target.value.split(",").map(i => i.trim())})}
+                      placeholder="e.g. English, French, Yoruba"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    />
                   </div>
                 </div>
               )}
@@ -593,10 +601,11 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
               </button>
               <button 
                 onClick={handleSaveProfile}
-                disabled={isUploading}
-                className="px-8 py-3 rounded-full bg-primary text-white font-bold hover:bg-primary-light transition-colors shadow-lg shadow-primary/20 disabled:opacity-50"
+                disabled={isUploading || isSaving}
+                className="px-8 py-3 rounded-full bg-primary text-white font-bold hover:bg-primary-light transition-colors shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isUploading ? "Uploading..." : "Save"}
+                {isSaving && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                {isSaving ? "Saving..." : isUploading ? "Uploading..." : "Save Changes"}
               </button>
             </div>
           </motion.div>
@@ -608,34 +617,69 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Navbar (Mobile matching image) */}
-      <nav className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-[100]">
-        <div className="flex items-center gap-2">
+      <nav className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-[50]">
+        <button onClick={onBack} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
-          <span className="font-display font-bold text-xl tracking-tight text-ink">
+          <span className="font-display font-bold text-xl tracking-tight text-ink hidden sm:block">
             Paradise <span className="text-primary">Hub</span>
           </span>
-        </div>
+        </button>
         
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 bg-orange-50 text-orange-600 px-2.5 py-1 rounded-full border border-orange-100">
+          <button className="flex items-center gap-1.5 bg-orange-50 text-orange-600 px-2.5 py-1 rounded-full border border-orange-100 hover:bg-orange-100 transition-colors">
             <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center">
               <div className="w-2 h-2 bg-orange-500 rounded-full" />
             </div>
             <span className="text-xs font-bold">{profile?.points?.toLocaleString() || 0}</span>
-          </div>
-          <button className="p-1.5 text-gray-400">
-            <Bell size={20} />
           </button>
-          <button className="p-1.5 text-gray-400">
+
+          <div className="relative">
+            <button 
+              onClick={() => {
+                setShowNotifications(!showNotifications);
+                if (!showNotifications && unreadCount > 0) setUnreadCount(0);
+              }}
+              className="p-1.5 text-gray-400 hover:bg-gray-50 rounded-full transition-colors relative"
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-red-500 text-[8px] text-white font-bold border border-white">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            <AnimatePresence>
+              {showNotifications && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden"
+                >
+                  <div className="px-4 py-3 border-b border-gray-50 font-bold text-ink flex justify-between items-center">
+                    Notifications
+                    <button onClick={() => setShowNotifications(false)}><X size={14} className="text-gray-400"/></button>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto p-4 text-center text-sm text-gray-400">
+                    You're all caught up!
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          
+          <button className="p-1.5 text-gray-400 hover:bg-gray-50 rounded-full transition-colors">
             <Grid size={20} />
           </button>
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs overflow-hidden border border-gray-200">
+          
+          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs overflow-hidden border border-gray-200 hover:border-primary transition-all">
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
             ) : (
               getInitials(profile?.full_name)
             )}
-          </div>
+          </button>
         </div>
       </nav>
 
@@ -805,24 +849,28 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                 </button>
               </div>
 
-              <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
-                <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
-                  <div className="w-14 h-9 md:w-16 md:h-10 border-2 border-gray-200 rounded-lg relative">
-                    <div className="absolute top-2 left-2 w-3 h-3 md:w-4 md:h-4 rounded-full bg-gray-200" />
-                    <div className="absolute top-2 right-2 w-5 h-1 md:w-6 md:h-1 bg-gray-200" />
-                    <div className="absolute top-4 right-2 w-5 h-1 md:w-6 md:h-1 bg-gray-200" />
-                    <div className="absolute top-6 right-2 w-5 h-1 md:w-6 md:h-1 bg-gray-200" />
+              {profile?.about_me ? (
+                <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{profile.about_me}</p>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
+                  <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                    <div className="w-14 h-9 md:w-16 md:h-10 border-2 border-gray-200 rounded-lg relative">
+                      <div className="absolute top-2 left-2 w-3 h-3 md:w-4 md:h-4 rounded-full bg-gray-200" />
+                      <div className="absolute top-2 right-2 w-5 h-1 md:w-6 md:h-1 bg-gray-200" />
+                      <div className="absolute top-4 right-2 w-5 h-1 md:w-6 md:h-1 bg-gray-200" />
+                      <div className="absolute top-6 right-2 w-5 h-1 md:w-6 md:h-1 bg-gray-200" />
+                    </div>
                   </div>
+                  <h4 className="text-primary font-bold mb-2">You seem like someone interesting...</h4>
+                  <p className="text-sm text-gray-500 mb-8 max-w-xs">Tell us a little about you, your passion, what you live for...</p>
+                  <button 
+                    onClick={() => setEditingSection("About")}
+                    className="w-full md:w-auto px-8 py-3 rounded-full border border-primary text-primary font-bold hover:bg-primary/5 transition-colors"
+                  >
+                    Add About Me Info
+                  </button>
                 </div>
-                <h4 className="text-primary font-bold mb-2">You seem like someone interesting...</h4>
-                <p className="text-sm text-gray-500 mb-8 max-w-xs">Tell us a little about you, your passion, what you live for...</p>
-                <button 
-                  onClick={() => setEditingSection("About")}
-                  className="w-full md:w-auto px-8 py-3 rounded-full border border-primary text-primary font-bold hover:bg-primary/5 transition-colors"
-                >
-                  Add About Me Info
-                </button>
-              </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -857,10 +905,12 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-ink">Primary</span>
                     <span className="w-1 h-1 rounded-full bg-gray-300" />
+                    <span className="text-sm text-gray-600">{profile?.phone_number || 'Not provided'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-ink">WhatsApp</span>
                     <span className="w-1 h-1 rounded-full bg-gray-300" />
+                    <span className="text-sm text-gray-600">{profile?.whatsapp_number || 'Not provided'}</span>
                   </div>
                 </div>
               </div>
@@ -876,9 +926,24 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                     <Plus size={16} />
                   </button>
                 </div>
-                <div className="h-24 flex items-center justify-center">
-                  <p className="text-xs text-gray-400">No social links added</p>
-                </div>
+                {profile?.social_profiles && Object.values(profile.social_profiles).some(val => val) ? (
+                  <div className="space-y-3">
+                    {Object.entries(profile.social_profiles).map(([platform, link]) => {
+                      if (!link) return null;
+                      return (
+                        <div key={platform} className="flex items-center gap-2">
+                          <span className="capitalize text-xs font-bold text-ink">{platform}</span>
+                          <span className="w-1 h-1 rounded-full bg-gray-300" />
+                          <a href={link as string} target="_blank" rel="noreferrer" className="text-primary hover:underline text-sm truncate">Link</a>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="h-24 flex items-center justify-center">
+                    <p className="text-xs text-gray-400">No social links added</p>
+                  </div>
+                )}
               </div>
 
               {/* Current Location */}
@@ -894,13 +959,14 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-ink">Country of Origin</span>
+                    <span className="text-xs font-bold text-ink">Origin</span>
                     <span className="w-1 h-1 rounded-full bg-gray-300" />
+                    <span className="text-sm text-gray-600">{profile?.country_of_origin || 'Not provided'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-ink">Residence</span>
                     <span className="w-1 h-1 rounded-full bg-gray-300" />
-                    <span className="text-xs text-gray-400">undefined</span>
+                    <span className="text-sm text-gray-600">{[profile?.city_of_residence, profile?.country_of_residence].filter(Boolean).join(', ') || 'Not provided'}</span>
                   </div>
                 </div>
               </div>
@@ -959,27 +1025,26 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
             <div>
               <h4 className="text-xl font-bold mb-8">Career Tracks</h4>
               <ul className="space-y-4 text-gray-400">
+                <li><a href="#" className="hover:text-primary-light transition-colors">Agribusiness Innovation</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">Sustainable Farm Management</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">AI-Powered Business Automation</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Agribusiness Innovation</a></li>
               </ul>
             </div>
 
             <div>
               <h4 className="text-xl font-bold mb-8">Company</h4>
               <ul className="space-y-4 text-gray-400">
-                <li><a href="#" className="hover:text-primary-light transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Support</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Privacy Policy</a></li>
+                <li><a href="/#testimonials" onClick={onBack} className="hover:text-primary-light transition-colors">About Us</a></li>
+                <li><a href="/#testimonials" onClick={onBack} className="hover:text-primary-light transition-colors">Support</a></li>
+                <li><a href="/#testimonials" onClick={onBack} className="hover:text-primary-light transition-colors">Privacy Policy</a></li>
               </ul>
             </div>
           </div>
 
           <div className="pt-12 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-8 text-gray-500 text-sm">
             <div className="flex gap-8">
-              <a href="#" className="hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
+              <a href="/#testimonials" onClick={onBack} className="hover:text-white transition-colors">Privacy</a>
+              <a href="/#testimonials" onClick={onBack} className="hover:text-white transition-colors">Cookie Policy</a>
             </div>
             <div>© Copyright 2026 Paradise Dynamic Farms. All rights reserved.</div>
           </div>

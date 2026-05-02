@@ -19,6 +19,7 @@ export interface ProfileData {
   country_of_residence?: string | null;
   state_of_residence?: string | null;
   city_of_residence?: string | null;
+  points?: number | null;
 }
 
 export interface ProfileSection {
