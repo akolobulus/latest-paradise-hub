@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { motion, AnimatePresence } from "motion/react";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
@@ -37,6 +38,7 @@ export default function App() {
   const [points, setPoints] = useState(0);
   const [communityChannel, setCommunityChannel] = useState("general");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const analytics = <Analytics />;
 
   // 1. Listen for Auth Changes on mount
   useEffect(() => {
@@ -280,103 +282,121 @@ export default function App() {
     }
     if (currentPage === "profile") {
       return (
-        <ProfilePage 
-          onBack={() => setCurrentPage("dashboard")}
-          onProfileUpdate={(updatedProfile) => setUserProfile(updatedProfile)}
-        />
+        <>
+          <ProfilePage 
+            onBack={() => setCurrentPage("dashboard")}
+            onProfileUpdate={(updatedProfile) => setUserProfile(updatedProfile)}
+          />
+          {analytics}
+        </>
       );
     }
     if (currentPage === "learning") {
       return (
-        <MyLearning 
-          userProfile={userProfile}
-          enrolledPrograms={enrolledPrograms}
-          onBack={() => setCurrentPage("dashboard")}
-          onLogoClick={() => setCurrentPage("landing")}
-          onViewCourse={(course) => {
-            setSelectedCourse(course);
-            setCurrentPage("course-player");
-          }}
-          onViewAllPrograms={(programs) => {
-            setSelectedCourse(programs);
-            setCurrentPage("all-programs");
-          }}
-          onPaymentSuccess={handlePaymentSuccess}
-          onViewProfile={() => setCurrentPage("profile")}
-          onViewCommunity={() => setCurrentPage("community")}
-          onLogout={handleLogout}
-        />
+        <>
+          <MyLearning 
+            userProfile={userProfile}
+            enrolledPrograms={enrolledPrograms}
+            onBack={() => setCurrentPage("dashboard")}
+            onLogoClick={() => setCurrentPage("landing")}
+            onViewCourse={(course) => {
+              setSelectedCourse(course);
+              setCurrentPage("course-player");
+            }}
+            onViewAllPrograms={(programs) => {
+              setSelectedCourse(programs);
+              setCurrentPage("all-programs");
+            }}
+            onPaymentSuccess={handlePaymentSuccess}
+            onViewProfile={() => setCurrentPage("profile")}
+            onViewCommunity={() => setCurrentPage("community")}
+            onLogout={handleLogout}
+          />
+          {analytics}
+        </>
       );
     }
     if (currentPage === "all-programs") {
       return (
-        <AllPrograms 
-          userProfile={userProfile}
-          programs={selectedCourse || []} 
-          onBack={() => setCurrentPage("dashboard")}
-          onLogoClick={() => setCurrentPage("landing")}
-          onViewDetails={(course) => {
-            setSelectedCourse(course);
-            setCurrentPage("course");
-          }}
-          onEnroll={handleEnroll}
-        />
+        <>
+          <AllPrograms 
+            userProfile={userProfile}
+            programs={selectedCourse || []} 
+            onBack={() => setCurrentPage("dashboard")}
+            onLogoClick={() => setCurrentPage("landing")}
+            onViewDetails={(course) => {
+              setSelectedCourse(course);
+              setCurrentPage("course");
+            }}
+            onEnroll={handleEnroll}
+          />
+          {analytics}
+        </>
       );
     }
     if (currentPage === "course" && selectedCourse) {
       const enrollment = enrolledPrograms.find(p => p.id === selectedCourse.id);
       return (
-        <CourseDetails 
-          userProfile={userProfile}
-          course={selectedCourse} 
-          isEnrolled={!!enrollment}
-          paymentStatus={enrollment?.paymentStatus}
-          onBack={() => {
-            setCurrentPage("dashboard");
-            setSelectedCourse(null);
-          }}
-          onLogoClick={() => setCurrentPage("landing")} 
-          onEnroll={handleEnroll}
-          onViewProfile={() => setCurrentPage("profile")}
-          onViewCommunity={() => setCurrentPage("community")}
-          onViewLearning={() => setCurrentPage("learning")}
-          onLogout={() => {
-            handleLogout();
-            setSelectedCourse(null);
-          }}
-        />
+        <>
+          <CourseDetails 
+            userProfile={userProfile}
+            course={selectedCourse} 
+            isEnrolled={!!enrollment}
+            paymentStatus={enrollment?.paymentStatus}
+            onBack={() => {
+              setCurrentPage("dashboard");
+              setSelectedCourse(null);
+            }}
+            onLogoClick={() => setCurrentPage("landing")} 
+            onEnroll={handleEnroll}
+            onViewProfile={() => setCurrentPage("profile")}
+            onViewCommunity={() => setCurrentPage("community")}
+            onViewLearning={() => setCurrentPage("learning")}
+            onLogout={() => {
+              handleLogout();
+              setSelectedCourse(null);
+            }}
+          />
+          {analytics}
+        </>
       );
     }
     if (currentPage === "course-player" && selectedCourse) {
       return (
-        <CoursePlayer 
-          userProfile={userProfile}
-          course={selectedCourse} 
-          onBack={() => {
-            setCurrentPage("learning");
-            setSelectedCourse(null);
-          }}
-          onLogoClick={() => setCurrentPage("landing")} 
-          onAwardPoints={handleAwardPoints}
-          onViewProfile={() => setCurrentPage("profile")}
-          onViewCommunity={() => setCurrentPage("community")}
-          onViewLearning={() => setCurrentPage("learning")}
-          onLogout={() => {
-            handleLogout();
-            setSelectedCourse(null);
-          }}
-        />
+        <>
+          <CoursePlayer 
+            userProfile={userProfile}
+            course={selectedCourse} 
+            onBack={() => {
+              setCurrentPage("learning");
+              setSelectedCourse(null);
+            }}
+            onLogoClick={() => setCurrentPage("landing")} 
+            onAwardPoints={handleAwardPoints}
+            onViewProfile={() => setCurrentPage("profile")}
+            onViewCommunity={() => setCurrentPage("community")}
+            onViewLearning={() => setCurrentPage("learning")}
+            onLogout={() => {
+              handleLogout();
+              setSelectedCourse(null);
+            }}
+          />
+          {analytics}
+        </>
       );
     }
     if (currentPage === "community") {
       return (
-        <CommunityHub 
-          userProfile={userProfile}
-          onBack={() => setCurrentPage("dashboard")}
-          onLogoClick={() => setCurrentPage("landing")} 
-          points={points} 
-          initialChannel={communityChannel} 
-        />
+        <>
+          <CommunityHub 
+            userProfile={userProfile}
+            onBack={() => setCurrentPage("dashboard")}
+            onLogoClick={() => setCurrentPage("landing") } 
+            points={points} 
+            initialChannel={communityChannel} 
+          />
+          {analytics}
+        </>
       );
     }
     return (
@@ -539,6 +559,7 @@ export default function App() {
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
       />
+      {analytics}
 
       {/* Floating Action Button for Support */}
       <motion.button
