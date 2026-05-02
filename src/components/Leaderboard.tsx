@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { Trophy, Medal, Crown, Flame, TrendingUp } from "lucide-react";
+import { Trophy, Medal, Crown, Flame, TrendingUp, Star, Activity } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/src/lib/utils";
 import { supabase } from "@/src/lib/supabase";
@@ -9,14 +9,18 @@ interface LeaderboardMember {
   name: string;
   points: number;
   streak: number;
-  avatar: string;
+  avatar: string | null;
+  level: number;
+  engagement: string;
 }
 
-const DEFAULT_DATA: LeaderboardMember[] = [
-  { id: "1", name: "Loading...", points: 0, streak: 0, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=loading" },
-];
+// Helper to get initials from full name
+const getInitials = (name?: string) => {
+  if (!name) return "U";
+  return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+};
 
-export function LeaderboardList({ data = DEFAULT_DATA }: { data?: LeaderboardMember[] }) {
+export function LeaderboardList({ data = [] }: { data?: LeaderboardMember[] }) {
   return (
     <motion.div 
       initial="hidden"
@@ -31,7 +35,8 @@ export function LeaderboardList({ data = DEFAULT_DATA }: { data?: LeaderboardMem
           }
         }
       }}
-      className="space-y-4 relative z-10"
+      // Added max-height and overflow-y-auto so the full list is scrollable!
+      className="space-y-4 relative z-10 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar"
     >
       {data.map((user, index) => (
         <motion.div
@@ -49,27 +54,44 @@ export function LeaderboardList({ data = DEFAULT_DATA }: { data?: LeaderboardMem
             <div className="w-6 md:w-8 shrink-0 text-center font-display font-bold text-gray-500 text-sm md:text-base">
               {index === 0 ? <Crown className="text-accent mx-auto" size={18} fill="currentColor" /> : `0${index + 1}`}
             </div>
+            
             <div className="relative shrink-0">
-              <img 
-                src={user.avatar} 
-                alt={user.name} 
-                className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-white/10"
-                referrerPolicy="no-referrer"
-              />
+              {/* Dynamic Avatar with Initials Fallback */}
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-primary font-bold text-sm overflow-hidden border-2 border-white/10 bg-white/5">
+                {user.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <span className="text-white/80">{getInitials(user.name)}</span>
+                )}
+              </div>
+              
               {index === 0 && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full flex items-center justify-center text-[10px] text-white font-bold">
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full flex items-center justify-center text-[10px] text-white font-bold shadow-lg shadow-accent/50">
                   1
                 </div>
               )}
             </div>
+
             <div className="min-w-0">
-              <div className="font-bold truncate text-sm md:text-base">{user.name}</div>
-              <div className="text-[10px] md:text-xs text-gray-500 flex items-center gap-1">
-                <Flame size={10} fill="currentColor" className="text-accent md:w-3 md:h-3" />
-                {user.streak} Day Streak
+              <div className="font-bold truncate text-sm md:text-base text-white flex items-center gap-2">
+                {user.name}
+                <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-white/70 font-medium">
+                  Lv. {user.level}
+                </span>
+              </div>
+              <div className="text-[10px] md:text-xs text-gray-400 flex items-center gap-3 mt-1">
+                <div className="flex items-center gap-1">
+                  <Flame size={10} fill="currentColor" className={user.streak > 5 ? "text-accent" : "text-gray-500"} />
+                  {user.streak} Day Streak
+                </div>
+                <div className="flex items-center gap-1 hidden sm:flex">
+                  <Activity size={10} className="text-primary-light" />
+                  {user.engagement}
+                </div>
               </div>
             </div>
           </div>
+
           <div className="text-right shrink-0 ml-2">
             <div className="font-display font-bold text-primary-light text-sm md:text-base">{user.points.toLocaleString()}</div>
             <div className="text-[8px] md:text-[10px] text-gray-500 uppercase tracking-widest">POINTS</div>
@@ -81,7 +103,7 @@ export function LeaderboardList({ data = DEFAULT_DATA }: { data?: LeaderboardMem
 }
 
 export default function Leaderboard() {
-  const [leaderboardData, setLeaderboardData] = useState<LeaderboardMember[]>(DEFAULT_DATA);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -90,17 +112,29 @@ export default function Leaderboard() {
         const { data, error } = await supabase
           .from('profiles')
           .select('id, full_name, points, avatar_url')
-          .order('points', { ascending: false })
-          .limit(5);
+          .order('points', { ascending: false }); // Removed .limit(5) to fetch everyone!
 
         if (!error && data) {
-          const mappedData: LeaderboardMember[] = data.map((user: any) => ({
-            id: user.id,
-            name: user.full_name || 'Learner',
-            points: user.points || 0,
-            streak: Math.floor((user.points || 0) / 100), // Approximate streak from points
-            avatar: user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`
-          }));
+          const mappedData: LeaderboardMember[] = data.map((user: any) => {
+            const pts = user.points || 0;
+            
+            // Calculate dynamic stats based on points
+            const calculatedLevel = Math.floor(pts / 500) + 1;
+            let engagementStatus = "New Learner";
+            if (pts > 2000) engagementStatus = "Top Contributor";
+            else if (pts > 1000) engagementStatus = "Highly Active";
+            else if (pts > 300) engagementStatus = "Active";
+
+            return {
+              id: user.id,
+              name: user.full_name || 'Learner',
+              points: pts,
+              streak: Math.floor(pts / 100), // Approximate streak
+              avatar: user.avatar_url,
+              level: calculatedLevel,
+              engagement: engagementStatus
+            };
+          });
           setLeaderboardData(mappedData);
         }
       } catch (error) {
@@ -112,7 +146,7 @@ export default function Leaderboard() {
 
     fetchLeaderboard();
 
-    // Subscribe to profile changes
+    // Subscribe to profile changes for real-time leaderboard updates
     const sub = supabase
       .channel('public:profiles')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
@@ -158,10 +192,10 @@ export default function Leaderboard() {
               </div>
               <div className="p-6 bg-white rounded-3xl border-4 border-ink shadow-[8px_8px_0px_0px_rgba(17,24,39,1)]">
                 <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center text-accent mb-4">
-                  <Medal size={24} />
+                  <Star size={24} />
                 </div>
-                <h4 className="text-xl font-bold mb-2">Badges</h4>
-                <p className="text-gray-500 text-sm">Unlock 50+ unique badges as you master new skills.</p>
+                <h4 className="text-xl font-bold mb-2">Level Up</h4>
+                <p className="text-gray-500 text-sm">Every 500 points increases your hub level and unlocks perks.</p>
               </div>
             </div>
           </motion.div>
@@ -175,32 +209,36 @@ export default function Leaderboard() {
           >
             <div className="bg-ink text-white rounded-[40px] p-8 md:p-12 shadow-2xl relative overflow-hidden">
               {/* Background Glow */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] -z-0" />
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] -z-0 pointer-events-none" />
               
               <div className="flex items-center justify-between mb-10 relative z-10">
-                <h3 className="text-3xl font-display">Top Learners</h3>
-                <div className="flex items-center gap-2 text-primary-light font-bold text-sm">
-                  <TrendingUp size={16} />
-                  <span>WEEKLY RECAP</span>
+                <div>
+                  <h3 className="text-3xl font-display">Hub Members</h3>
+                  <p className="text-sm text-gray-400 mt-1">{leaderboardData.length} active learners</p>
+                </div>
+                <div className="flex items-center gap-2 text-primary-light font-bold text-sm bg-primary/10 px-3 py-1.5 rounded-full">
+                  <Activity size={16} />
+                  <span>LIVE</span>
                 </div>
               </div>
 
               {isLoading ? (
-                <div className="text-center py-8 text-white/70">Loading leaderboard...</div>
+                <div className="text-center py-12 text-white/70">
+                  <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+                  Loading leaderboard...
+                </div>
+              ) : leaderboardData.length === 0 ? (
+                <div className="text-center py-12 text-white/70">No learners on the board yet!</div>
               ) : (
                 <LeaderboardList data={leaderboardData} />
               )}
-
-              <button className="w-full mt-10 py-4 rounded-2xl bg-white/5 border border-white/10 font-bold hover:bg-white/10 transition-all">
-                View Full Leaderboard
-              </button>
             </div>
 
             {/* Floating Achievement Card */}
             <motion.div
               animate={{ y: [0, -15, 0] }}
               transition={{ duration: 6, repeat: Infinity }}
-              className="absolute -bottom-10 -right-10 glass p-6 rounded-3xl shadow-2xl brutal-border hidden md:block"
+              className="absolute -bottom-10 -left-10 glass p-6 rounded-3xl shadow-2xl brutal-border hidden md:block z-20 bg-white"
             >
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-accent rounded-2xl flex items-center justify-center text-white shadow-lg shadow-accent/20">
@@ -208,7 +246,7 @@ export default function Leaderboard() {
                 </div>
                 <div>
                   <div className="text-xs font-bold text-gray-500 uppercase">RECENT ACHIEVEMENT</div>
-                  <div className="text-lg font-bold">Agro-Tech Pioneer</div>
+                  <div className="text-lg font-bold text-ink">Agro-Tech Pioneer</div>
                   <div className="text-sm text-primary font-bold">+500 XP</div>
                 </div>
               </div>
