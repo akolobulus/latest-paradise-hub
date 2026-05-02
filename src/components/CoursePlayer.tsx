@@ -61,6 +61,12 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [session, setSession] = useState<any>(null);
 
+  // Comment state
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+
   // Get current user session and profile
   useEffect(() => {
     const setupUser = async () => {
@@ -171,6 +177,34 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     loadUserProgress();
   }, [session?.user?.id, course.id]);
 
+  const loadComments = async (lessonId: string) => {
+    setCommentError(null);
+
+    try {
+      const { data: commentsData, error: commentsError } = await supabase
+        .from('lesson_comments')
+        .select('id, lesson_id, user_id, content, created_at, profiles(id, full_name, avatar_url)')
+        .eq('lesson_id', lessonId)
+        .order('created_at', { ascending: false });
+
+      if (commentsError) throw commentsError;
+      setComments(commentsData || []);
+    } catch (error) {
+      console.error('Error loading comments:', error);
+      setCommentError('Unable to load comments.');
+      setComments([]);
+    }
+  };
+
+  useEffect(() => {
+    if (!activeLesson) {
+      setComments([]);
+      return;
+    }
+
+    loadComments(activeLesson.id);
+  }, [activeLesson?.id]);
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth <= 1024) {
@@ -247,8 +281,8 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           if (error) throw error;
 
           // Award points via RPC function
-          await supabase.rpc('increment_points', { 
-            amount: 200, 
+          await supabase.rpc('increment_points', {
+            amount: 200,
             row_id: session.user.id 
           });
         }
@@ -261,6 +295,31 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         setPassedQuizzes(prev => [...prev, quiz.id]);
         onAwardPoints(200);
       }
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!newComment.trim() || !session?.user?.id || !activeLesson) return;
+    setCommentError(null);
+    setIsSubmittingComment(true);
+
+    try {
+      const { error } = await supabase
+        .from('lesson_comments')
+        .insert({
+          lesson_id: activeLesson.id,
+          user_id: session.user.id,
+          content: newComment.trim(),
+        });
+
+      if (error) throw error;
+      await loadComments(activeLesson.id);
+      setNewComment('');
+    } catch (error) {
+      console.error('Error posting comment:', error);
+      setCommentError('Unable to post comment. Please try again.');
+    } finally {
+      setIsSubmittingComment(false);
     }
   };
 
@@ -393,10 +452,16 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
               transition={{ duration: 0.2 }}
             >
               <div className="flex items-center gap-2 mb-6">
-                <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
-                <span className="font-display font-bold text-xl tracking-tight text-ink">
-                  Paradise <span className="text-primary">Hub</span>
-                </span>
+                <BrandLogo
+                  wrapperClassName="w-8 h-8 rounded-lg shadow-inner"
+                  imgClassName="w-full h-full"
+                  onClick={onLogoClick}
+                />
+                <button onClick={onLogoClick} className="text-left">
+                  <span className="font-display font-bold text-xl tracking-tight text-ink">
+                    Paradise <span className="text-primary">Hub</span>
+                  </span>
+                </button>
               </div>
 
               <div className="space-y-2">
@@ -552,15 +617,14 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           <div className="flex items-center gap-2 md:gap-4">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-bold rounded-lg hover:bg-white/10 transition-colors"
             >
-              <ArrowLeft size={20} className={cn("transition-transform", !isSidebarOpen && "rotate-180")} />
+              {isSidebarOpen ? "<<" : ">>"}
             </button>
             <h2 className="font-bold text-xs sm:text-sm md:text-base truncate max-w-[150px] sm:max-w-md">{course.title}</h2>
           </div>
           <div className="flex items-center gap-6">
             <div className="hidden md:flex items-center gap-2 text-xs font-bold">
-              <span>{completedItems} of {totalItems} items</span>
               <div className="w-24 h-1.5 bg-white/20 rounded-full overflow-hidden">
                 <div className="h-full bg-white" style={{ width: `${progressPercent}%` }} />
               </div>
@@ -901,20 +965,60 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                         <MessageSquare size={20} className="text-primary" />
                         Comments
                       </h3>
-                      <span className="text-xs font-bold text-gray-400">0 comments</span>
+                      <span className="text-xs font-bold text-gray-400">{comments.length} comments</span>
                     </div>
                     
                     <div className="bg-gray-50 rounded-3xl p-6 md:p-8 border border-gray-100">
-                      <p className="text-sm text-gray-400 text-center mb-8">No comments yet! You be the first to comment.</p>
+                      {comments.length === 0 ? (
+                        <p className="text-sm text-gray-400 text-center mb-8">No comments yet! You be the first to comment.</p>
+                      ) : (
+                        <div className="space-y-6 mb-8">
+                          {comments.map(comment => (
+                            <div key={comment.id} className="flex gap-4">
+                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+                                {comment.profiles?.avatar_url ? (
+                                  <img src={comment.profiles.avatar_url} alt="User avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="text-primary font-bold text-sm">
+                                    {getInitials(comment.profiles?.full_name)}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className="font-bold text-sm text-ink">{comment.profiles?.full_name || 'Learner'}</span>
+                                    <span className="text-[10px] text-gray-400">
+                                      {new Date(comment.created_at).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{comment.content}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       
                       <div className="space-y-4">
                         <h4 className="font-bold text-ink">Leave a Reply</h4>
                         <textarea 
-                          placeholder="Comment*"
-                          className="w-full p-4 rounded-2xl border-2 border-gray-100 focus:border-primary outline-none min-h-[120px] text-sm"
+                          placeholder="What did you learn from this lesson? Have any questions?"
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          disabled={isSubmittingComment}
+                          className="w-full p-4 rounded-2xl border-2 border-gray-100 focus:border-primary outline-none min-h-[120px] text-sm disabled:opacity-50 transition-colors"
                         />
-                        <button className="px-8 py-3 border-2 border-primary text-primary font-bold rounded-xl hover:bg-primary hover:text-white transition-all">
-                          Post Comment
+                        {commentError && (
+                          <p className="text-xs text-red-500">{commentError}</p>
+                        )}
+                        <button 
+                          type="button"
+                          onClick={handlePostComment}
+                          disabled={isSubmittingComment || !newComment.trim()}
+                          className="px-8 py-3 border-2 border-primary bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
+                        >
+                          {isSubmittingComment ? 'Posting...' : 'Post Comment'}
                         </button>
                       </div>
                     </div>

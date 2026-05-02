@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { Menu, X, Flame, Trophy, User, Zap } from "lucide-react";
+import { Menu, X, Trophy, User } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/src/lib/utils";
 import BrandLogo from "./BrandLogo";
@@ -58,22 +58,8 @@ export default function Navbar({
             <button onClick={onAboutClick} className="text-gray-600 hover:text-primary font-semibold transition-colors">About</button>
           </div>
 
-          {/* Right Side: Stats & Login/Avatar */}
+          {/* Right Side: Login/Avatar */}
           <div className="hidden md:flex items-center gap-4">
-            <div className="h-8 w-px bg-gray-100 mx-2" />
-            
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-orange-50 text-orange-600 px-4 py-2 rounded-full border border-orange-100 shadow-sm">
-                <Flame size={18} fill="currentColor" />
-                <span className="font-bold">7</span>
-              </div>
-              
-              <div className="flex items-center gap-2 bg-yellow-50 text-yellow-600 px-4 py-2 rounded-full border border-yellow-100 shadow-sm">
-                <Zap size={18} fill="currentColor" />
-                <span className="font-bold">1,240</span>
-              </div>
-            </div>
-
             {isLoggedIn && userProfile ? (
               <button 
                 onClick={onProfileClick}
@@ -113,19 +99,6 @@ export default function Navbar({
           animate={{ opacity: 1, y: 0 }}
           className="md:hidden mt-4 bg-white rounded-3xl p-6 flex flex-col gap-4 shadow-2xl border border-gray-100"
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-orange-50 text-orange-600 px-4 py-2 rounded-full border border-orange-100 shadow-sm">
-                <Flame size={18} fill="currentColor" />
-                <span className="font-bold">7</span>
-              </div>
-              <div className="flex items-center gap-2 bg-yellow-50 text-yellow-600 px-4 py-2 rounded-full border border-yellow-100 shadow-sm">
-                <Zap size={18} fill="currentColor" />
-                <span className="font-bold">1,240</span>
-              </div>
-            </div>
-          </div>
-          
           <button 
             onClick={() => {
               onCoursesClick?.();
