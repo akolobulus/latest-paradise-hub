@@ -61,6 +61,8 @@ export default function AuthPage({ initialMode = "login", onBack, onLoginSuccess
     }
   };
 
+  const redirectUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+
   // Google OAuth Login Handler - Updated with redirectTo
   const handleGoogleLogin = async () => {
     setError(null);
@@ -69,7 +71,7 @@ export default function AuthPage({ initialMode = "login", onBack, onLoginSuccess
         provider: 'google',
         options: {
           // This ensures Google sends them back to your app after logging in
-          redirectTo: window.location.origin
+          redirectTo: redirectUrl,
         }
       });
       
