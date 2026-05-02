@@ -42,6 +42,7 @@ interface MyLearningProps {
   onBack: () => void;
   onLogoClick?: () => void;
   onViewCourse: (course: any) => void;
+  onPlayCourse: (course: any) => void;
   onViewAllPrograms: (programs: any[]) => void;
   onPaymentSuccess: (courseId: number) => void;
   onViewProfile?: () => void;
@@ -49,7 +50,7 @@ interface MyLearningProps {
   onLogout?: () => void;
 }
 
-export default function MyLearning({ enrolledPrograms = [], userProfile, onBack, onLogoClick, onViewCourse, onViewAllPrograms, onPaymentSuccess, onViewProfile, onViewCommunity, onLogout }: MyLearningProps) {
+export default function MyLearning({ enrolledPrograms = [], userProfile, onBack, onLogoClick, onViewCourse, onPlayCourse, onViewAllPrograms, onPaymentSuccess, onViewProfile, onViewCommunity, onLogout }: MyLearningProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -430,7 +431,7 @@ export default function MyLearning({ enrolledPrograms = [], userProfile, onBack,
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       className="bg-white rounded-3xl overflow-hidden border-2 border-ink shadow-[8px_8px_0px_0px_rgba(17,24,39,1)] hover:shadow-[12px_12px_0px_0px_rgba(17,24,39,1)] transition-all group cursor-pointer hover:-translate-x-1 hover:-translate-y-1"
-                      onClick={() => onViewCourse(program)}
+                      onClick={() => onPlayCourse(program)}
                     >
                       <div className="h-48 overflow-hidden relative">
                         <img src={program.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={program.title} />
@@ -514,9 +515,9 @@ export default function MyLearning({ enrolledPrograms = [], userProfile, onBack,
             <div>
               <h4 className="text-xl font-bold mb-8">Career Tracks</h4>
               <ul className="space-y-4 text-gray-400">
-                <li><a href="#" className="hover:text-primary-light transition-colors">Sustainable Farm Management</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">AI-Powered Business Automation</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">Agribusiness Innovation</a></li>
+                <li><a href="#" className="hover:text-primary-light transition-colors">Sustainable Farm Management</a></li>
+                
               </ul>
             </div>
 
@@ -525,7 +526,6 @@ export default function MyLearning({ enrolledPrograms = [], userProfile, onBack,
               <ul className="space-y-4 text-gray-400">
                 <li><a href="#" className="hover:text-primary-light transition-colors">About Us</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">Support</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Careers</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">Privacy Policy</a></li>
               </ul>
             </div>

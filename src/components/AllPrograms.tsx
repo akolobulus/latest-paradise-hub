@@ -12,13 +12,14 @@ import { cn } from "@/src/lib/utils";
 interface AllProgramsProps {
   programs: any[];
   userProfile?: { full_name?: string; avatar_url?: string | null } | null;
+  enrolledPrograms?: any[];
   onBack: () => void;
   onLogoClick?: () => void;
   onViewDetails: (program: any) => void;
   onEnroll: (program: any) => void;
 }
 
-export default function AllPrograms({ programs, userProfile, onBack, onLogoClick, onViewDetails, onEnroll }: AllProgramsProps) {
+export default function AllPrograms({ programs, userProfile, enrolledPrograms = [], onBack, onLogoClick, onViewDetails, onEnroll }: AllProgramsProps) {
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Navbar */}
@@ -117,12 +118,25 @@ export default function AllPrograms({ programs, userProfile, onBack, onLogoClick
                     >
                       View Details
                     </button>
-                    <button 
-                      onClick={() => onEnroll(program)}
-                      className="py-3 rounded-xl bg-[#00FF85] border-2 border-ink text-ink font-bold text-sm hover:bg-[#00E676] transition-colors shadow-[4px_4px_0px_0px_rgba(17,24,39,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
-                    >
-                      Enroll Now
-                    </button>
+                    {(() => {
+                      const isEnrolled = enrolledPrograms.some(
+                        (p) => Number(p.id) === Number(program.id) || Number(p.course_id) === Number(program.id)
+                      );
+                      return (
+                        <button 
+                          onClick={() => !isEnrolled && onEnroll(program)}
+                          disabled={isEnrolled}
+                          className={cn(
+                            "py-3 rounded-xl border-2 font-bold text-sm transition-colors",
+                            isEnrolled
+                              ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
+                              : "bg-[#00FF85] border-ink text-ink hover:bg-[#00E676] shadow-[4px_4px_0px_0px_rgba(17,24,39,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
+                          )}
+                        >
+                          {isEnrolled ? "Enrolled" : "Enroll Now"}
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               </motion.div>

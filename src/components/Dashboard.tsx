@@ -34,7 +34,7 @@ const RECOMMENDED_PROGRAMS = [
 
   
   {
-    id: 1,
+    id: 101,
     title: "Agribusiness Innovation",
     headline: "The Ultimate Hybrid Career",
     description: "Smart farming for a growing world: Driving efficiency through data and automation to build a more resilient global food future.",
@@ -42,13 +42,12 @@ const RECOMMENDED_PROGRAMS = [
     startDate: "25 May 2026",
     duration: "16 weeks",
     commitment: "15-25 hrs/week",
-    accessFee: "11k naira only",
-    category: "Agro-Tech",
+    accessFee: "Free",
+    category: "Agribusiness",
     includes: [
-      "IoT in agriculture",
-      "Precision farming with AI",
-      "Supply chain optimization",
-      "Data-driven farm management"
+      "Industry-recognized certificate",
+      "1-on-1 mentorship",
+      "Real-world project portfolio"
     ],
     structure: [
       {
@@ -62,7 +61,7 @@ const RECOMMENDED_PROGRAMS = [
   },
 
     {
-    id: 2,
+    id: 102,
     title: "Sustainable Farm Management",
     headline: "Eco-Friendly Farming for the Future",
     description: "Mastering modern agriculture: Bridging eco-friendly farming practices with strategic business growth and value chain success.",
@@ -70,13 +69,11 @@ const RECOMMENDED_PROGRAMS = [
     startDate: "11 May 2026",
     duration: "12 weeks",
     commitment: "15-20 hrs/week",
-    accessFee: "11k naira only",
-    category: "Agri Business",
+    accessFee: "Free",
+    category: "Farming",
     includes: [
-      "Soil science and management",
-      "Sustainable crop production",
-      "Livestock health and welfare",
-      "Agribusiness fundamentals"
+      "Certificate",
+      "Live Classes"
     ],
     structure: [
       {
@@ -90,7 +87,7 @@ const RECOMMENDED_PROGRAMS = [
   },
 
   {
-    id: 3,
+    id: 103,
     title: "AI-Powered Business Automation",
     headline: "Lead the Future of Tech with AI",
     description: "Work smarter, not harder: Use AI and low-code tools to eliminate manual tasks, optimize workflows, and scale business impact.",
@@ -98,13 +95,11 @@ const RECOMMENDED_PROGRAMS = [
     startDate: "18 May 2026",
     duration: "24 weeks",
     commitment: "20-30 hrs/week",
-    accessFee: "11k naira only",
-    category: "Tech",
+    accessFee: "Free",
+    category: "Technology",
     includes: [
-      "AI and machine learning basics",
-      "Low-code automation tools",
-      "Digital transformation strategy",
-      "Cloud computing for AI"
+      "Certificate",
+      "API Access"
     ],
     structure: [
       {
@@ -112,60 +107,6 @@ const RECOMMENDED_PROGRAMS = [
         description: "Understanding LLMs and automation.",
         date: "18 May 2026",
         duration: "4 weeks",
-        status: "Available" as const
-      }
-    ]
-  },
-  {
-    id: 4,
-    title: "Agri Value Chain Optimization",
-    headline: "Maximize Profit from Farm to Table",
-    description: "Learn the end-to-end business of agriculture, from sustainable farm management to profitable value chain optimization.",
-    image: "/farm-management.jpg",
-    startDate: "01 June 2026",
-    duration: "10 weeks",
-    commitment: "12-18 hrs/week",
-    accessFee: "11k naira only",
-    category: "Agri Business",
-    includes: [
-      "Supply chain logistics",
-      "Market analysis",
-      "Value addition strategies",
-      "Export requirements"
-    ],
-    structure: [
-      {
-        title: "Value Chain Basics",
-        description: "Introduction to agricultural logistics.",
-        date: "01 June 2026",
-        duration: "2 weeks",
-        status: "Available" as const
-      }
-    ]
-  },
-  {
-    id: 5,
-    title: "Low-Code App Development",
-    headline: "Build Apps Without Coding",
-    description: "Build world-class software solutions using low-code platforms and lead digital transformation in your organization.",
-    image: "/ai-automation.jpg",
-    startDate: "08 June 2026",
-    duration: "8 weeks",
-    commitment: "10-15 hrs/week",
-    accessFee: "11k naira only",
-    category: "Tech",
-    includes: [
-      "No-code/Low-code platforms",
-      "UI/UX design basics",
-      "Database management",
-      "App deployment"
-    ],
-    structure: [
-      {
-        title: "Platform Overview",
-        description: "Choosing the right low-code tool.",
-        date: "08 June 2026",
-        duration: "1 week",
         status: "Available" as const
       }
     ]
@@ -209,6 +150,8 @@ interface DashboardProps {
   points: number;
   user?: { full_name?: string; email?: string };
   userProfile?: ProfileData | null;
+  programs?: any[];
+  enrolledPrograms?: any[];
   onLogout: () => void;
   onLogoClick?: () => void;
   onViewProfile: () => void;
@@ -222,7 +165,7 @@ interface DashboardProps {
   onPrivacyClick?: () => void;
 }
 
-export default function Dashboard({ points, user, userProfile, onLogout, onLogoClick, onViewProfile, onViewCourse, onViewAllPrograms, onEnroll, onViewLearning, onViewCommunity, onAboutClick, onSupportClick, onPrivacyClick }: DashboardProps) {
+export default function Dashboard({ points, user, userProfile, programs = [], enrolledPrograms = [], onLogout, onLogoClick, onViewProfile, onViewCourse, onViewAllPrograms, onEnroll, onViewLearning, onViewCommunity, onAboutClick, onSupportClick, onPrivacyClick }: DashboardProps) {
   const [activeVideoSlide, setActiveVideoSlide] = useState(0);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -549,7 +492,7 @@ export default function Dashboard({ points, user, userProfile, onLogout, onLogoC
           <div className="flex items-center justify-between mb-6 md:mb-8">
             <h2 className="text-xl md:text-3xl font-display font-bold text-ink">Recommended Programs</h2>
             <button 
-              onClick={() => onViewAllPrograms(RECOMMENDED_PROGRAMS)}
+              onClick={() => onViewAllPrograms(programs.length ? programs : RECOMMENDED_PROGRAMS)}
               className="text-primary text-sm md:text-base font-bold hover:underline flex items-center gap-1 md:gap-2"
             >
               View All
@@ -558,7 +501,7 @@ export default function Dashboard({ points, user, userProfile, onLogout, onLogoC
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {RECOMMENDED_PROGRAMS.slice(0, 3).map((program, i) => (
+            {(programs.length ? programs : RECOMMENDED_PROGRAMS).slice(0, 3).map((program, i) => (
               <motion.div
                 key={program.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -596,12 +539,25 @@ export default function Dashboard({ points, user, userProfile, onLogout, onLogoC
                     >
                       View Details
                     </button>
-                    <button 
-                      onClick={() => onEnroll(program)}
-                      className="py-2.5 md:py-3 rounded-xl bg-[#00FF85] border-2 border-ink text-ink font-bold text-xs md:text-sm hover:bg-[#00E676] transition-colors shadow-[4px_4px_0px_0px_rgba(17,24,39,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
-                    >
-                      Enroll Now
-                    </button>
+                    {(() => {
+                      const isEnrolled = enrolledPrograms.some(
+                        (p) => Number(p.id) === Number(program.id) || Number(p.course_id) === Number(program.id)
+                      );
+                      return (
+                        <button 
+                          onClick={() => !isEnrolled && onEnroll(program)}
+                          disabled={isEnrolled}
+                          className={cn(
+                            "py-2.5 md:py-3 rounded-xl border-2 font-bold text-xs md:text-sm transition-colors",
+                            isEnrolled
+                              ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
+                              : "bg-[#00FF85] border-ink text-ink hover:bg-[#00E676] shadow-[4px_4px_0px_0px_rgba(17,24,39,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
+                          )}
+                        >
+                          {isEnrolled ? "Enrolled" : "Enroll Now"}
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               </motion.div>
@@ -610,7 +566,7 @@ export default function Dashboard({ points, user, userProfile, onLogout, onLogoC
 
           <div className="mt-8 md:mt-12 flex justify-center">
             <button 
-              onClick={() => onViewAllPrograms(RECOMMENDED_PROGRAMS)}
+              onClick={() => onViewAllPrograms(programs.length ? programs : RECOMMENDED_PROGRAMS)}
               className="px-8 py-3 rounded-full border-2 border-primary text-primary font-bold text-sm md:text-base hover:bg-primary hover:text-white transition-all active:scale-95"
             >
               View All Programs

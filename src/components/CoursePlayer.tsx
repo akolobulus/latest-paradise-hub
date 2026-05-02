@@ -48,7 +48,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   
   // Use database content if available, otherwise fallback to hardcoded
-  const content = { weeks: dbContent.length > 0 ? dbContent : (COURSE_CONTENTS[course.id] || COURSE_CONTENTS[101]).weeks };
+  const content = { weeks: dbContent.length > 0 ? dbContent : (COURSE_CONTENTS[course.id] || COURSE_CONTENTS[101])?.weeks || [] };
   
   const [activeWeek, setActiveWeek] = useState<number>(0);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
@@ -115,13 +115,13 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         if (dbData && dbData.length > 0) {
           setDbContent(dbData);
           setActiveLesson(dbData[0].lessons[0]);
-          setExpandedWeeks([dbData[0].id]);
+          setExpandedWeeks([String(dbData[0].id)]);
         } else {
           // Fallback to hardcoded if no database content
           const fallbackContent = COURSE_CONTENTS[course.id] || COURSE_CONTENTS[101];
           setDbContent(fallbackContent.weeks);
           setActiveLesson(fallbackContent.weeks[0]?.lessons[0]);
-          setExpandedWeeks([fallbackContent.weeks[0]?.id]);
+          setExpandedWeeks([String(fallbackContent.weeks[0]?.id || "")]);
         }
       } catch (error) {
         console.error("Error loading course content:", error);
@@ -129,7 +129,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         const fallbackContent = COURSE_CONTENTS[course.id] || COURSE_CONTENTS[101];
         setDbContent(fallbackContent.weeks);
         setActiveLesson(fallbackContent.weeks[0]?.lessons[0]);
-        setExpandedWeeks([fallbackContent.weeks[0]?.id]);
+        setExpandedWeeks([String(fallbackContent.weeks[0]?.id || "")]);
       } finally {
         setIsLoadingContent(false);
       }

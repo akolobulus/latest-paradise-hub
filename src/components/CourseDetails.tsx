@@ -49,13 +49,14 @@ interface CourseDetailsProps {
   onEnroll: (course: any) => void;
   isEnrolled?: boolean;
   paymentStatus?: 'pending' | 'verified';
+  onPlayCourse?: () => void;
   onViewProfile?: () => void;
   onViewCommunity?: () => void;
   onViewLearning?: () => void;
   onLogout?: () => void;
 }
 
-export default function CourseDetails({ course, userProfile, onBack, onLogoClick, onEnroll, isEnrolled, paymentStatus, onViewProfile, onViewCommunity, onViewLearning, onLogout }: CourseDetailsProps) {
+export default function CourseDetails({ course, userProfile, onBack, onLogoClick, onEnroll, onPlayCourse, isEnrolled, paymentStatus, onViewProfile, onViewCommunity, onViewLearning, onLogout }: CourseDetailsProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -66,6 +67,10 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
     if (!name) return "U";
     return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
   };
+
+  // Force all courses to be free for now
+  const isPaidCourse = false;
+  const displayFee = "Free";
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -334,7 +339,7 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
             </div>
             <div className="border-l border-white/20 pl-4 md:pl-12">
               <p className="text-yellow-400 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">Access Fee</p>
-              <p className="text-sm md:text-lg font-bold">{course.accessFee}</p>
+              <p className="text-sm md:text-lg font-bold">{displayFee}</p>
             </div>
           </div>
         </div>
@@ -422,25 +427,13 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
                   ))}
                 </ul>
 
-                {isEnrolled && paymentStatus === 'verified' ? (
+                {isEnrolled ? (
                   <div className="space-y-6">
-                    <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between text-xs font-bold">
-                          <span className="text-gray-400 uppercase tracking-wider">Lessons completed</span>
-                          <span className="text-ink">0/35</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs font-bold">
-                          <span className="text-gray-400 uppercase tracking-wider">Quizzes completed</span>
-                          <span className="text-ink">0/1</span>
-                        </div>
-                      </div>
-                    </div>
                     <button 
-                      onClick={() => onEnroll(course)}
+                      onClick={() => onPlayCourse?.()}
                       className="w-full py-4 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 mb-6 active:scale-95"
                     >
-                      Continue
+                      Continue Learning
                     </button>
                   </div>
                 ) : (
@@ -448,7 +441,7 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
                     onClick={() => onEnroll(course)}
                     className="w-full py-4 bg-[#00FF85] text-ink font-bold rounded-full hover:bg-[#00E676] transition-all shadow-lg shadow-[#00FF85]/20 mb-6 active:scale-95"
                   >
-                    {isEnrolled && paymentStatus === 'pending' ? 'Complete Payment' : 'Enroll Now'}
+                    Start for Free
                   </button>
                 )}
 

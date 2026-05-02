@@ -16,14 +16,7 @@ import CoursePlayer from "./components/CoursePlayer";
 import CommunityHub from "./components/CommunityHub";
 import { generateAgroTechImages } from "./lib/imageGen";
 import { supabase } from "./lib/supabase";
-
-interface UserProfile {
-  id: string;
-  full_name: string;
-  email: string;
-  points: number;
-  avatar_url: string | null;
-}
+import { ProfileData } from "./lib/profileCompletion";
 
 export default function App() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -35,9 +28,10 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<"landing" | "dashboard" | "profile" | "course" | "all-programs" | "learning" | "course-player" | "community">("dashboard");
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [enrolledPrograms, setEnrolledPrograms] = useState<any[]>([]);
+  const [allCourses, setAllCourses] = useState<any[]>([]);
   const [points, setPoints] = useState(0);
   const [communityChannel, setCommunityChannel] = useState("general");
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userProfile, setUserProfile] = useState<ProfileData | null>(null);
   const analytics = <Analytics />;
 
   // 1. Listen for Auth Changes on mount
@@ -81,19 +75,63 @@ export default function App() {
         setUserProfile(profile);
       }
 
-      // Fetch Enrollments (map course_ids back to course objects)
-      const { data: enrollments } = await supabase
+      // Fetch enrollments and then load the related course details separately.
+      const { data: enrollments, error: enrollError } = await supabase
         .from('enrollments')
         .select('*')
         .eq('user_id', userId);
-      
-      if (enrollments) {
-        // You would map course_ids back to your full course objects here
-        // For now, we'll just store the enrollment data
-        setEnrolledPrograms(enrollments.map(e => ({ 
-          ...e, 
-          paymentStatus: e.payment_status 
-        })));
+
+      if (enrollError) {
+        console.error("Enrollment fetch error:", enrollError?.message || enrollError);
+        return;
+      }
+
+      if (enrollments && enrollments.length > 0) {
+        // Migrate any pending enrollments to verified since courses are now free
+        const pendingEnrollments = enrollments.filter((e: any) => e.payment_status === 'pending');
+        if (pendingEnrollments.length > 0) {
+          const pendingIds = pendingEnrollments.map((e: any) => e.id);
+          await supabase
+            .from('enrollments')
+            .update({ payment_status: 'verified' })
+            .in('id', pendingIds);
+        }
+
+        const courseIds = enrollments.map((e: any) => e.course_id).filter(Boolean);
+        const { data: courses, error: courseError } = await supabase
+          .from('courses')
+          .select('*')
+          .in('id', courseIds);
+
+        if (courseError) {
+          console.error("Courses fetch error:", courseError?.message || courseError);
+          return;
+        }
+
+        const coursesById = (courses || []).reduce((acc: Record<number, any>, course: any) => {
+          acc[course.id] = course;
+          return acc;
+        }, {});
+
+        const formattedPrograms = enrollments
+          .filter((e: any) => coursesById[e.course_id]) // Only include enrollments with valid courses
+          .map((e: any) => {
+            const course = coursesById[e.course_id];
+            return {
+              ...course,
+              id: Number(e.course_id),
+              enrollment_id: e.id,
+              paymentStatus: e.payment_status,
+              payment_status: e.payment_status,
+              accessFee: course.access_fee ?? course.accessFee ?? 'Free',
+              startDate: course.start_date ?? course.startDate ?? '',
+              enrolledAt: e.created_at,
+            };
+          });
+
+        setEnrolledPrograms(formattedPrograms);
+      } else {
+        setEnrolledPrograms([]);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -104,41 +142,84 @@ export default function App() {
     setPoints(prev => prev + amount);
   };
 
-  // 3. Update the handleEnroll function to push to DB
+  // 3. Update the handleEnroll function to push to DB (Now 100% Free)
   const handleEnroll = async (course: any) => {
     if (!session) {
       setShowAuth("login");
       return;
     }
 
-    if (enrolledPrograms.some(p => p.id === course.id || p.course_id === course.id)) {
+    const courseId = Number(course.id);
+
+    // Check if already enrolled locally
+    const isAlreadyEnrolled = enrolledPrograms.some(
+      (p) => Number(p.id) === courseId || Number(p.course_id) === courseId
+    );
+
+    if (isAlreadyEnrolled) {
       setCurrentPage("learning");
+      window.scrollTo(0, 0);
       return;
     }
 
+    // MAKE ALL COURSES FREE FOR NOW
+    const initialStatus = 'verified';
+
     try {
-      const { error } = await supabase
+      // 1. Save enrollment to database
+      const { error: enrollError } = await supabase
         .from('enrollments')
         .insert({
           user_id: session.user.id,
-          course_id: course.id,
-          payment_status: 'pending'
+          course_id: courseId,
+          payment_status: initialStatus
         });
 
-      if (error) throw error;
+      if (enrollError) {
+        // ERROR CODE 23505 = Postgres unique violation (already enrolled)
+        if (enrollError.code === '23505') {
+          console.log("User is already enrolled. Redirecting to learning.");
+          if (session) fetchUserData(session.user.id);
+          setCurrentPage("learning");
+          window.scrollTo(0, 0);
+          return;
+        }
 
-      const newEnrollment = { 
-        ...course, 
-        course_id: course.id,
+        console.error("Supabase Error Details:", enrollError);
+        throw new Error(enrollError.message);
+      }
+
+      // 2. Add an instant notification to the user's dashboard
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: session.user.id,
+          title: "Enrollment Successful!",
+          message: `You have successfully enrolled in ${course.title}. You can now start learning.`
+        });
+
+      if (notificationError) {
+        console.error("Notification insert failed:", notificationError);
+        throw new Error(notificationError.message);
+      }
+
+      // 3. Update local state and redirect to My Learning
+      const newEnrollment = {
+        ...course,
+        course_id: courseId,
         user_id: session.user.id,
-        payment_status: 'pending',
-        paymentStatus: 'pending',
-        enrolledAt: new Date().toISOString() 
+        payment_status: initialStatus,
+        paymentStatus: initialStatus,
+        enrolledAt: new Date().toISOString()
       };
-      setEnrolledPrograms(prev => [...prev, newEnrollment]);
+
+      setEnrolledPrograms((prev) => [...prev, newEnrollment]);
       setCurrentPage("learning");
-    } catch (error) {
+      window.scrollTo(0, 0);
+
+    } catch (error: any) {
       console.error('Error enrolling in course:', error);
+      alert(`Failed to enroll: ${error?.message || 'Unknown database error'}`);
     }
   };
 
@@ -174,6 +255,25 @@ export default function App() {
   }, [currentPage, isLoggedIn, selectedCourse]);
 
   useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const { data, error } = await supabase.from('courses').select('*');
+        if (error) {
+          console.error('Error fetching courses:', error);
+          return;
+        }
+        if (data) {
+          setAllCourses(data);
+        }
+      } catch (error) {
+        console.error('Unexpected error fetching courses:', error);
+      }
+    };
+
+    if (!allCourses.length) {
+      fetchCourses();
+    }
+
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual';
     }
@@ -187,7 +287,7 @@ export default function App() {
     generateAgroTechImages().then(setAiImages).catch(console.error);
 
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  }, [allCourses.length]);
 
   if (isLoggedIn) {
     if (currentPage === "landing") {
@@ -301,6 +401,10 @@ export default function App() {
             onLogoClick={() => setCurrentPage("landing")}
             onViewCourse={(course) => {
               setSelectedCourse(course);
+              setCurrentPage("course");
+            }}
+            onPlayCourse={(course) => {
+              setSelectedCourse(course);
               setCurrentPage("course-player");
             }}
             onViewAllPrograms={(programs) => {
@@ -321,7 +425,8 @@ export default function App() {
         <>
           <AllPrograms 
             userProfile={userProfile}
-            programs={selectedCourse || []} 
+            programs={Array.isArray(selectedCourse) ? selectedCourse : allCourses} 
+            enrolledPrograms={enrolledPrograms}
             onBack={() => setCurrentPage("dashboard")}
             onLogoClick={() => setCurrentPage("landing")}
             onViewDetails={(course) => {
@@ -349,6 +454,7 @@ export default function App() {
             }}
             onLogoClick={() => setCurrentPage("landing")} 
             onEnroll={handleEnroll}
+            onPlayCourse={() => setCurrentPage("course-player")}
             onViewProfile={() => setCurrentPage("profile")}
             onViewCommunity={() => setCurrentPage("community")}
             onViewLearning={() => setCurrentPage("learning")}
@@ -405,6 +511,8 @@ export default function App() {
         points={points}
         user={session?.user.user_metadata}
         userProfile={userProfile}
+        programs={allCourses}
+        enrolledPrograms={enrolledPrograms}
         onLogout={handleLogout}
         onLogoClick={() => setCurrentPage("landing")}
         onViewProfile={() => setCurrentPage("profile")}
