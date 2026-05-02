@@ -110,24 +110,34 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
     setActiveChannel(initialChannel);
   }, [initialChannel]);
 
-  // Fetch current user & setup realtime
+  // Fetch current user on mount
   useEffect(() => {
-    const setupCommunity = async () => {
+    const setupUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
-      await fetchPosts();
-      await fetchMemberStats();
     };
+    setupUser();
+  }, []);
 
-    setupCommunity();
+  // Fetch posts and set up Realtime EVERY TIME the activeChannel changes
+  useEffect(() => {
+    fetchPosts();
+    fetchMemberStats();
+    calculateTrendingTopicsFromAllPosts();
 
-    // Subscribe to ALL post changes (Insert, Update, Delete) and likes
+    // Setup Realtime isolated to the current channel
+    const targetChannel = activeChannel === 'leaderboard' ? 'general' : activeChannel;
+    
     const channelSub = supabase
-      .channel('public:posts')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
+      .channel(`room:${targetChannel}`) // Unique socket channel name
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'posts',
+        filter: `channel=eq.${targetChannel}` // Only listen to this specific chat room!
+      }, () => {
         fetchPosts();
         calculateTrendingTopicsFromAllPosts();
-        fetchMemberStats();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_likes' }, () => {
         fetchPosts();
@@ -275,7 +285,7 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
     const targetChannel = activeChannel === 'leaderboard' ? 'general' : activeChannel;
     
     try {
-      setNewPostContent(""); // Clear input immediately
+      setNewPostContent(""); // Clear input immediately for snappy UX
       
       const { error } = await supabase.from('posts').insert({
         author_id: currentUser.id,
@@ -285,10 +295,13 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
 
       if (error) throw error;
       
-      // Realtime subscription will automatically trigger fetchPosts
+      // Force an immediate fetch so the user sees their post instantly, 
+      // rather than waiting for the Realtime broadcast to bounce back.
+      await fetchPosts();
+      
     } catch (error) {
       console.error('Error creating post:', error);
-      setNewPostContent(contentToPost); 
+      setNewPostContent(contentToPost); // Restore text if it failed
       alert('Failed to create post. Please try again.');
     } finally {
       setIsPosting(false);
