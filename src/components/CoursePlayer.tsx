@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import { cn } from "@/src/lib/utils";
-import { COURSE_CONTENTS, Week, Lesson, Quiz } from "@/src/data/courseContent";
+import { Week, Lesson, Quiz } from "@/src/data/courseContent";
 import { fetchCourseContent } from "@/src/lib/courseApi";
 import { supabase } from "@/src/lib/supabase";
 
@@ -47,8 +47,8 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const [profile, setProfile] = useState<any>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   
-  // Use database content if available, otherwise fallback to hardcoded
-  const content = { weeks: dbContent.length > 0 ? dbContent : (COURSE_CONTENTS[course.id] || COURSE_CONTENTS[101])?.weeks || [] };
+  // Use ONLY database content - no fallbacks
+  const content = { weeks: dbContent };
   
   const [activeWeek, setActiveWeek] = useState<number>(0);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
@@ -106,7 +106,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     return "Learner";
   };
 
-  // Fetch Course Content from Supabase
+  // Fetch Course Content from Supabase (ONLY SOURCE OF TRUTH)
   useEffect(() => {
     const loadContent = async () => {
       setIsLoadingContent(true);
@@ -117,19 +117,13 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           setActiveLesson(dbData[0].lessons[0]);
           setExpandedWeeks([String(dbData[0].id)]);
         } else {
-          // Fallback to hardcoded if no database content
-          const fallbackContent = COURSE_CONTENTS[course.id] || COURSE_CONTENTS[101];
-          setDbContent(fallbackContent.weeks);
-          setActiveLesson(fallbackContent.weeks[0]?.lessons[0]);
-          setExpandedWeeks([String(fallbackContent.weeks[0]?.id || "")]);
+          // No data from Supabase - show "Coming Soon"
+          setDbContent([]);
         }
       } catch (error) {
         console.error("Error loading course content:", error);
-        // Fallback to hardcoded on error
-        const fallbackContent = COURSE_CONTENTS[course.id] || COURSE_CONTENTS[101];
-        setDbContent(fallbackContent.weeks);
-        setActiveLesson(fallbackContent.weeks[0]?.lessons[0]);
-        setExpandedWeeks([String(fallbackContent.weeks[0]?.id || "")]);
+        // Error loading from Supabase - show "Coming Soon"
+        setDbContent([]);
       } finally {
         setIsLoadingContent(false);
       }
@@ -137,6 +131,45 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
 
     loadContent();
   }, [course.id]);
+
+  // Load user progress from database
+  useEffect(() => {
+    const loadUserProgress = async () => {
+      if (!session?.user?.id) return;
+
+      try {
+        // Load completed lessons
+        const { data: lessonProgress, error: lessonError } = await supabase
+          .from('lesson_progress')
+          .select('lesson_id')
+          .eq('user_id', session.user.id)
+          .eq('course_id', course.id);
+
+        if (lessonError) {
+          console.error('Error loading lesson progress:', lessonError);
+        } else if (lessonProgress) {
+          setCompletedLessons(lessonProgress.map(lp => lp.lesson_id));
+        }
+
+        // Load passed quizzes
+        const { data: quizResults, error: quizError } = await supabase
+          .from('quiz_results')
+          .select('quiz_id')
+          .eq('user_id', session.user.id)
+          .eq('passed', true);
+
+        if (quizError) {
+          console.error('Error loading quiz results:', quizError);
+        } else if (quizResults) {
+          setPassedQuizzes(quizResults.map(qr => qr.quiz_id));
+        }
+      } catch (error) {
+        console.error('Error loading user progress:', error);
+      }
+    };
+
+    loadUserProgress();
+  }, [session?.user?.id, course.id]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -240,6 +273,54 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const totalItems = content.weeks.reduce((acc, w) => acc + w.lessons.length + (w.quiz ? 1 : 0), 0);
   const completedItems = completedLessons.length + passedQuizzes.length;
   const progressPercent = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
+
+  // Navigation helpers
+  const getAllLessons = () => {
+    const lessons: { lesson: Lesson; weekIndex: number; lessonIndex: number }[] = [];
+    content.weeks.forEach((week, weekIndex) => {
+      week.lessons.forEach((lesson, lessonIndex) => {
+        lessons.push({ lesson, weekIndex, lessonIndex });
+      });
+    });
+    return lessons;
+  };
+
+  const getCurrentLessonIndex = () => {
+    if (!activeLesson) return -1;
+    const allLessons = getAllLessons();
+    return allLessons.findIndex(item => item.lesson.id === activeLesson.id);
+  };
+
+  const navigateToLesson = (lessonIndex: number) => {
+    const allLessons = getAllLessons();
+    if (lessonIndex >= 0 && lessonIndex < allLessons.length) {
+      const { lesson, weekIndex } = allLessons[lessonIndex];
+      setActiveLesson(lesson);
+      setActiveWeek(weekIndex);
+      setShowQuiz(false);
+      setQuizResult(null);
+      setExpandedWeeks(prev => 
+        prev.includes(String(content.weeks[weekIndex].id)) 
+          ? prev 
+          : [...prev, String(content.weeks[weekIndex].id)]
+      );
+    }
+  };
+
+  const goToPreviousLesson = () => {
+    const currentIndex = getCurrentLessonIndex();
+    if (currentIndex > 0) {
+      navigateToLesson(currentIndex - 1);
+    }
+  };
+
+  const goToNextLesson = () => {
+    const currentIndex = getCurrentLessonIndex();
+    const allLessons = getAllLessons();
+    if (currentIndex < allLessons.length - 1) {
+      navigateToLesson(currentIndex + 1);
+    }
+  };
 
   if (isLoadingContent) {
     return (
@@ -366,7 +447,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                     <>
                       <div className="flex-1 pr-4">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Week {week.id}</span>
+                          <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Module {idx + 1}</span>
                           {locked && <Lock size={12} className="text-gray-400" />}
                         </div>
                         <h4 className="text-sm font-bold text-ink leading-tight mb-2">{week.title}</h4>
@@ -385,7 +466,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                     </>
                   ) : (
                     <div className="flex flex-col items-center gap-1">
-                      <span className="text-[9px] font-bold text-primary">W{week.id}</span>
+                      <span className="text-[9px] font-bold text-primary">M{idx + 1}</span>
                       <div className="w-1 h-6 bg-gray-100 rounded-full overflow-hidden">
                         <div className="h-full bg-primary/40" style={{ width: "100%", height: `${weekProgress}%` }} />
                       </div>
@@ -669,7 +750,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded uppercase tracking-widest">
-                        Module {content.weeks[activeWeek].id}
+                        Module {activeWeek + 1}
                       </span>
                       <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-bold rounded uppercase tracking-widest">
                         {activeLesson.type}
@@ -784,11 +865,29 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors text-gray-400 hover:text-ink font-bold text-sm">
+                      <button 
+                        onClick={goToPreviousLesson}
+                        disabled={getCurrentLessonIndex() <= 0}
+                        className={cn(
+                          "flex items-center gap-2 px-5 py-2.5 rounded-xl border font-bold text-sm transition-colors",
+                          getCurrentLessonIndex() <= 0
+                            ? "border-gray-100 text-gray-300 cursor-not-allowed"
+                            : "border-gray-100 hover:bg-gray-50 text-gray-600 hover:text-ink"
+                        )}
+                      >
                         <ArrowLeft size={16} />
                         Previous
                       </button>
-                      <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-ink text-white hover:bg-ink/90 transition-colors font-bold text-sm">
+                      <button 
+                        onClick={goToNextLesson}
+                        disabled={getCurrentLessonIndex() >= getAllLessons().length - 1}
+                        className={cn(
+                          "flex items-center gap-2 px-5 py-2.5 rounded-xl bg-ink text-white font-bold text-sm transition-colors",
+                          getCurrentLessonIndex() >= getAllLessons().length - 1
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:bg-ink/90"
+                        )}
+                      >
                         Next Lesson
                         <ArrowRight size={16} />
                       </button>
