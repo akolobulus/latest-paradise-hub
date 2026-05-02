@@ -31,34 +31,36 @@ import { cn } from "@/src/lib/utils";
 import { calculateProfileCompletion, getProfileSections, ProfileData } from "@/src/lib/profileCompletion";
 
 const RECOMMENDED_PROGRAMS = [
+
+  
   {
-    id: 3,
-    title: "Sustainable Farm Management",
-    headline: "Eco-Friendly Farming for the Future",
-    description: "Master modern farming techniques, sustainable practices, and livestock management for the 21st century.",
-    image: "/farm-management.jpg",
-    startDate: "11 May 2026",
-    duration: "12 weeks",
-    commitment: "15-20 hrs/week",
+    id: 1,
+    title: "Agribusiness Innovation",
+    headline: "The Ultimate Hybrid Career",
+    description: "Harness the power of IoT, satellite imagery, and data analytics to revolutionize modern farming and ensure food security.",
+    image: "/agribusiness-innovation.jpg",
+    startDate: "25 May 2026",
+    duration: "16 weeks",
+    commitment: "15-25 hrs/week",
     accessFee: "11k naira only",
-    category: "Agri Business",
+    category: "Agro-Tech",
     includes: [
-      "Soil science and management",
-      "Sustainable crop production",
-      "Livestock health and welfare",
-      "Agribusiness fundamentals"
+      "IoT in agriculture",
+      "Precision farming with AI",
+      "Supply chain optimization",
+      "Data-driven farm management"
     ],
     structure: [
       {
-        title: "Introduction to Modern Farming",
-        description: "Core concepts of sustainable agriculture.",
-        date: "11 May 2026",
-        duration: "1 week",
+        title: "IoT and Sensors",
+        description: "Connecting the farm to the cloud.",
+        date: "25 May 2026",
+        duration: "3 weeks",
         status: "Available" as const
       }
     ]
   },
-  {
+{
     id: 2,
     title: "AI-Powered Business Automation",
     headline: "Lead the Future of Tech with AI",
@@ -85,29 +87,29 @@ const RECOMMENDED_PROGRAMS = [
       }
     ]
   },
-  {
-    id: 1,
-    title: "Agribusiness Innovation",
-    headline: "The Ultimate Hybrid Career",
-    description: "Harness the power of IoT, satellite imagery, and data analytics to revolutionize modern farming and ensure food security.",
-    image: "/agribusiness-innovation.jpg",
-    startDate: "25 May 2026",
-    duration: "16 weeks",
-    commitment: "15-25 hrs/week",
+    {
+    id: 3,
+    title: "Sustainable Farm Management",
+    headline: "Eco-Friendly Farming for the Future",
+    description: "Master modern farming techniques, sustainable practices, and livestock management for the 21st century.",
+    image: "/farm-management.jpg",
+    startDate: "11 May 2026",
+    duration: "12 weeks",
+    commitment: "15-20 hrs/week",
     accessFee: "11k naira only",
-    category: "Agro-Tech",
+    category: "Agri Business",
     includes: [
-      "IoT in agriculture",
-      "Precision farming with AI",
-      "Supply chain optimization",
-      "Data-driven farm management"
+      "Soil science and management",
+      "Sustainable crop production",
+      "Livestock health and welfare",
+      "Agribusiness fundamentals"
     ],
     structure: [
       {
-        title: "IoT and Sensors",
-        description: "Connecting the farm to the cloud.",
-        date: "25 May 2026",
-        duration: "3 weeks",
+        title: "Introduction to Modern Farming",
+        description: "Core concepts of sustainable agriculture.",
+        date: "11 May 2026",
+        duration: "1 week",
         status: "Available" as const
       }
     ]
