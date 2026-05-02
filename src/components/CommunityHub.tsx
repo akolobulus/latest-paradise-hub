@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   MessageSquare, 
@@ -76,12 +76,13 @@ const TRENDING = [
 interface CommunityHubProps {
   onBack: () => void;
   onLogoClick?: () => void;
+  onProfileClick?: () => void;
   points: number;
   userProfile?: { full_name?: string; avatar_url?: string | null } | null;
   initialChannel?: string;
 }
 
-export default function CommunityHub({ onBack, onLogoClick, points, userProfile, initialChannel = "general" }: CommunityHubProps) {
+export default function CommunityHub({ onBack, onLogoClick, onProfileClick, points, userProfile, initialChannel = "general" }: CommunityHubProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [activeChannel, setActiveChannel] = useState(initialChannel);
   const [newPostContent, setNewPostContent] = useState("");
@@ -89,6 +90,11 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Real-time data state
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
@@ -360,6 +366,61 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
     }
   };
 
+  const addNotification = (notification: { type: string; text: string; relatedId?: string }) => {
+    setNotifications((prev) => [
+      {
+        id: `${Date.now()}-${Math.random()}`,
+        isRead: false,
+        created_at: new Date().toISOString(),
+        ...notification,
+      },
+      ...prev,
+    ].slice(0, 12));
+    setUnreadCount((count) => count + 1);
+  };
+
+  const toggleNotifications = () => {
+    const next = !showNotifications;
+    setShowNotifications(next);
+    if (next) {
+      setNotifications((prev) => prev.map((notification) => ({ ...notification, isRead: true })));
+      setUnreadCount(0);
+    }
+  };
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const notificationChannel = supabase
+      .channel('community-notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) => {
+        const newPost: any = payload.new;
+        if (currentUser && newPost.author_id === currentUser.id) return;
+        addNotification({
+          type: 'post',
+          text: `New post in #${newPost.channel}`,
+          relatedId: newPost.id,
+        });
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, (payload) => {
+        const newMessage: any = payload.new;
+        if (!currentUser || newMessage.sender_id === currentUser.id) return;
+        if (newMessage.receiver_id === currentUser.id) {
+          const sender = usersList.find((user) => user.id === newMessage.sender_id);
+          addNotification({
+            type: 'dm',
+            text: `New message from ${sender?.full_name || 'Someone'}`,
+            relatedId: newMessage.id,
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(notificationChannel);
+    };
+  }, [currentUser, usersList]);
+
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (!currentUser) {
       alert('Please log in to like posts');
@@ -443,6 +504,11 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
     setEditContent(post.content);
     setOpenDropdownId(null);
   };
+
+  const filteredPosts = posts.filter((post) =>
+    post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.author.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleUpdatePost = async (postId: string) => {
     if (!editContent.trim()) return;
@@ -587,7 +653,10 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
 
           {/* User Profile Card in Sidebar */}
           {userProfile && (
-            <div className="mt-6 pt-6 border-t border-gray-100 flex items-center gap-3">
+            <div
+              onClick={() => onProfileClick?.()}
+              className="mt-6 pt-6 border-t border-gray-100 flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-3xl p-3 transition-all"
+            >
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm overflow-hidden">
                 {userProfile.avatar_url ? (
                   <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
@@ -694,19 +763,87 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
 
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center bg-gray-50 border border-gray-100 rounded-full px-4 py-2 w-64">
-              <Search size={16} className="text-gray-400 mr-2" />
+              <button
+                type="button"
+                onClick={() => searchInputRef.current?.focus()}
+                className="text-gray-400 mr-2"
+              >
+                <Search size={16} />
+              </button>
               <input 
+                ref={searchInputRef}
                 type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search community..." 
                 className="bg-transparent border-none outline-none text-sm w-full"
               />
             </div>
-            <button className="p-2 text-gray-500 hover:bg-gray-50 rounded-full relative">
-              <Bell size={20} />
-              <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={toggleNotifications}
+                className="p-2 text-gray-500 hover:bg-gray-50 rounded-full relative"
+              >
+                <Bell size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-[10px] text-white font-bold border-2 border-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {showNotifications && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute right-0 mt-2 w-80 bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden z-50"
+                  >
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-bold text-ink">Notifications</p>
+                        <p className="text-xs text-gray-500">{notifications.length} recent update{notifications.length === 1 ? '' : 's'}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNotifications([]);
+                          setUnreadCount(0);
+                        }}
+                        className="text-[10px] uppercase text-primary font-bold"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="max-h-72 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="p-4 text-sm text-gray-400">No new notifications</div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={cn(
+                              "px-4 py-3 border-b border-gray-100",
+                              notification.isRead ? "bg-white" : "bg-primary/5"
+                            )}
+                          >
+                            <p className="text-sm text-gray-700">{notification.text}</p>
+                            <p className="mt-1 text-[10px] text-gray-400">{timeAgo(notification.created_at)}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             {userProfile && (
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs border-2 border-transparent hover:border-primary transition-all overflow-hidden cursor-pointer">
+              <div
+                onClick={() => onProfileClick?.()}
+                className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs border-2 border-transparent hover:border-primary transition-all overflow-hidden cursor-pointer"
+              >
                 {userProfile.avatar_url ? (
                   <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
@@ -897,9 +1034,11 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
                     <div className="text-center p-10 text-gray-400 font-medium">Loading posts...</div>
                   ) : posts.length === 0 ? (
                     <div className="text-center p-10 text-gray-400 font-medium">Be the first to post in this channel!</div>
+                  ) : filteredPosts.length === 0 ? (
+                    <div className="text-center p-10 text-gray-400 font-medium">No posts match your search.</div>
                   ) : (
                     <AnimatePresence initial={false}>
-                      {posts.map((post) => (
+                      {filteredPosts.map((post) => (
                       <motion.div
                         key={post.id}
                         initial={{ opacity: 0, y: 20 }}

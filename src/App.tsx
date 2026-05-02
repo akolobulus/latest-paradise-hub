@@ -392,6 +392,7 @@ export default function App() {
             userProfile={userProfile}
             onBack={() => setCurrentPage("dashboard")}
             onLogoClick={() => setCurrentPage("landing") } 
+            onProfileClick={() => setCurrentPage("profile")}
             points={points} 
             initialChannel={communityChannel} 
           />
