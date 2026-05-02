@@ -60,35 +60,9 @@ const RECOMMENDED_PROGRAMS = [
       }
     ]
   },
-{
-    id: 2,
-    title: "AI-Powered Business Automation",
-    headline: "Lead the Future of Tech with AI",
-    description: "Master the use of AI, low-code tools, and digital automation to streamline business processes and drive modern innovation.",
-    image: "/ai-automation.jpg",
-    startDate: "18 May 2026",
-    duration: "24 weeks",
-    commitment: "20-30 hrs/week",
-    accessFee: "11k naira only",
-    category: "Tech",
-    includes: [
-      "AI and machine learning basics",
-      "Low-code automation tools",
-      "Digital transformation strategy",
-      "Cloud computing for AI"
-    ],
-    structure: [
-      {
-        title: "AI Fundamentals",
-        description: "Understanding LLMs and automation.",
-        date: "18 May 2026",
-        duration: "4 weeks",
-        status: "Available" as const
-      }
-    ]
-  },
+
     {
-    id: 3,
+    id: 2,
     title: "Sustainable Farm Management",
     headline: "Eco-Friendly Farming for the Future",
     description: "Master modern farming techniques, sustainable practices, and livestock management for the 21st century.",
@@ -110,6 +84,34 @@ const RECOMMENDED_PROGRAMS = [
         description: "Core concepts of sustainable agriculture.",
         date: "11 May 2026",
         duration: "1 week",
+        status: "Available" as const
+      }
+    ]
+  },
+
+  {
+    id: 3,
+    title: "AI-Powered Business Automation",
+    headline: "Lead the Future of Tech with AI",
+    description: "Master the use of AI, low-code tools, and digital automation to streamline business processes and drive modern innovation.",
+    image: "/ai-automation.jpg",
+    startDate: "18 May 2026",
+    duration: "24 weeks",
+    commitment: "20-30 hrs/week",
+    accessFee: "11k naira only",
+    category: "Tech",
+    includes: [
+      "AI and machine learning basics",
+      "Low-code automation tools",
+      "Digital transformation strategy",
+      "Cloud computing for AI"
+    ],
+    structure: [
+      {
+        title: "AI Fundamentals",
+        description: "Understanding LLMs and automation.",
+        date: "18 May 2026",
+        duration: "4 weeks",
         status: "Available" as const
       }
     ]
