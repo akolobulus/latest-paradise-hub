@@ -533,12 +533,14 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
                         )}
                       >
                         <div className="relative">
-                          <img 
-                            src={user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
-                            className="w-8 h-8 rounded-full bg-gray-100 object-cover"
-                            alt={user.full_name}
-                          />
-                          <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs overflow-hidden border border-primary/20">
+                            {user.avatar_url ? (
+                              <img src={user.avatar_url} alt={user.full_name || "User"} className="w-full h-full object-cover" />
+                            ) : (
+                              getInitials(user.full_name)
+                            )}
+                          </div>
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
                         </div>
                         <span className={cn(
                           "text-sm font-medium transition-colors truncate",
@@ -642,12 +644,14 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
                   )}
                 >
                   <div className="relative">
-                    <img 
-                      src={user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
-                      className="w-8 h-8 rounded-full bg-gray-100 object-cover"
-                      alt={user.full_name}
-                    />
-                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs overflow-hidden border border-primary/20">
+                      {user.avatar_url ? (
+                        <img src={user.avatar_url} alt={user.full_name || "User"} className="w-full h-full object-cover" />
+                      ) : (
+                        getInitials(user.full_name)
+                      )}
+                    </div>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
                   </div>
                   <span className={cn(
                     "text-sm font-medium transition-colors truncate",
@@ -725,11 +729,13 @@ export default function CommunityHub({ onBack, onLogoClick, points, userProfile,
                   <ArrowLeft size={16} /> Back to #{activeChannel}
                 </button>
                 <div className="flex items-center gap-4 pb-4 border-b border-gray-100 mb-4">
-                  <img 
-                    src={activeDmUser.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${activeDmUser.id}`} 
-                    className="w-12 h-12 rounded-full bg-gray-100 object-cover"
-                    alt={activeDmUser.full_name}
-                  />
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-base overflow-hidden border border-primary/20 shadow-sm">
+                    {activeDmUser.avatar_url ? (
+                      <img src={activeDmUser.avatar_url} alt={activeDmUser.full_name} className="w-full h-full object-cover" />
+                    ) : (
+                      getInitials(activeDmUser.full_name)
+                    )}
+                  </div>
                   <div>
                     <h2 className="font-bold text-lg text-ink">{activeDmUser.full_name}</h2>
                     <p className="text-xs text-gray-400">Direct Message</p>
