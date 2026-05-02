@@ -32,7 +32,7 @@ import { calculateProfileCompletion, getProfileSections, ProfileData } from "@/s
 
 const RECOMMENDED_PROGRAMS = [
   {
-    id: 1,
+    id: 3,
     title: "Sustainable Farm Management",
     headline: "Eco-Friendly Farming for the Future",
     description: "Master modern farming techniques, sustainable practices, and livestock management for the 21st century.",
@@ -86,7 +86,7 @@ const RECOMMENDED_PROGRAMS = [
     ]
   },
   {
-    id: 3,
+    id: 1,
     title: "Agribusiness Innovation",
     headline: "The Ultimate Hybrid Career",
     description: "Harness the power of IoT, satellite imagery, and data analytics to revolutionize modern farming and ensure food security.",
