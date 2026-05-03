@@ -149,7 +149,7 @@ export function Footer({
             <a href="#" className="hover:text-white transition-colors">Privacy</a>
             <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
           </div>
-          <div>© Copyright 2026 <a href="https://pdfarms.com" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Paradise Dynamic Farms</a>. All rights reserved.</div>
+          <div>© Copyright 2026 <a href="https://pdfarms.com" target="_blank" rel="noreferrer" className="text-primary hover:text-white transition-colors">Paradise Dynamic Farms</a>. All rights reserved.</div>
         </div>
       </div>
     </footer>
