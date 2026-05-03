@@ -1,7 +1,5 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { ArrowRight, Mail, CheckCircle, X } from "lucide-react";
-import { supabase } from "@/src/lib/supabase";
+import { motion } from "motion/react";
+import { ArrowRight } from "lucide-react";
 
 export default function Hero({ 
   isLoggedIn, 
@@ -14,47 +12,10 @@ export default function Hero({
   onStartClick?: () => void,
   onDashboardClick?: () => void
 }) {
-  // Newsletter State
-  const [email, setEmail] = useState("");
-  const [isSubscribing, setIsSubscribing] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [subError, setSubError] = useState("");
-
   // Helper to get initials from full name
   const getInitials = (name?: string) => {
     if (!name) return "U";
     return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
-  };
-
-  // Handle Newsletter Subscription
-  const handleSubscribe = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-
-    setIsSubscribing(true);
-    setSubError("");
-
-    try {
-      const { error } = await supabase
-        .from("newsletter_subscribers")
-        .insert([{ email: email.trim().toLowerCase() }]);
-
-      if (error) {
-        if (error.code === "23505") {
-          setSubError("You're already subscribed with this email!");
-        } else {
-          throw error;
-        }
-      } else {
-        setShowSuccess(true);
-        setEmail("");
-      }
-    } catch (err: any) {
-      console.error("Subscription error:", err);
-      setSubError("Something went wrong. Please try again.");
-    } finally {
-      setIsSubscribing(false);
-    }
   };
 
   return (
@@ -67,12 +28,12 @@ export default function Hero({
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
-            className="absolute -top-24 -right-24 w-96 h-96 border-[1px] border-primary/10 rounded-full"
+            className="absolute -top-24 -right-24 w-96 h-96 border border-primary/10 rounded-full"
           />
           <motion.div
             animate={{ rotate: -360 }}
             transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-            className="absolute -bottom-24 -left-24 w-[500px] h-[500px] border-[1px] border-primary/5 rounded-full"
+            className="absolute -bottom-24 -left-24 w-125 h-125 border border-primary/5 rounded-full"
           />
         </div>
 
@@ -164,92 +125,15 @@ export default function Hero({
                   </button>
                   <button className="text-ink font-bold text-lg hover:text-primary transition-colors flex items-center gap-2 group">
                     Browse Courses
-                    <div className="w-6 h-[2px] bg-primary/20 group-hover:w-10 transition-all" />
+                    <div className="w-6 h-0.5 bg-primary/20 group-hover:w-10 transition-all" />
                   </button>
                 </>
               )}
             </motion.div>
 
-            {/* Newsletter Subscription */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="w-full max-w-md mx-auto"
-            >
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Stay updated on new courses</p>
-              <form onSubmit={handleSubscribe} className="relative flex items-center">
-                <Mail className="absolute left-4 text-gray-400" size={20} />
-                <input
-                  type="email"
-                  required
-                  placeholder="Enter your email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-32 py-4 rounded-full border-2 border-gray-100 focus:border-primary focus:outline-none transition-colors"
-                />
-                <button
-                  type="submit"
-                  disabled={isSubscribing}
-                  className="absolute right-2 bg-ink text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-ink/90 transition-colors disabled:opacity-50"
-                >
-                  {isSubscribing ? "Wait..." : "Subscribe"}
-                </button>
-              </form>
-              {subError && (
-                <p className="text-red-500 text-sm font-medium mt-3">{subError}</p>
-              )}
-            </motion.div>
           </div>
         </div>
       </section>
-
-      {/* Success Modal Overlay */}
-      <AnimatePresence>
-        {showSuccess && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowSuccess(false)}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
-            />
-
-            <div className="fixed inset-0 flex items-center justify-center z-[101] pointer-events-none px-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl pointer-events-auto text-center relative border border-gray-100"
-              >
-                <button
-                  onClick={() => setShowSuccess(false)}
-                  className="absolute top-4 right-4 p-2 text-gray-400 hover:text-ink hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <X size={20} />
-                </button>
-
-                <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle size={40} />
-                </div>
-
-                <h3 className="text-2xl font-display font-bold text-ink mb-3">You're on the list!</h3>
-                <p className="text-gray-500 mb-8 leading-relaxed">
-                  Thank you for subscribing. We'll keep you updated with the latest courses, tech trends, and agribusiness news.
-                </p>
-
-                <button
-                  onClick={() => setShowSuccess(false)}
-                  className="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
-                >
-                  Awesome, thanks!
-                </button>
-              </motion.div>
-            </div>
-          </>
-        )}
-      </AnimatePresence>
     </>
   );
 }

@@ -1,5 +1,7 @@
-import { motion } from "motion/react";
-import { Play, Instagram, Twitter, Linkedin, Youtube, Facebook, Users } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Play, Instagram, Twitter, Linkedin, Youtube, Facebook, Users, CheckCircle, X } from "lucide-react";
+import { supabase } from "@/src/lib/supabase";
 import { cn } from "@/src/lib/utils";
 import BrandLogo from "./BrandLogo";
 
@@ -84,6 +86,41 @@ export function Footer({
   onSupportClick?: () => void,
   onPrivacyClick?: () => void
 }) {
+  const [email, setEmail] = useState("");
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [subError, setSubError] = useState("");
+
+  const handleSubscribe = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+
+    setIsSubscribing(true);
+    setSubError("");
+
+    try {
+      const { error } = await supabase
+        .from("newsletter_subscribers")
+        .insert([{ email: email.trim().toLowerCase() }]);
+
+      if (error) {
+        if (error.code === "23505") {
+          setSubError("You're already subscribed with this email!");
+        } else {
+          throw error;
+        }
+      } else {
+        setShowSuccess(true);
+        setEmail("");
+      }
+    } catch (err: any) {
+      console.error("Subscription error:", err);
+      setSubError("Something went wrong. Please try again.");
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
+
   return (
     <footer className="bg-ink text-white pt-32 pb-12 px-4 relative">
       <div className="max-w-7xl mx-auto">
@@ -93,16 +130,20 @@ export function Footer({
           <p className="text-white/90 mb-8 max-w-2xl mx-auto text-lg">
             We bring together industry leaders to share insights, spark ideas, and help you level up.
           </p>
-          <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto">
+          <form onSubmit={handleSubscribe} className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto">
             <input 
               type="email" 
+              required
               placeholder="Enter your email" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="flex-1 px-8 py-4 rounded-full bg-white/10 border-2 border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:border-white transition-all"
             />
-            <button className="px-12 py-4 rounded-full bg-ink text-white font-bold hover:bg-white hover:text-ink transition-all shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]">
-              SUBSCRIBE
+            <button type="submit" disabled={isSubscribing} className="px-12 py-4 rounded-full bg-ink text-white font-bold hover:bg-white hover:text-ink transition-all shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] disabled:opacity-50">
+              {isSubscribing ? "Wait..." : "SUBSCRIBE"}
             </button>
-          </div>
+          </form>
+          {subError && <p className="text-red-200 mt-4">{subError}</p>}
         </div>
 
         <div className="grid md:grid-cols-4 gap-16 mb-24 pt-48">
@@ -152,6 +193,48 @@ export function Footer({
           <div>© Copyright 2026 <a href="https://pdfarms.com" target="_blank" rel="noreferrer" className="text-primary hover:text-white transition-colors">Paradise Dynamic Farms</a>. All rights reserved.</div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showSuccess && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSuccess(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            />
+            <div className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="pointer-events-auto max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl border border-gray-100 text-center relative"
+              >
+                <button
+                  onClick={() => setShowSuccess(false)}
+                  className="absolute top-4 right-4 p-2 text-gray-400 hover:text-ink hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+                <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle size={40} />
+                </div>
+                <h3 className="text-2xl font-bold text-ink mb-3">You're on the list!</h3>
+                <p className="text-gray-600 mb-8 leading-relaxed">
+                  Thank you for subscribing. We'll keep you updated with the latest courses, tech trends, and agribusiness news.
+                </p>
+                <button
+                  onClick={() => setShowSuccess(false)}
+                  className="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-colors"
+                >
+                  Awesome, thanks!
+                </button>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </footer>
   );
 }
