@@ -1018,7 +1018,7 @@ export default function ProfilePage({ onBack, onProfileUpdate }: ProfilePageProp
                 </span>
               </div>
               <p className="text-gray-400 text-lg max-w-sm leading-relaxed mb-8">
-                Empowering the next generation of African leaders through an interactive e-learning in technology and agribusiness.
+                Empowering the next generation of African leaders through an interactive e-learning in agribusiness and technology.
               </p>
             </div>
 
