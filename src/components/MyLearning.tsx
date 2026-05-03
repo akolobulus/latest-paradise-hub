@@ -497,7 +497,7 @@ export default function MyLearning({ enrolledPrograms = [], userProfile, onBack,
                 </span>
               </div>
               <p className="text-gray-400 text-lg max-w-sm leading-relaxed mb-8">
-                Empowering the next generation of African leaders through an interactive e-learning in technology and agribusiness.
+                Empowering the next generation of African leaders through an interactive e-learning in agribusiness and technology.
               </p>
               <div className="flex gap-4">
                 <a href="#" className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all">
