@@ -431,7 +431,13 @@ export default function Dashboard({ points, user, userProfile, programs = [], en
                         <span className="text-sm font-bold">My Learning</span>
                       </button>
 
-                      <button className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink">
+                      <button 
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          onViewProfile();
+                        }}
+                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
+                      >
                         <Settings size={18} className="text-gray-400" />
                         <span className="text-sm font-bold">Settings</span>
                       </button>
