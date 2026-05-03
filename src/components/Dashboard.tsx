@@ -741,7 +741,7 @@ export default function Dashboard({ points, user, userProfile, programs = [], en
                 </span>
               </div>
               <p className="text-gray-400 text-lg max-w-sm leading-relaxed mb-8">
-                Empowering the next generation of African leaders through an interactive e-learning in technology and agribusiness.
+                Empowering the next generation of African leaders through an interactive e-learning in agribusiness and technology.
               </p>
               <div className="flex gap-4">
                 <a href="#" className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all">
@@ -759,9 +759,9 @@ export default function Dashboard({ points, user, userProfile, programs = [], en
             <div>
               <h4 className="text-xl font-bold mb-8">Career Tracks</h4>
               <ul className="space-y-4 text-gray-400">
+                <li><a href="#" className="hover:text-primary-light transition-colors">Agribusiness Innovation</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">Sustainable Farm Management</a></li>
                 <li><a href="#" className="hover:text-primary-light transition-colors">AI-Powered Business Automation</a></li>
-                <li><a href="#" className="hover:text-primary-light transition-colors">Agribusiness Innovation</a></li>
               </ul>
             </div>
 
