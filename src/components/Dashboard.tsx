@@ -696,27 +696,6 @@ export default function Dashboard({ points, user, userProfile, programs = [], en
           </div>
         </section>
 
-        {/* Current Programs Section */}
-        <section>
-          <div className="flex items-center justify-between mb-6 md:mb-8">
-            <h2 className="text-xl md:text-3xl font-display font-bold text-ink">Current Programs</h2>
-            <button className="text-primary text-sm md:text-base font-bold hover:underline flex items-center gap-1">
-              View More
-              <ChevronRight size={16} />
-            </button>
-          </div>
-          
-          <div className="bg-white rounded-[32px] p-8 md:p-12 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
-            <h3 className="text-lg md:text-xl font-bold text-ink">No Programs Yet</h3>
-            <p className="text-gray-500 text-xs md:text-sm max-w-xs leading-relaxed">
-              Explore a world of knowledge. Start your learning journey today!
-            </p>
-            <button className="px-6 md:px-8 py-2.5 md:py-3 rounded-full border-2 border-primary text-primary font-bold text-xs md:text-sm hover:bg-primary hover:text-white transition-all">
-              Apply to new programs
-            </button>
-          </div>
-        </section>
-
         {/* Explore the eHub */}
         <section>
           <h2 className="text-xl md:text-3xl font-display font-bold text-ink mb-6 md:mb-8">Explore the Hub</h2>
