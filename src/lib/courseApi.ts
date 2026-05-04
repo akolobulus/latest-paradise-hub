@@ -22,7 +22,7 @@ export async function fetchCourseContent(courseId: string | number) {
       .from('modules')
       .select(`
         id, course_id, title, description, order_index,
-        lessons ( id, title, type, content, video_url, duration, transcript, order_index, resources(title, url, type) ),
+        lessons ( id, title, type, content, video_url, duration, transcript, order_index, resources(title, url, type:resource_type) ),
         quizzes ( id, title, description, passing_grade, duration_text, quiz_questions(id, question, type, options, correct_answer) )
       `)
       .eq('course_id', courseId)
