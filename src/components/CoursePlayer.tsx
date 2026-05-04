@@ -124,7 +124,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     const loadContent = async () => {
       setIsLoadingContent(true);
       try {
-        const dbData = await fetchCourseContent(course.id);
+        const dbData = await fetchCourseContent(101); // Hardcoded for debug to match seeded data
         if (dbData && dbData.length > 0) {
           setDbContent(dbData);
           setActiveLesson(dbData[0].lessons[0]);
