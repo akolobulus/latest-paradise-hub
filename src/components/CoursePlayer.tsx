@@ -66,6 +66,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
   const [session, setSession] = useState<any>(null);
 
   // Comment state
@@ -214,7 +215,9 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth <= 1024) {
+      const mobile = window.innerWidth <= 1024;
+      setIsMobile(mobile);
+      if (mobile) {
         setIsSidebarOpen(false);
       } else {
         setIsSidebarOpen(true);
@@ -421,6 +424,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
       </AnimatePresence>
 
       {/* Sidebar */}
+      {!isMobile && (
       <motion.aside 
         initial={false}
         animate={{ 
@@ -616,18 +620,21 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           })}
         </div>
       </motion.aside>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col relative bg-white">
         {/* Header */}
         <header className="h-16 border-b border-gray-100 flex items-center justify-between px-4 md:px-8 bg-primary text-white shrink-0">
           <div className="flex items-center gap-2 md:gap-4">
+            {!isMobile && (
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="px-4 py-2 text-sm font-bold rounded-lg hover:bg-white/10 transition-colors"
             >
               {isSidebarOpen ? "<<" : ">>"}
             </button>
+            )}
             <h2 className="font-bold text-xs sm:text-sm md:text-base truncate max-w-[150px] sm:max-w-md">{course.title}</h2>
           </div>
           <div className="flex items-center gap-6">
