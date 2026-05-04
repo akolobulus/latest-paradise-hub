@@ -72,6 +72,8 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
+  const [quizStarted, setQuizStarted] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
   
   // Mobile Responsiveness States
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
@@ -270,6 +272,44 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
       }
     }
   };
+
+  const parseDurationToSeconds = (durationText?: string): number => {
+    if (!durationText) return 600;
+    const normalized = durationText.toLowerCase().trim();
+    const match = normalized.match(/(\d+(?:\.\d+)?)/);
+    const value = match ? Number(match[1]) : 10;
+    if (normalized.includes('hour') || normalized.includes('hr')) return Math.round(value * 3600);
+    if (normalized.includes('min')) return Math.round(value * 60);
+    if (normalized.includes('sec')) return Math.round(value);
+    return Math.round(value * 60);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  useEffect(() => {
+    if (!showQuiz || quizStarted) return;
+    setRemainingSeconds(parseDurationToSeconds(activeQuiz?.duration));
+  }, [showQuiz, activeWeek, activeQuiz?.duration, quizStarted]);
+
+  useEffect(() => {
+    if (!quizStarted || quizResult) return;
+    if (remainingSeconds <= 0) {
+      if (activeQuiz) {
+        handleQuizSubmit(activeQuiz);
+      }
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setRemainingSeconds(prev => prev - 1);
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [quizStarted, remainingSeconds, quizResult, activeQuiz]);
 
   const isQuestionAnswered = (q: any) => {
     const answer = quizAnswers[q.id];
@@ -614,9 +654,10 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                               setShowQuiz(true);
                               setActiveLesson(null);
                               setActiveWeek(idx);
-                              setQuizResult(null);
                               setQuizAnswers({});
+                              setQuizStarted(false);
                               setCurrentQuestionIndex(0);
+                              setRemainingSeconds(parseDurationToSeconds(week.quiz?.duration));
                             }}
                             className={cn(
                               "w-full p-3 rounded-xl flex items-center gap-3 transition-all text-left mt-2 border-t border-gray-50",
@@ -714,11 +755,29 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                       </div>
 
                       <div className="space-y-8 md:space-y-12">
-                        {activeQuiz && currentQuestion ? (
+                        {!quizStarted ? (
+                          <div className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
+                            <div className="mb-6 text-sm text-gray-500">Your timer will start as soon as you click the button below.</div>
+                            <div className="mb-4 text-3xl font-bold text-ink">{formatTime(remainingSeconds)}</div>
+                            <div className="mb-6 text-sm text-gray-500">{activeQuiz?.questions.length ?? 0} questions — auto-submit when time runs out.</div>
+                            <button
+                              onClick={() => {
+                                setQuizStarted(true);
+                                if (remainingSeconds <= 0) {
+                                  setRemainingSeconds(parseDurationToSeconds(activeQuiz?.duration));
+                                }
+                              }}
+                              className="w-full md:w-auto px-10 py-4 bg-primary text-white font-bold rounded-xl md:rounded-full hover:bg-primary/90 transition-all"
+                            >
+                              Start Quiz
+                            </button>
+                          </div>
+                        ) : activeQuiz && currentQuestion ? (
                           <>
                             <div className="flex items-center justify-between flex-wrap gap-3 text-sm text-gray-500">
                               <span>Question {safeQuestionIndex + 1} of {activeQuiz.questions.length}</span>
                               <span>{activeQuiz.questions.filter(isQuestionAnswered).length}/{activeQuiz.questions.length} answered</span>
+                              <span className="font-mono text-sm text-ink">{formatTime(remainingSeconds)}</span>
                             </div>
 
                             <div key={currentQuestion.id} className="space-y-4">
@@ -880,11 +939,13 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                             onClick={() => {
                               setQuizResult(null);
                               setQuizAnswers({});
+                              setQuizStarted(false);
                               setCurrentQuestionIndex(0);
+                              setRemainingSeconds(parseDurationToSeconds(activeQuiz?.duration));
                             }}
                             className="w-full sm:w-auto px-8 py-3 bg-red-600 text-white font-bold rounded-xl md:rounded-full hover:bg-red-700 transition-all text-sm md:text-base"
                           >
-                            Try Again
+                            Take Quiz Again
                           </button>
                         )}
                       </div>
@@ -1278,9 +1339,10 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                                       setShowQuiz(true);
                                       setActiveLesson(null);
                                       setActiveWeek(idx); // Tells the player exactly which week we are in!
-                                      setQuizResult(null);
                                       setQuizAnswers({});
+                                      setQuizStarted(false);
                                       setCurrentQuestionIndex(0);
+                                      setRemainingSeconds(parseDurationToSeconds(week.quiz?.duration));
                                       setShowMobileSidebar(false); // Auto close sidebar on mobile selection
                                     }}
                                     className={cn(
