@@ -47,11 +47,13 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const [profile, setProfile] = useState<any>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   
-  // Map the Supabase 'quizzes' array into a single 'quiz' object so the UI can read it
+  // Safely map 'quizzes' whether Supabase returns it as an array OR a direct object
   const content = { 
     weeks: dbContent.map(week => ({
       ...week,
-      quiz: week.quizzes && week.quizzes.length > 0 ? week.quizzes[0] : null
+      quiz: Array.isArray(week.quizzes) 
+        ? (week.quizzes[0] || null) 
+        : (week.quizzes || null)
     })) 
   };
   
