@@ -663,21 +663,21 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                         <div className="flex items-center justify-center gap-8 mt-8">
                           <div className="flex items-center gap-2 text-sm font-bold text-gray-400">
                             <HelpCircle size={18} className="text-primary" />
-                            <span>{content.weeks[activeWeek].quiz?.questions.length} Questions</span>
+                            <span>{content.weeks[activeWeek]?.quiz?.questions?.length ?? 0} Questions</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm font-bold text-gray-400">
                             <Clock size={18} className="text-primary" />
-                            <span>{content.weeks[activeWeek].quiz?.duration}</span>
+                            <span>{content.weeks[activeWeek]?.quiz?.duration || 'N/A'}</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm font-bold text-gray-400">
                             <Trophy size={18} className="text-primary" />
-                            <span>Pass: {content.weeks[activeWeek].quiz?.passingGrade} correct</span>
+                            <span>Pass: {content.weeks[activeWeek]?.quiz?.passingGrade ?? 0} correct</span>
                           </div>
                         </div>
                       </div>
 
                       <div className="space-y-12">
-                        {content.weeks[activeWeek].quiz?.questions.map((q, i) => (
+                        {(content.weeks[activeWeek]?.quiz?.questions ?? []).map((q, i) => (
                           <div key={q.id} className="space-y-4">
                             <h3 className="text-lg font-bold text-ink flex gap-3">
                               <span className="text-primary">{i + 1}.</span>
@@ -727,7 +727,11 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
 
                       <div className="pt-12 flex justify-center">
                         <button
-                          onClick={() => handleQuizSubmit(content.weeks[activeWeek].quiz!)}
+                          onClick={() => {
+                            if (content.weeks[activeWeek]?.quiz) {
+                              handleQuizSubmit(content.weeks[activeWeek].quiz);
+                            }
+                          }}
                           className="px-12 py-4 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-all shadow-xl shadow-primary/20"
                         >
                           Finish Quiz
@@ -754,9 +758,9 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
                           <span className="text-4xl font-display font-bold">
-                            {Math.round((quizResult.score / content.weeks[activeWeek].quiz!.questions.length) * 100)}%
+                            {Math.round((quizResult.score / (content.weeks[activeWeek]?.quiz?.questions?.length ?? 1)) * 100)}%
                           </span>
-                          <span className="text-xs text-gray-400 font-bold">{quizResult.score}/{content.weeks[activeWeek].quiz!.questions.length}</span>
+                          <span className="text-xs text-gray-400 font-bold">{quizResult.score}/{content.weeks[activeWeek]?.quiz?.questions?.length ?? 0}</span>
                         </div>
                       </div>
 
