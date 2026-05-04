@@ -47,8 +47,13 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const [profile, setProfile] = useState<any>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   
-  // Use ONLY database content - no fallbacks
-  const content = { weeks: dbContent };
+  // Map the Supabase 'quizzes' array into a single 'quiz' object so the UI can read it
+  const content = { 
+    weeks: dbContent.map(week => ({
+      ...week,
+      quiz: week.quizzes && week.quizzes.length > 0 ? week.quizzes[0] : null
+    })) 
+  };
   
   const [activeWeek, setActiveWeek] = useState<number>(0);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
