@@ -134,11 +134,16 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           setDbContent(dbData);
           
           // CRITICAL: Reset the player state when switching courses!
-          setActiveLesson(dbData[0].lessons[0]);
+          const firstModule = dbData[0];
+          const firstLesson = Array.isArray(firstModule.lessons) ? firstModule.lessons[0] : null;
+          const rawFirstQuiz = Array.isArray(firstModule.quizzes) ? (firstModule.quizzes[0] || null) : (firstModule.quizzes || null);
+          const hasFirstQuiz = Boolean(rawFirstQuiz);
+
+          setActiveLesson(firstLesson || null);
           setActiveWeek(0);
-          setShowQuiz(false);
+          setShowQuiz(!firstLesson && hasFirstQuiz);
           setQuizResult(null);
-          setExpandedWeeks([String(dbData[0].id)]);
+          setExpandedWeeks([String(firstModule.id)]);
         } else {
           setDbContent([]);
         }
