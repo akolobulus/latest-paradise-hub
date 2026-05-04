@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   ChevronDown, 
@@ -57,7 +56,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           ...rawQuiz,
           passingGrade: rawQuiz.passing_grade,
           duration: rawQuiz.duration_text,
-          questions: rawQuiz.quiz_questions || [] // This fixes the "0 Questions" bug!
+          questions: rawQuiz.quiz_questions || [] 
         } : null
       };
     }) 
@@ -156,7 +155,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     };
 
     loadContent();
-  }, [course.id]); // Re-runs whenever the parent sends a new course.id!
+  }, [course.id]);
 
   // Load user progress from database
   useEffect(() => {
@@ -232,13 +231,11 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         setIsSidebarOpen(false);
       } else {
         setIsSidebarOpen(true);
-        setShowMobileSidebar(false); // Auto close mobile sidebar when sizing up
+        setShowMobileSidebar(false);
       }
     };
     
-    // Initial check
     handleResize();
-    
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -295,10 +292,11 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Timer Effect
   useEffect(() => {
     if (!showQuiz || quizStarted) return;
     setRemainingSeconds(parseDurationToSeconds(activeQuiz?.duration));
-  }, [showQuiz, activeWeek, activeQuiz?.duration, quizStarted]);
+  }, [showQuiz, activeWeek, quizStarted]);
 
   useEffect(() => {
     if (!quizStarted || quizResult) return;
@@ -314,7 +312,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [quizStarted, remainingSeconds, quizResult, activeQuiz]);
+  }, [quizStarted, remainingSeconds, quizResult]);
 
   const isQuestionAnswered = (q: any) => {
     const answer = quizAnswers[q.id];
@@ -335,10 +333,10 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     }
   }, [showQuiz, activeWeek]);
 
+  // THE MASTER QUIZ LOGIC
   const handleQuizSubmit = async (quiz: any) => {
     let score = 0;
     quiz.questions.forEach((q: any) => {
-      // NOTE: We check against q.correct_answer (Supabase's exact column name)
       if (q.type === 'multiple-choice' && quizAnswers[q.id] === q.correct_answer) {
         score++;
       } else if (q.type === 'text' && quizAnswers[q.id]?.length > 0) {
@@ -348,7 +346,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
       }
     });
 
-    // 1. Enforce strict 80% cutoff to pass
     const passThreshold = Math.ceil(quiz.questions.length * 0.8);
     const passed = score >= passThreshold;
     
@@ -356,7 +353,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     
     if (session) {
       try {
-        // 2. Check if the user has already taken this quiz
         const { data: existingResult } = await supabase
           .from('quiz_results')
           .select('id, score, passed')
@@ -365,7 +361,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           .single();
 
         if (existingResult) {
-          // 3. OVERRIDE Logic: Only update if the new score is higher
           if (score > existingResult.score) {
             await supabase
               .from('quiz_results')
@@ -376,7 +371,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
               .eq('id', existingResult.id);
           }
         } else {
-          // First time taking the quiz
           await supabase.from('quiz_results').insert({
             user_id: session.user.id,
             quiz_id: quiz.id,
@@ -384,26 +378,22 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
             passed: passed
           });
           
-          // Only award points on the first passing attempt
           if (passed) {
             await supabase.rpc('increment_points', { amount: 200, row_id: session.user.id });
           }
         }
 
-        // Instantly unlock the next module locally if they passed
         if (passed && !passedQuizzes.includes(quiz.id)) {
           setPassedQuizzes(prev => [...prev, quiz.id]);
           onAwardPoints(200); 
         }
       } catch (error) {
         console.error('Error saving quiz result:', error);
-        // Ensure UI updates even if DB sync temporarily fails
         if (passed && !passedQuizzes.includes(quiz.id)) {
           setPassedQuizzes(prev => [...prev, quiz.id]);
         }
       }
     } else {
-      // Local fallback for users not logged in
       if (passed && !passedQuizzes.includes(quiz.id)) {
         setPassedQuizzes(prev => [...prev, quiz.id]);
       }
@@ -516,7 +506,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   return (
     <div className="flex h-screen bg-white overflow-hidden">
 
-      {/* DESKTOP Sidebar (Hidden completely on mobile to prevent layout cutting) */}
+      {/* DESKTOP Sidebar */}
       {!isMobile && (
       <motion.aside 
         initial={false}
@@ -642,7 +632,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                               activeLesson?.id === lesson.id && !showQuiz ? "bg-primary/5 text-primary" : "hover:bg-gray-50 text-gray-600"
                             )}
                           >
-                            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", completedLessons.includes(lesson.id) ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400")}>
+                            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", completedLessons.includes(lesson.id) ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400")}> 
                               {lesson.type === 'video' ? <Play size={14} fill="currentColor" /> : <FileText size={14} />}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -659,6 +649,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                               setShowQuiz(true);
                               setActiveLesson(null);
                               setActiveWeek(idx);
+                              setQuizResult(null);
                               setQuizAnswers({});
                               setQuizStarted(false);
                               setCurrentQuestionIndex(0);
@@ -669,7 +660,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                               showQuiz && activeWeek === idx ? "bg-primary/5 text-primary" : "hover:bg-gray-50 text-gray-600"
                             )}
                           >
-                            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", passedQuizzes.includes(week.quiz.id) ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary")}>
+                            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", passedQuizzes.includes(week.quiz.id) ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary")}> 
                               <HelpCircle size={14} />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -720,7 +711,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           </div>
         </header>
 
-        {/* Content Scrolling Area - Modified to prevent cutting off text on Mobile */}
+        {/* Content Scrolling Area */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white">
           <div className="mx-auto w-full px-4 sm:px-6 md:px-8 py-6 md:py-12 max-w-4xl">
             <AnimatePresence mode="wait">
@@ -759,7 +750,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                           <div className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
                             <div className="mb-6 text-sm text-gray-500">Your timer will start as soon as you click the button below.</div>
                             <div className="mb-4 text-3xl font-bold text-ink">{formatTime(remainingSeconds)}</div>
-                            <div className="mb-6 text-sm text-gray-500">{activeQuiz?.questions.length ?? 0} questions — auto-submit when time runs out.</div>
+                            <div className="mb-6 text-sm text-gray-500">{activeQuiz?.questions?.length ?? 0} questions — auto-submit when time runs out.</div>
                             <button
                               onClick={() => {
                                 setQuizStarted(true);
@@ -974,7 +965,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                   
                   {activeLesson.type === 'video' ? (
                     <div className="space-y-6 md:space-y-8">
-                      {/* Responsive Video Container */}
                       <div className="aspect-video bg-black rounded-xl md:rounded-3xl overflow-hidden shadow-lg md:shadow-2xl relative group w-full">
                         {activeLesson.videoUrl?.includes("youtube.com") || activeLesson.videoUrl?.includes("youtu.be") ? (
                           <iframe
@@ -999,7 +989,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                         )}
                       </div>
 
-                      {/* Tabs for Transcript and Resources */}
                       <div className="bg-gray-50 rounded-2xl md:rounded-3xl p-5 md:p-8 border border-gray-100">
                         <div className="flex gap-4 md:gap-8 border-b border-gray-200 mb-6 overflow-x-auto custom-scrollbar whitespace-nowrap">
                           <button className="pb-3 md:pb-4 text-xs md:text-sm font-bold text-primary border-b-2 border-primary shrink-0">Transcript</button>
@@ -1192,7 +1181,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         </footer>
       </main>
 
-      {/* Mobile Sidebar Overlay (Only rendered on small screens when triggered) */}
+      {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {showMobileSidebar && isMobile && (
           <>
@@ -1312,17 +1301,17 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                                     key={lesson.id}
                                     onClick={() => {
                                       setActiveLesson(lesson);
-                                      setActiveWeek(idx); // Tells the player exactly which week we are in!
+                                      setActiveWeek(idx); 
                                       setShowQuiz(false);
                                       setQuizResult(null);
-                                      setShowMobileSidebar(false); // Auto close sidebar on mobile selection
+                                      setShowMobileSidebar(false); 
                                     }}
                                     className={cn(
                                       "w-full p-2.5 rounded-lg flex items-center gap-3 transition-all text-left",
                                       activeLesson?.id === lesson.id && !showQuiz ? "bg-primary/5 text-primary" : "text-gray-600 hover:bg-gray-50"
                                     )}
                                   >
-                                    <div className={cn("w-6 h-6 rounded flex items-center justify-center shrink-0", completedLessons.includes(lesson.id) ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400")}>
+                                    <div className={cn("w-6 h-6 rounded flex items-center justify-center shrink-0", completedLessons.includes(lesson.id) ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400")}> 
                                       {lesson.type === 'video' ? <Play size={10} fill="currentColor" /> : <FileText size={10} />}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -1338,19 +1327,19 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                                     onClick={() => {
                                       setShowQuiz(true);
                                       setActiveLesson(null);
-                                      setActiveWeek(idx); // Tells the player exactly which week we are in!
+                                      setActiveWeek(idx); 
                                       setQuizAnswers({});
                                       setQuizStarted(false);
                                       setCurrentQuestionIndex(0);
                                       setRemainingSeconds(parseDurationToSeconds(week.quiz?.duration));
-                                      setShowMobileSidebar(false); // Auto close sidebar on mobile selection
+                                      setShowMobileSidebar(false); 
                                     }}
                                     className={cn(
                                       "w-full p-2.5 rounded-lg flex items-center gap-3 transition-all text-left mt-1 border-t border-gray-50",
                                       showQuiz && activeWeek === idx ? "bg-primary/5 text-primary" : "text-gray-600 hover:bg-gray-50"
                                     )}
                                   >
-                                    <div className={cn("w-6 h-6 rounded flex items-center justify-center shrink-0", passedQuizzes.includes(week.quiz.id) ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary")}>
+                                    <div className={cn("w-6 h-6 rounded flex items-center justify-center shrink-0", passedQuizzes.includes(week.quiz.id) ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary")}> 
                                       <HelpCircle size={10} />
                                     </div>
                                     <div className="flex-1 min-w-0">
