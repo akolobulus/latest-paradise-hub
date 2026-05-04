@@ -39,29 +39,16 @@ export default function App() {
     const initializeAuth = async () => {
       setIsLoading(true);
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        setIsLoggedIn(!!session);
+        if (session) fetchUserData(session.user.id);
+
         const url = window.location.href;
         const hasAuthParams = url.includes('access_token=') || url.includes('refresh_token=') || url.includes('type=') || url.includes('provider_token=');
-
-        if (hasAuthParams) {
-          const { data, error } = await supabase.auth.getSessionFromUrl();
-          if (error) {
-            console.error('Supabase auth callback failed:', error.message ?? error);
-          }
-          const session = data?.session ?? null;
-          setSession(session);
-          setIsLoggedIn(!!session);
-          if (session) {
-            fetchUserData(session.user.id);
-          }
-
-          if (window.history.replaceState) {
-            window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-          }
-        } else {
-          const { data: { session } } = await supabase.auth.getSession();
-          setSession(session);
-          setIsLoggedIn(!!session);
-          if (session) fetchUserData(session.user.id);
+        if (hasAuthParams && window.history.replaceState) {
+          const cleanUrl = window.location.origin + window.location.pathname + window.location.search;
+          window.history.replaceState({}, document.title, cleanUrl);
         }
       } catch (error) {
         console.error('Error initializing Supabase auth:', error);
