@@ -47,14 +47,20 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const [profile, setProfile] = useState<any>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   
-  // Safely map 'quizzes' whether Supabase returns it as an array OR a direct object
+  // Safely map Supabase snake_case data into the camelCase format React expects
   const content = { 
-    weeks: dbContent.map(week => ({
-      ...week,
-      quiz: Array.isArray(week.quizzes) 
-        ? (week.quizzes[0] || null) 
-        : (week.quizzes || null)
-    })) 
+    weeks: dbContent.map(week => {
+      const rawQuiz = Array.isArray(week.quizzes) ? (week.quizzes[0] || null) : (week.quizzes || null);
+      return {
+        ...week,
+        quiz: rawQuiz ? {
+          ...rawQuiz,
+          passingGrade: rawQuiz.passing_grade,
+          duration: rawQuiz.duration_text,
+          questions: rawQuiz.quiz_questions || [] // This fixes the "0 Questions" bug!
+        } : null
+      };
+    }) 
   };
   
   const [activeWeek, setActiveWeek] = useState<number>(0);
@@ -264,10 +270,11 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     }
   };
 
-  const handleQuizSubmit = async (quiz: Quiz) => {
+  const handleQuizSubmit = async (quiz: any) => {
     let score = 0;
-    quiz.questions.forEach(q => {
-      if (q.type === 'multiple-choice' && quizAnswers[q.id] === q.correctAnswer) {
+    quiz.questions.forEach((q: any) => {
+      // NOTE: We check against q.correct_answer (Supabase's exact column name)
+      if (q.type === 'multiple-choice' && quizAnswers[q.id] === q.correct_answer) {
         score++;
       } else if (q.type === 'text' && quizAnswers[q.id]?.length > 0) {
         score++; 
@@ -276,32 +283,64 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
       }
     });
 
-    const passed = score >= quiz.passingGrade;
+    // 1. Enforce strict 80% cutoff to pass
+    const passThreshold = Math.ceil(quiz.questions.length * 0.8);
+    const passed = score >= passThreshold;
+    
     setQuizResult({ score, passed });
     
-    if (passed && !passedQuizzes.includes(quiz.id)) {
+    if (session) {
       try {
-        if (session) {
-          const { error } = await supabase.from('quiz_results').insert({
+        // 2. Check if the user has already taken this quiz
+        const { data: existingResult } = await supabase
+          .from('quiz_results')
+          .select('id, score, passed')
+          .eq('user_id', session.user.id)
+          .eq('quiz_id', quiz.id)
+          .single();
+
+        if (existingResult) {
+          // 3. OVERRIDE Logic: Only update if the new score is higher
+          if (score > existingResult.score) {
+            await supabase
+              .from('quiz_results')
+              .update({ 
+                score: score, 
+                passed: passed || existingResult.passed 
+              })
+              .eq('id', existingResult.id);
+          }
+        } else {
+          // First time taking the quiz
+          await supabase.from('quiz_results').insert({
             user_id: session.user.id,
             quiz_id: quiz.id,
             score: score,
-            passed: true
+            passed: passed
           });
-          if (error) throw error;
-
-          await supabase.rpc('increment_points', {
-            amount: 200,
-            row_id: session.user.id 
-          });
+          
+          // Only award points on the first passing attempt
+          if (passed) {
+            await supabase.rpc('increment_points', { amount: 200, row_id: session.user.id });
+          }
         }
 
-        setPassedQuizzes(prev => [...prev, quiz.id]);
-        onAwardPoints(200); 
+        // Instantly unlock the next module locally if they passed
+        if (passed && !passedQuizzes.includes(quiz.id)) {
+          setPassedQuizzes(prev => [...prev, quiz.id]);
+          onAwardPoints(200); 
+        }
       } catch (error) {
         console.error('Error saving quiz result:', error);
+        // Ensure UI updates even if DB sync temporarily fails
+        if (passed && !passedQuizzes.includes(quiz.id)) {
+          setPassedQuizzes(prev => [...prev, quiz.id]);
+        }
+      }
+    } else {
+      // Local fallback for users not logged in
+      if (passed && !passedQuizzes.includes(quiz.id)) {
         setPassedQuizzes(prev => [...prev, quiz.id]);
-        onAwardPoints(200);
       }
     }
   };
@@ -639,11 +678,11 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                           </div>
                           <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-gray-400">
                             <Clock size={16} className="text-primary" />
-                            <span>{content.weeks[activeWeek]?.quiz?.duration_text || 'N/A'}</span>
+                            <span>{content.weeks[activeWeek]?.quiz?.duration || 'N/A'}</span>
                           </div>
                           <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-gray-400">
                             <Trophy size={16} className="text-primary" />
-                            <span>Pass: {content.weeks[activeWeek]?.quiz?.passing_grade ?? 0} correct</span>
+                            <span>Pass: {Math.ceil((content.weeks[activeWeek]?.quiz?.questions?.length ?? 0) * 0.8)} correct</span>
                           </div>
                         </div>
                       </div>
