@@ -709,11 +709,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
             <h2 className="font-bold text-xs sm:text-sm md:text-base truncate max-w-[200px] sm:max-w-md">{course.title}</h2>
           </div>
           <div className="flex items-center gap-6">
-            <div className="hidden md:flex items-center gap-2 text-xs font-bold">
-              <div className="w-24 h-1.5 bg-white/20 rounded-full overflow-hidden">
-                <div className="h-full bg-white" style={{ width: `${progressPercent}%` }} />
-              </div>
-            </div>
             <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
               <X size={20} onClick={onBack} />
             </button>
