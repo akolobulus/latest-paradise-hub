@@ -18,7 +18,7 @@ export async function fetchCourseContent(courseId: string | number) {
 
     console.log("[📡 SUPABASE] Fetching fresh data from database...");
     
-    const { data, error } = await supabase
+    const response = await supabase
       .from('modules')
       .select(`
         id, course_id, title, description, order_index,
@@ -28,13 +28,15 @@ export async function fetchCourseContent(courseId: string | number) {
       .eq('course_id', courseId)
       .order('order_index', { ascending: true });
 
-    // IF THERE IS AN ERROR, THIS WILL REVEAL IT:
+    console.log('[RAW SUPABASE RESPONSE]', response);
+
+    const { data, error } = response;
+
     if (error) {
-      console.error("[❌ SUPABASE ERROR] Something went wrong:", error.message, error.details, error.hint);
+      console.error("[❌ SUPABASE ERROR] Something went wrong:", error);
       throw error;
     }
 
-    // THIS REVEALS WHAT SUPABASE ACTUALLY FOUND:
     console.log(`[✅ SUPABASE SUCCESS] Found ${data?.length || 0} modules for this course.`);
 
     if (data && data.length > 0) {
