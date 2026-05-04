@@ -65,8 +65,11 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
+  
+  // Mobile Responsiveness States
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [session, setSession] = useState<any>(null);
 
   // Comment state
@@ -87,7 +90,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         
         setSession({ user });
         
-        // Fetch user profile from database
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -107,20 +109,13 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     setupUser();
   }, []);
   
-  // Helper function to get user initials
   const getInitials = (name: string | undefined) => {
     if (!name) return "L";
     const parts = name.split(" ");
     return (parts[0]?.[0] + (parts[1]?.[0] || "")).toUpperCase();
   };
-  
-  // Helper function to get display name
-  const getUserDisplayName = () => {
-    if (profile?.full_name) return profile.full_name.split(" ")[0];
-    return "Learner";
-  };
 
-  // Fetch Course Content from Supabase (ONLY SOURCE OF TRUTH)
+  // Fetch Course Content from Supabase (Dynamically handles course 101, 102, 103!)
   useEffect(() => {
     const loadContent = async () => {
       setIsLoadingContent(true);
@@ -128,15 +123,18 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         const dbData = await fetchCourseContent(course.id);
         if (dbData && dbData.length > 0) {
           setDbContent(dbData);
+          
+          // CRITICAL: Reset the player state when switching courses!
           setActiveLesson(dbData[0].lessons[0]);
+          setActiveWeek(0);
+          setShowQuiz(false);
+          setQuizResult(null);
           setExpandedWeeks([String(dbData[0].id)]);
         } else {
-          // No data from Supabase - show "Coming Soon"
           setDbContent([]);
         }
       } catch (error) {
         console.error("Error loading course content:", error);
-        // Error loading from Supabase - show "Coming Soon"
         setDbContent([]);
       } finally {
         setIsLoadingContent(false);
@@ -144,7 +142,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     };
 
     loadContent();
-  }, [course.id]);
+  }, [course.id]); // Re-runs whenever the parent sends a new course.id!
 
   // Load user progress from database
   useEffect(() => {
@@ -165,7 +163,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           setCompletedLessons(lessonProgress.map(lp => lp.lesson_id));
         }
 
-        // Load passed quizzes
         const { data: quizResults, error: quizError } = await supabase
           .from('quiz_results')
           .select('quiz_id')
@@ -209,10 +206,10 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
       setComments([]);
       return;
     }
-
     loadComments(activeLesson.id);
   }, [activeLesson?.id]);
 
+  // Handle Mobile Resizing
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth <= 1024;
@@ -221,22 +218,28 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         setIsSidebarOpen(false);
       } else {
         setIsSidebarOpen(true);
+        setShowMobileSidebar(false); // Auto close mobile sidebar when sizing up
       }
     };
+    
+    // Initial check
+    handleResize();
+    
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const toggleWeek = (weekId: string) => {
     setExpandedWeeks(prev => 
-      prev.includes(weekId) ? prev.filter(id => id !== weekId) : [...prev, weekId]
+      prev.includes(String(weekId)) 
+        ? prev.filter(id => id !== String(weekId)) 
+        : [...prev, String(weekId)]
     );
   };
 
   const handleLessonComplete = async () => {
     if (activeLesson && !completedLessons.includes(activeLesson.id)) {
       try {
-        // Sync to Supabase if user is logged in
         if (session) {
           const { error } = await supabase.from('lesson_progress').insert({
             user_id: session.user.id,
@@ -245,7 +248,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           });
           if (error) throw error;
 
-          // Award points via RPC function
           await supabase.rpc('increment_points', { 
             amount: 50, 
             row_id: session.user.id 
@@ -253,10 +255,9 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         }
 
         setCompletedLessons(prev => [...prev, activeLesson.id]);
-        onAwardPoints(50); // Award 50 points for completing a lesson
+        onAwardPoints(50); 
       } catch (error) {
         console.error('Error marking lesson complete:', error);
-        // Still update local state if sync fails
         setCompletedLessons(prev => [...prev, activeLesson.id]);
         onAwardPoints(50);
       }
@@ -269,7 +270,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
       if (q.type === 'multiple-choice' && quizAnswers[q.id] === q.correctAnswer) {
         score++;
       } else if (q.type === 'text' && quizAnswers[q.id]?.length > 0) {
-        score++; // Simple check for demo
+        score++; 
       } else if (q.type === 'link' && quizAnswers[q.id]?.startsWith('http')) {
         score++;
       }
@@ -280,7 +281,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     
     if (passed && !passedQuizzes.includes(quiz.id)) {
       try {
-        // Sync to Supabase if user is logged in
         if (session) {
           const { error } = await supabase.from('quiz_results').insert({
             user_id: session.user.id,
@@ -290,7 +290,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           });
           if (error) throw error;
 
-          // Award points via RPC function
           await supabase.rpc('increment_points', {
             amount: 200,
             row_id: session.user.id 
@@ -298,10 +297,9 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         }
 
         setPassedQuizzes(prev => [...prev, quiz.id]);
-        onAwardPoints(200); // Award 200 points for passing a quiz
+        onAwardPoints(200); 
       } catch (error) {
         console.error('Error saving quiz result:', error);
-        // Still update local state if sync fails
         setPassedQuizzes(prev => [...prev, quiz.id]);
         onAwardPoints(200);
       }
@@ -343,7 +341,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const completedItems = completedLessons.length + passedQuizzes.length;
   const progressPercent = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
 
-  // Navigation helpers
   const getAllLessons = () => {
     const lessons: { lesson: Lesson; weekIndex: number; lessonIndex: number }[] = [];
     content.weeks.forEach((week, weekIndex) => {
@@ -410,37 +407,16 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
 
   return (
     <div className="flex h-screen bg-white overflow-hidden">
-      {/* Sidebar Overlay for Mobile */}
-      <AnimatePresence>
-        {isSidebarOpen && window.innerWidth <= 1024 && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsSidebarOpen(false)}
-            className="fixed inset-0 bg-black/40 z-[60] lg:hidden"
-          />
-        )}
-      </AnimatePresence>
 
-      {/* Sidebar */}
+      {/* DESKTOP Sidebar (Hidden completely on mobile to prevent layout cutting) */}
       {!isMobile && (
       <motion.aside 
         initial={false}
-        animate={{ 
-          width: isSidebarOpen ? (window.innerWidth <= 1024 ? 300 : 350) : 80,
-        }}
+        animate={{ width: isSidebarOpen ? 350 : 80 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className={cn(
-          "border-r border-gray-100 flex flex-col bg-gray-50 relative z-[70]",
-          window.innerWidth <= 1024 && isSidebarOpen && "fixed inset-y-0 left-0 shadow-2xl"
-        )}
+        className="border-r border-gray-100 flex flex-col bg-gray-50 relative z-[70] hidden lg:flex"
       >
-        {/* Header */}
-        <div className={cn(
-          "border-b border-gray-100 bg-white transition-all",
-          isSidebarOpen ? "p-6" : "p-3"
-        )}>
+        <div className={cn("border-b border-gray-100 bg-white transition-all", isSidebarOpen ? "p-6" : "p-3")}>
           <div className="flex items-center justify-between mb-6">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -456,12 +432,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           </div>
 
           {isSidebarOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               <div className="flex items-center gap-2 mb-6">
                 <BrandLogo
                   wrapperClassName="w-8 h-8 rounded-lg shadow-inner"
@@ -492,13 +463,10 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           )}
         </div>
 
-        <div className={cn(
-          "flex-1 overflow-y-auto custom-scrollbar transition-all",
-          isSidebarOpen ? "p-4 space-y-4" : "p-2 space-y-2"
-        )}>
+        <div className={cn("flex-1 overflow-y-auto custom-scrollbar transition-all", isSidebarOpen ? "p-4 space-y-4" : "p-2 space-y-2")}>
           {content.weeks.map((week, idx) => {
             const locked = isWeekLocked(idx);
-            const isExpanded = expandedWeeks.includes(week.id);
+            const isExpanded = expandedWeeks.includes(String(week.id));
             const weekLessons = week.lessons.map(l => l.id);
             const weekCompleted = weekLessons.filter(id => completedLessons.includes(id)).length;
             const weekTotal = weekLessons.length + (week.quiz ? 1 : 0);
@@ -506,17 +474,10 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
             const weekProgress = Math.round(((weekCompleted + weekPassed) / weekTotal) * 100);
             
             return (
-              <div key={week.id} className={cn(
-                "bg-white border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow",
-                isSidebarOpen ? "rounded-2xl" : "rounded-lg"
-              )}>
+              <div key={week.id} className={cn("bg-white border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow", isSidebarOpen ? "rounded-2xl" : "rounded-lg")}>
                 <button 
-                  onClick={() => !locked && toggleWeek(week.id)}
-                  className={cn(
-                    "w-full flex items-center justify-between transition-colors",
-                    isSidebarOpen ? "p-4 text-left" : "p-2 justify-center",
-                    locked ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"
-                  )}
+                  onClick={() => !locked && toggleWeek(String(week.id))}
+                  className={cn("w-full flex items-center justify-between transition-colors", isSidebarOpen ? "p-4 text-left" : "p-2 justify-center", locked ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50")}
                   title={week.title}
                 >
                   {isSidebarOpen ? (
@@ -564,6 +525,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                             key={lesson.id}
                             onClick={() => {
                               setActiveLesson(lesson);
+                              setActiveWeek(idx);
                               setShowQuiz(false);
                               setQuizResult(null);
                             }}
@@ -572,10 +534,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                               activeLesson?.id === lesson.id && !showQuiz ? "bg-primary/5 text-primary" : "hover:bg-gray-50 text-gray-600"
                             )}
                           >
-                            <div className={cn(
-                              "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                              completedLessons.includes(lesson.id) ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"
-                            )}>
+                            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", completedLessons.includes(lesson.id) ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400")}>
                               {lesson.type === 'video' ? <Play size={14} fill="currentColor" /> : <FileText size={14} />}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -591,17 +550,15 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                             onClick={() => {
                               setShowQuiz(true);
                               setActiveLesson(null);
+                              setActiveWeek(idx);
                               setQuizResult(null);
                             }}
                             className={cn(
                               "w-full p-3 rounded-xl flex items-center gap-3 transition-all text-left mt-2 border-t border-gray-50",
-                              showQuiz ? "bg-primary/5 text-primary" : "hover:bg-gray-50 text-gray-600"
+                              showQuiz && activeWeek === idx ? "bg-primary/5 text-primary" : "hover:bg-gray-50 text-gray-600"
                             )}
                           >
-                            <div className={cn(
-                              "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                              passedQuizzes.includes(week.quiz.id) ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary"
-                            )}>
+                            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", passedQuizzes.includes(week.quiz.id) ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary")}>
                               <HelpCircle size={14} />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -622,8 +579,8 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
       </motion.aside>
       )}
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col relative bg-white">
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col relative bg-white w-full">
         {/* Header */}
         <header className="h-16 border-b border-gray-100 flex items-center justify-between px-4 md:px-8 bg-primary text-white shrink-0">
           <div className="flex items-center gap-2 md:gap-4">
@@ -635,7 +592,15 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
               {isSidebarOpen ? "<<" : ">>"}
             </button>
             )}
-            <h2 className="font-bold text-xs sm:text-sm md:text-base truncate max-w-[150px] sm:max-w-md">{course.title}</h2>
+            {isMobile && (
+            <button 
+              onClick={() => setShowMobileSidebar(true)}
+              className="p-2 text-sm font-bold rounded-lg hover:bg-white/10 transition-colors flex items-center justify-center"
+            >
+              <span className="text-xl leading-none">☰</span>
+            </button>
+            )}
+            <h2 className="font-bold text-xs sm:text-sm md:text-base truncate max-w-[200px] sm:max-w-md">{course.title}</h2>
           </div>
           <div className="flex items-center gap-6">
             <div className="hidden md:flex items-center gap-2 text-xs font-bold">
@@ -649,9 +614,9 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           </div>
         </header>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
-          <div className="max-w-4xl mx-auto p-8 md:p-12">
+        {/* Content Scrolling Area - Modified to prevent cutting off text on Mobile */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white">
+          <div className="mx-auto w-full px-4 sm:px-6 md:px-8 py-6 md:py-12 max-w-4xl">
             <AnimatePresence mode="wait">
               {showQuiz ? (
                 <motion.div
@@ -659,35 +624,35 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="space-y-8"
+                  className="space-y-8 w-full"
                 >
                   {!quizResult ? (
                     <>
-                      <div className="text-center mb-12">
-                        <h1 className="text-3xl font-display font-bold text-ink mb-4">{content.weeks[activeWeek].quiz?.title}</h1>
-                        <p className="text-gray-500">{content.weeks[activeWeek].quiz?.description}</p>
+                      <div className="text-center mb-8 md:mb-12">
+                        <h1 className="text-2xl md:text-3xl font-display font-bold text-ink mb-4">{content.weeks[activeWeek]?.quiz?.title}</h1>
+                        <p className="text-gray-500 text-sm md:text-base">{content.weeks[activeWeek]?.quiz?.description}</p>
                         
-                        <div className="flex items-center justify-center gap-8 mt-8">
-                          <div className="flex items-center gap-2 text-sm font-bold text-gray-400">
-                            <HelpCircle size={18} className="text-primary" />
+                        <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 mt-6 md:mt-8">
+                          <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-gray-400">
+                            <HelpCircle size={16} className="text-primary" />
                             <span>{content.weeks[activeWeek]?.quiz?.questions?.length ?? 0} Questions</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm font-bold text-gray-400">
-                            <Clock size={18} className="text-primary" />
-                            <span>{content.weeks[activeWeek]?.quiz?.duration || 'N/A'}</span>
+                          <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-gray-400">
+                            <Clock size={16} className="text-primary" />
+                            <span>{content.weeks[activeWeek]?.quiz?.duration_text || 'N/A'}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm font-bold text-gray-400">
-                            <Trophy size={18} className="text-primary" />
-                            <span>Pass: {content.weeks[activeWeek]?.quiz?.passingGrade ?? 0} correct</span>
+                          <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-gray-400">
+                            <Trophy size={16} className="text-primary" />
+                            <span>Pass: {content.weeks[activeWeek]?.quiz?.passing_grade ?? 0} correct</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="space-y-12">
+                      <div className="space-y-8 md:space-y-12">
                         {(content.weeks[activeWeek]?.quiz?.questions ?? []).map((q, i) => (
                           <div key={q.id} className="space-y-4">
-                            <h3 className="text-lg font-bold text-ink flex gap-3">
-                              <span className="text-primary">{i + 1}.</span>
+                            <h3 className="text-base md:text-lg font-bold text-ink flex gap-3 leading-tight">
+                              <span className="text-primary shrink-0">{i + 1}.</span>
                               {q.question}
                             </h3>
                             
@@ -698,7 +663,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                                     key={option}
                                     onClick={() => setQuizAnswers(prev => ({ ...prev, [q.id]: option }))}
                                     className={cn(
-                                      "p-4 rounded-xl border-2 text-left transition-all font-bold text-sm",
+                                      "p-3 md:p-4 rounded-xl border-2 text-left transition-all font-bold text-xs md:text-sm w-full",
                                       quizAnswers[q.id] === option 
                                         ? "border-primary bg-primary/5 text-primary" 
                                         : "border-gray-100 hover:border-gray-200 text-gray-600"
@@ -715,7 +680,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                                 placeholder="Type your answer here..."
                                 value={quizAnswers[q.id] || ''}
                                 onChange={(e) => setQuizAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
-                                className="w-full p-4 rounded-xl border-2 border-gray-100 focus:border-primary outline-none min-h-[150px] text-sm font-medium"
+                                className="w-full p-4 rounded-xl border-2 border-gray-100 focus:border-primary outline-none min-h-[120px] text-sm font-medium"
                               />
                             )}
 
@@ -732,27 +697,27 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                         ))}
                       </div>
 
-                      <div className="pt-12 flex justify-center">
+                      <div className="pt-8 md:pt-12 flex justify-center">
                         <button
                           onClick={() => {
                             if (content.weeks[activeWeek]?.quiz) {
                               handleQuizSubmit(content.weeks[activeWeek].quiz);
                             }
                           }}
-                          className="px-12 py-4 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-all shadow-xl shadow-primary/20"
+                          className="w-full md:w-auto px-12 py-4 bg-primary text-white font-bold rounded-xl md:rounded-full hover:bg-primary/90 transition-all shadow-xl shadow-primary/20"
                         >
                           Finish Quiz
                         </button>
                       </div>
                     </>
                   ) : (
-                    <div className="text-center py-20">
-                      <div className="relative w-48 h-48 mx-auto mb-8">
+                    <div className="text-center py-12 md:py-20 px-4">
+                      <div className="relative w-32 h-32 md:w-48 md:h-48 mx-auto mb-8">
                         <svg className="w-full h-full" viewBox="0 0 100 100">
                           <circle className="text-gray-100 stroke-current" strokeWidth="8" cx="50" cy="50" r="40" fill="transparent"></circle>
                           <motion.circle 
                             initial={{ strokeDashoffset: 251.2 }}
-                            animate={{ strokeDashoffset: 251.2 - (251.2 * (quizResult.score / content.weeks[activeWeek].quiz!.questions.length)) }}
+                            animate={{ strokeDashoffset: 251.2 - (251.2 * (quizResult.score / (content.weeks[activeWeek]?.quiz?.questions?.length ?? 1))) }}
                             className={cn("stroke-current", quizResult.passed ? "text-green-500" : "text-red-500")}
                             strokeWidth="8" 
                             strokeLinecap="round" 
@@ -764,29 +729,26 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                           />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-4xl font-display font-bold">
+                          <span className="text-2xl md:text-4xl font-display font-bold">
                             {Math.round((quizResult.score / (content.weeks[activeWeek]?.quiz?.questions?.length ?? 1)) * 100)}%
                           </span>
-                          <span className="text-xs text-gray-400 font-bold">{quizResult.score}/{content.weeks[activeWeek]?.quiz?.questions?.length ?? 0}</span>
+                          <span className="text-[10px] md:text-xs text-gray-400 font-bold">{quizResult.score}/{content.weeks[activeWeek]?.quiz?.questions?.length ?? 0}</span>
                         </div>
                       </div>
 
-                      <h2 className={cn(
-                        "text-3xl font-display font-bold mb-4",
-                        quizResult.passed ? "text-green-600" : "text-red-600"
-                      )}>
+                      <h2 className={cn("text-2xl md:text-3xl font-display font-bold mb-4", quizResult.passed ? "text-green-600" : "text-red-600")}>
                         {quizResult.passed ? "Congratulations! You Passed" : "Assessment Failed"}
                       </h2>
-                      <p className="text-gray-500 mb-12">
+                      <p className="text-gray-500 text-sm md:text-base mb-8 md:mb-12 max-w-lg mx-auto">
                         {quizResult.passed 
                           ? "You have successfully completed this week's assessment. You can now proceed to the next module."
                           : "Don't worry! You can review the materials and try again."}
                       </p>
 
-                      <div className="flex items-center justify-center gap-4">
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
                         <button
                           onClick={() => setQuizResult(null)}
-                          className="px-8 py-3 rounded-full border-2 border-gray-200 font-bold hover:border-ink transition-all"
+                          className="w-full sm:w-auto px-8 py-3 rounded-xl md:rounded-full border-2 border-gray-200 font-bold hover:border-ink transition-all text-sm md:text-base"
                         >
                           Review Answers
                         </button>
@@ -799,10 +761,10 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                               if (nextWeek) {
                                 setActiveWeek(activeWeek + 1);
                                 setActiveLesson(nextWeek.lessons[0]);
-                                setExpandedWeeks(prev => [...prev, nextWeek.id]);
+                                setExpandedWeeks(prev => [...prev, String(nextWeek.id)]);
                               }
                             }}
-                            className="px-8 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-all"
+                            className="w-full sm:w-auto px-8 py-3 bg-primary text-white font-bold rounded-xl md:rounded-full hover:bg-primary/90 transition-all text-sm md:text-base"
                           >
                             Next Module
                           </button>
@@ -812,7 +774,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                               setQuizResult(null);
                               setQuizAnswers({});
                             }}
-                            className="px-8 py-3 bg-red-600 text-white font-bold rounded-full hover:bg-red-700 transition-all"
+                            className="w-full sm:w-auto px-8 py-3 bg-red-600 text-white font-bold rounded-xl md:rounded-full hover:bg-red-700 transition-all text-sm md:text-base"
                           >
                             Try Again
                           </button>
@@ -827,23 +789,24 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="space-y-8"
+                  className="space-y-6 md:space-y-8 w-full"
                 >
                   <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded uppercase tracking-widest">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-2 py-0.5 bg-primary/10 text-primary text-[9px] md:text-[10px] font-bold rounded uppercase tracking-widest">
                         Module {activeWeek + 1}
                       </span>
-                      <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-bold rounded uppercase tracking-widest">
+                      <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-[9px] md:text-[10px] font-bold rounded uppercase tracking-widest">
                         {activeLesson.type}
                       </span>
                     </div>
-                    <h1 className="text-3xl md:text-4xl font-display font-bold text-ink">{activeLesson.title}</h1>
+                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-ink leading-tight">{activeLesson.title}</h1>
                   </div>
                   
                   {activeLesson.type === 'video' ? (
-                    <div className="space-y-8">
-                      <div className="aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl relative group">
+                    <div className="space-y-6 md:space-y-8">
+                      {/* Responsive Video Container */}
+                      <div className="aspect-video bg-black rounded-xl md:rounded-3xl overflow-hidden shadow-lg md:shadow-2xl relative group w-full">
                         {activeLesson.videoUrl?.includes("youtube.com") || activeLesson.videoUrl?.includes("youtu.be") ? (
                           <iframe
                             src={activeLesson.videoUrl.includes("v=") 
@@ -868,34 +831,34 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                       </div>
 
                       {/* Tabs for Transcript and Resources */}
-                      <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100">
-                        <div className="flex gap-8 border-b border-gray-200 mb-6">
-                          <button className="pb-4 text-sm font-bold text-primary border-b-2 border-primary">Transcript</button>
-                          <button className="pb-4 text-sm font-bold text-gray-400 hover:text-ink transition-colors">Resources</button>
+                      <div className="bg-gray-50 rounded-2xl md:rounded-3xl p-5 md:p-8 border border-gray-100">
+                        <div className="flex gap-4 md:gap-8 border-b border-gray-200 mb-6 overflow-x-auto custom-scrollbar whitespace-nowrap">
+                          <button className="pb-3 md:pb-4 text-xs md:text-sm font-bold text-primary border-b-2 border-primary shrink-0">Transcript</button>
+                          <button className="pb-3 md:pb-4 text-xs md:text-sm font-bold text-gray-400 hover:text-ink transition-colors shrink-0">Resources</button>
                         </div>
                         
-                        <div className="prose prose-sm max-w-none">
+                        <div className="prose prose-sm max-w-none text-xs md:text-sm">
                           <p className="text-gray-600 leading-relaxed">
                             {activeLesson.transcript || "No transcript available for this lesson."}
                           </p>
                         </div>
 
                         {activeLesson.resources && activeLesson.resources.length > 0 && (
-                          <div className="mt-8 pt-8 border-t border-gray-200">
-                            <h4 className="text-sm font-bold text-ink mb-4">Downloadable Resources</h4>
-                            <div className="grid sm:grid-cols-2 gap-4">
+                          <div className="mt-6 md:mt-8 pt-6 md:pt-8 border-t border-gray-200">
+                            <h4 className="text-xs md:text-sm font-bold text-ink mb-4">Downloadable Resources</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                               {activeLesson.resources.map((res, i) => (
                                 <a 
                                   key={i} 
                                   href={res.url} 
-                                  className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 hover:border-primary transition-all group"
+                                  className="flex items-center gap-3 p-3 md:p-4 bg-white rounded-xl border border-gray-100 hover:border-primary transition-all group"
                                 >
-                                  <div className="w-10 h-10 bg-primary/5 rounded-lg flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                                    <FileText size={20} />
+                                  <div className="w-8 h-8 md:w-10 md:h-10 bg-primary/5 rounded-lg flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors shrink-0">
+                                    <FileText size={16} className="md:w-5 md:h-5" />
                                   </div>
-                                  <div>
-                                    <div className="text-sm font-bold text-ink">{res.title}</div>
-                                    <div className="text-[10px] text-gray-400 uppercase font-bold">{res.type}</div>
+                                  <div className="min-w-0">
+                                    <div className="text-xs md:text-sm font-bold text-ink truncate">{res.title}</div>
+                                    <div className="text-[9px] md:text-[10px] text-gray-400 uppercase font-bold">{res.type || res.resource_type}</div>
                                   </div>
                                 </a>
                               ))}
@@ -905,17 +868,17 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-8">
-                      <div className="prose prose-lg max-w-none bg-gray-50 p-8 md:p-12 rounded-3xl border border-gray-100">
-                        <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
+                    <div className="space-y-6 md:space-y-8">
+                      <div className="prose prose-base md:prose-lg max-w-none bg-gray-50 p-6 md:p-12 rounded-2xl md:rounded-3xl border border-gray-100 text-sm md:text-base">
+                        <p className="text-gray-600 leading-relaxed whitespace-pre-wrap break-words">
                           {activeLesson.content}
                         </p>
                       </div>
                       
                       {activeLesson.transcript && (
-                        <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100">
-                          <h4 className="text-sm font-bold text-ink mb-4">Additional Notes</h4>
-                          <p className="text-sm text-gray-600 leading-relaxed">
+                        <div className="bg-gray-50 rounded-2xl md:rounded-3xl p-5 md:p-8 border border-gray-100">
+                          <h4 className="text-xs md:text-sm font-bold text-ink mb-3 md:mb-4">Additional Notes</h4>
+                          <p className="text-xs md:text-sm text-gray-600 leading-relaxed break-words">
                             {activeLesson.transcript}
                           </p>
                         </div>
@@ -923,13 +886,13 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between pt-12 border-t border-gray-100">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</span>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pt-8 md:pt-12 border-t border-gray-100">
+                    <div className="flex flex-col gap-2 w-full sm:w-auto">
+                      <span className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</span>
                       <button
                         onClick={handleLessonComplete}
                         className={cn(
-                          "px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 text-sm",
+                          "w-full sm:w-auto px-6 py-3 md:py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-xs md:text-sm",
                           completedLessons.includes(activeLesson.id)
                             ? "bg-green-100 text-green-600 cursor-default"
                             : "bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20"
@@ -946,71 +909,71 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                       </button>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-between sm:justify-end">
                       <button 
                         onClick={goToPreviousLesson}
                         disabled={getCurrentLessonIndex() <= 0}
                         className={cn(
-                          "flex items-center gap-2 px-5 py-2.5 rounded-xl border font-bold text-sm transition-colors",
+                          "flex items-center justify-center gap-1 md:gap-2 flex-1 sm:flex-none px-4 md:px-5 py-3 md:py-2.5 rounded-xl border font-bold text-xs md:text-sm transition-colors",
                           getCurrentLessonIndex() <= 0
                             ? "border-gray-100 text-gray-300 cursor-not-allowed"
                             : "border-gray-100 hover:bg-gray-50 text-gray-600 hover:text-ink"
                         )}
                       >
                         <ArrowLeft size={16} />
-                        Previous
+                        <span className="hidden sm:inline">Previous</span>
                       </button>
                       <button 
                         onClick={goToNextLesson}
                         disabled={getCurrentLessonIndex() >= getAllLessons().length - 1}
                         className={cn(
-                          "flex items-center gap-2 px-5 py-2.5 rounded-xl bg-ink text-white font-bold text-sm transition-colors",
+                          "flex items-center justify-center gap-1 md:gap-2 flex-1 sm:flex-none px-4 md:px-5 py-3 md:py-2.5 rounded-xl bg-ink text-white font-bold text-xs md:text-sm transition-colors",
                           getCurrentLessonIndex() >= getAllLessons().length - 1
                             ? "opacity-50 cursor-not-allowed"
                             : "hover:bg-ink/90"
                         )}
                       >
-                        Next Lesson
+                        Next <span className="hidden sm:inline">Lesson</span>
                         <ArrowRight size={16} />
                       </button>
                     </div>
                   </div>
 
                   {/* Comments Section */}
-                  <div className="mt-16 space-y-8">
+                  <div className="mt-12 md:mt-16 space-y-6 md:space-y-8">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-bold text-ink flex items-center gap-2">
-                        <MessageSquare size={20} className="text-primary" />
+                      <h3 className="text-lg md:text-xl font-bold text-ink flex items-center gap-2">
+                        <MessageSquare size={18} className="text-primary md:w-5 md:h-5" />
                         Comments
                       </h3>
-                      <span className="text-xs font-bold text-gray-400">{comments.length} comments</span>
+                      <span className="text-[10px] md:text-xs font-bold text-gray-400">{comments.length} comments</span>
                     </div>
                     
-                    <div className="bg-gray-50 rounded-3xl p-6 md:p-8 border border-gray-100">
+                    <div className="bg-gray-50 rounded-2xl md:rounded-3xl p-5 md:p-8 border border-gray-100">
                       {comments.length === 0 ? (
-                        <p className="text-sm text-gray-400 text-center mb-8">No comments yet! You be the first to comment.</p>
+                        <p className="text-xs md:text-sm text-gray-400 text-center mb-6 md:mb-8">No comments yet! You be the first to comment.</p>
                       ) : (
-                        <div className="space-y-6 mb-8">
+                        <div className="space-y-4 md:space-y-6 mb-6 md:mb-8">
                           {comments.map(comment => (
-                            <div key={comment.id} className="flex gap-4">
-                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+                            <div key={comment.id} className="flex gap-3 md:gap-4">
+                              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
                                 {comment.profiles?.avatar_url ? (
                                   <img src={comment.profiles.avatar_url} alt="User avatar" className="w-full h-full object-cover" />
                                 ) : (
-                                  <span className="text-primary font-bold text-sm">
+                                  <span className="text-primary font-bold text-xs md:text-sm">
                                     {getInitials(comment.profiles?.full_name)}
                                   </span>
                                 )}
                               </div>
-                              <div className="flex-1">
-                                <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm">
-                                  <div className="flex justify-between items-center mb-2">
-                                    <span className="font-bold text-sm text-ink">{comment.profiles?.full_name || 'Learner'}</span>
-                                    <span className="text-[10px] text-gray-400">
+                              <div className="flex-1 min-w-0">
+                                <div className="bg-white p-3 md:p-4 rounded-xl md:rounded-2xl rounded-tl-none border border-gray-100 shadow-sm">
+                                  <div className="flex justify-between items-center mb-1 md:mb-2">
+                                    <span className="font-bold text-xs md:text-sm text-ink truncate">{comment.profiles?.full_name || 'Learner'}</span>
+                                    <span className="text-[9px] md:text-[10px] text-gray-400 shrink-0 ml-2">
                                       {new Date(comment.created_at).toLocaleDateString()}
                                     </span>
                                   </div>
-                                  <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{comment.content}</p>
+                                  <p className="text-xs md:text-sm text-gray-600 whitespace-pre-wrap leading-relaxed break-words">{comment.content}</p>
                                 </div>
                               </div>
                             </div>
@@ -1018,23 +981,23 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                         </div>
                       )}
                       
-                      <div className="space-y-4">
-                        <h4 className="font-bold text-ink">Leave a Reply</h4>
+                      <div className="space-y-3 md:space-y-4">
+                        <h4 className="font-bold text-xs md:text-sm text-ink">Leave a Reply</h4>
                         <textarea 
                           placeholder="What did you learn from this lesson? Have any questions?"
                           value={newComment}
                           onChange={(e) => setNewComment(e.target.value)}
                           disabled={isSubmittingComment}
-                          className="w-full p-4 rounded-2xl border-2 border-gray-100 focus:border-primary outline-none min-h-[120px] text-sm disabled:opacity-50 transition-colors"
+                          className="w-full p-3 md:p-4 rounded-xl md:rounded-2xl border-2 border-gray-100 focus:border-primary outline-none min-h-[100px] md:min-h-[120px] text-xs md:text-sm disabled:opacity-50 transition-colors"
                         />
                         {commentError && (
-                          <p className="text-xs text-red-500">{commentError}</p>
+                          <p className="text-[10px] md:text-xs text-red-500">{commentError}</p>
                         )}
                         <button 
                           type="button"
                           onClick={handlePostComment}
                           disabled={isSubmittingComment || !newComment.trim()}
-                          className="px-8 py-3 border-2 border-primary bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
+                          className="w-full md:w-auto px-6 md:px-8 py-3 border-2 border-primary bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20 text-xs md:text-sm"
                         >
                           {isSubmittingComment ? 'Posting...' : 'Post Comment'}
                         </button>
@@ -1048,17 +1011,196 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         </div>
 
         {/* Footer Navigation */}
-        <footer className="h-16 border-t border-gray-100 flex items-center justify-between px-8 bg-white">
-          <button className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-ink transition-colors">
-            <ArrowLeft size={16} />
+        <footer className="h-14 md:h-16 border-t border-gray-100 flex items-center justify-between px-4 md:px-8 bg-white shrink-0">
+          <button className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs font-bold text-gray-400 hover:text-ink transition-colors">
+            <ArrowLeft size={14} className="md:w-4 md:h-4" />
             Prev
           </button>
-          <button className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-ink transition-colors">
+          <button className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs font-bold text-gray-400 hover:text-ink transition-colors">
             Next
-            <ArrowRight size={16} />
+            <ArrowRight size={14} className="md:w-4 md:h-4" />
           </button>
         </footer>
       </main>
+
+      {/* Mobile Sidebar Overlay (Only rendered on small screens when triggered) */}
+      <AnimatePresence>
+        {showMobileSidebar && isMobile && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMobileSidebar(false)}
+              className="fixed inset-0 bg-black/50 z-[100] lg:hidden backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "tween", duration: 0.3 }}
+              className="fixed left-0 top-0 h-full w-[85%] max-w-[320px] bg-white z-[101] lg:hidden shadow-2xl"
+            >
+              <div className="flex flex-col h-full">
+                {/* Mobile Sidebar Header */}
+                <div className="border-b border-gray-100 bg-primary text-white p-5">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-2">
+                      <BrandLogo
+                        wrapperClassName="w-8 h-8 rounded-lg shadow-inner bg-white"
+                        imgClassName="w-full h-full"
+                        onClick={() => {
+                          setShowMobileSidebar(false);
+                          onLogoClick?.();
+                        }}
+                      />
+                      <button 
+                        onClick={() => {
+                          setShowMobileSidebar(false);
+                          onLogoClick?.();
+                        }} 
+                        className="text-left"
+                      >
+                        <span className="font-display font-bold text-xl tracking-tight text-white">
+                          Paradise <span className="text-white/80">Hub</span>
+                        </span>
+                      </button>
+                    </div>
+                    <button 
+                      onClick={() => setShowMobileSidebar(false)}
+                      className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-white/80 uppercase tracking-widest">
+                      <span>Course Progress</span>
+                      <span>{progressPercent}%</span>
+                    </div>
+                    <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progressPercent}%` }}
+                        className="h-full bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile Sidebar Content Menu */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3 bg-gray-50">
+                  {content.weeks.map((week, idx) => {
+                    const locked = isWeekLocked(idx);
+                    const isExpanded = expandedWeeks.includes(String(week.id));
+                    const weekLessons = week.lessons.map(l => l.id);
+                    const weekCompleted = weekLessons.filter(id => completedLessons.includes(id)).length;
+                    const weekTotal = weekLessons.length + (week.quiz ? 1 : 0);
+                    const weekPassed = week.quiz && passedQuizzes.includes(week.quiz.id) ? 1 : 0;
+                    const weekProgress = Math.round(((weekCompleted + weekPassed) / weekTotal) * 100);
+                    
+                    return (
+                      <div key={week.id} className="bg-white border border-gray-100 overflow-hidden shadow-sm rounded-xl">
+                        <button 
+                          onClick={() => !locked && toggleWeek(String(week.id))}
+                          className={cn(
+                            "w-full flex items-center justify-between transition-colors p-3 text-left",
+                            locked ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"
+                          )}
+                        >
+                          <div className="flex-1 pr-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[9px] font-bold text-primary uppercase tracking-widest">Module {idx + 1}</span>
+                              {locked && <Lock size={10} className="text-gray-400" />}
+                            </div>
+                            <h4 className="text-xs font-bold text-ink leading-tight mb-2">{week.title}</h4>
+                            {!locked && (
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                                  <div className="h-full bg-primary/40" style={{ width: `${weekProgress}%` }} />
+                                </div>
+                                <span className="text-[8px] font-bold text-gray-400">{weekProgress}%</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {isExpanded ? <ChevronUp size={16} className="text-primary" /> : <ChevronDown size={16} />}
+                          </div>
+                        </button>
+
+                        <AnimatePresence>
+                          {isExpanded && !locked && (
+                            <motion.div 
+                              initial={{ height: 0 }}
+                              animate={{ height: "auto" }}
+                              exit={{ height: 0 }}
+                              className="overflow-hidden border-t border-gray-50"
+                            >
+                              <div className="p-2 space-y-1">
+                                {week.lessons.map((lesson) => (
+                                  <button
+                                    key={lesson.id}
+                                    onClick={() => {
+                                      setActiveLesson(lesson);
+                                      setActiveWeek(idx); // Tells the player exactly which week we are in!
+                                      setShowQuiz(false);
+                                      setQuizResult(null);
+                                      setShowMobileSidebar(false); // Auto close sidebar on mobile selection
+                                    }}
+                                    className={cn(
+                                      "w-full p-2.5 rounded-lg flex items-center gap-3 transition-all text-left",
+                                      activeLesson?.id === lesson.id && !showQuiz ? "bg-primary/5 text-primary" : "text-gray-600 hover:bg-gray-50"
+                                    )}
+                                  >
+                                    <div className={cn("w-6 h-6 rounded flex items-center justify-center shrink-0", completedLessons.includes(lesson.id) ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400")}>
+                                      {lesson.type === 'video' ? <Play size={10} fill="currentColor" /> : <FileText size={10} />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-[11px] font-bold truncate leading-tight">{lesson.title}</p>
+                                      {lesson.duration && <span className="text-[9px] opacity-60 block mt-0.5">{lesson.duration}</span>}
+                                    </div>
+                                    {completedLessons.includes(lesson.id) && <CheckCircle2 size={12} className="text-green-600 shrink-0" />}
+                                  </button>
+                                ))}
+                                
+                                {week.quiz && (
+                                  <button
+                                    onClick={() => {
+                                      setShowQuiz(true);
+                                      setActiveLesson(null);
+                                      setActiveWeek(idx); // Tells the player exactly which week we are in!
+                                      setQuizResult(null);
+                                      setShowMobileSidebar(false); // Auto close sidebar on mobile selection
+                                    }}
+                                    className={cn(
+                                      "w-full p-2.5 rounded-lg flex items-center gap-3 transition-all text-left mt-1 border-t border-gray-50",
+                                      showQuiz && activeWeek === idx ? "bg-primary/5 text-primary" : "text-gray-600 hover:bg-gray-50"
+                                    )}
+                                  >
+                                    <div className={cn("w-6 h-6 rounded flex items-center justify-center shrink-0", passedQuizzes.includes(week.quiz.id) ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary")}>
+                                      <HelpCircle size={10} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-[11px] font-bold truncate leading-tight">{week.quiz.title}</p>
+                                      <span className="text-[9px] opacity-60 block mt-0.5">Assessment</span>
+                                    </div>
+                                    {passedQuizzes.includes(week.quiz.id) && <CheckCircle2 size={12} className="text-green-600 shrink-0" />}
+                                  </button>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
