@@ -71,6 +71,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   
   // Mobile Responsiveness States
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
@@ -270,6 +271,25 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     }
   };
 
+  const isQuestionAnswered = (q: any) => {
+    const answer = quizAnswers[q.id];
+    if (!answer) return false;
+    if (q.type === 'text' || q.type === 'link') {
+      return answer.trim().length > 0;
+    }
+    return true;
+  };
+
+  const areAllQuestionsAnswered = (questions: any[] = []) => {
+    return questions.length > 0 && questions.every(isQuestionAnswered);
+  };
+
+  useEffect(() => {
+    if (showQuiz) {
+      setCurrentQuestionIndex(0);
+    }
+  }, [showQuiz, activeWeek]);
+
   const handleQuizSubmit = async (quiz: any) => {
     let score = 0;
     quiz.questions.forEach((q: any) => {
@@ -379,6 +399,10 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const totalItems = content.weeks.reduce((acc, w) => acc + w.lessons.length + (w.quiz ? 1 : 0), 0);
   const completedItems = completedLessons.length + passedQuizzes.length;
   const progressPercent = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
+
+  const activeQuiz = content.weeks[activeWeek]?.quiz;
+  const safeQuestionIndex = Math.max(0, Math.min(currentQuestionIndex, (activeQuiz?.questions?.length ?? 1) - 1));
+  const currentQuestion = activeQuiz?.questions?.[safeQuestionIndex];
 
   const getAllLessons = () => {
     const lessons: { lesson: Lesson; weekIndex: number; lessonIndex: number }[] = [];
@@ -591,6 +615,8 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                               setActiveLesson(null);
                               setActiveWeek(idx);
                               setQuizResult(null);
+                              setQuizAnswers({});
+                              setCurrentQuestionIndex(0);
                             }}
                             className={cn(
                               "w-full p-3 rounded-xl flex items-center gap-3 transition-all text-left mt-2 border-t border-gray-50",
@@ -688,52 +714,88 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                       </div>
 
                       <div className="space-y-8 md:space-y-12">
-                        {(content.weeks[activeWeek]?.quiz?.questions ?? []).map((q, i) => (
-                          <div key={q.id} className="space-y-4">
-                            <h3 className="text-base md:text-lg font-bold text-ink flex gap-3 leading-tight">
-                              <span className="text-primary shrink-0">{i + 1}.</span>
-                              {q.question}
-                            </h3>
-                            
-                            {q.type === 'multiple-choice' && (
-                              <div className="grid gap-3">
-                                {q.options?.map(option => (
-                                  <button
-                                    key={option}
-                                    onClick={() => setQuizAnswers(prev => ({ ...prev, [q.id]: option }))}
-                                    className={cn(
-                                      "p-3 md:p-4 rounded-xl border-2 text-left transition-all font-bold text-xs md:text-sm w-full",
-                                      quizAnswers[q.id] === option 
-                                        ? "border-primary bg-primary/5 text-primary" 
-                                        : "border-gray-100 hover:border-gray-200 text-gray-600"
-                                    )}
-                                  >
-                                    {option}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
+                        {activeQuiz && currentQuestion ? (
+                          <>
+                            <div className="flex items-center justify-between flex-wrap gap-3 text-sm text-gray-500">
+                              <span>Question {safeQuestionIndex + 1} of {activeQuiz.questions.length}</span>
+                              <span>{activeQuiz.questions.filter(isQuestionAnswered).length}/{activeQuiz.questions.length} answered</span>
+                            </div>
 
-                            {q.type === 'text' && (
-                              <textarea
-                                placeholder="Type your answer here..."
-                                value={quizAnswers[q.id] || ''}
-                                onChange={(e) => setQuizAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
-                                className="w-full p-4 rounded-xl border-2 border-gray-100 focus:border-primary outline-none min-h-[120px] text-sm font-medium"
-                              />
-                            )}
+                            <div key={currentQuestion.id} className="space-y-4">
+                              <h3 className="text-base md:text-lg font-bold text-ink flex gap-3 leading-tight">
+                                <span className="text-primary shrink-0">{safeQuestionIndex + 1}.</span>
+                                {currentQuestion.question}
+                              </h3>
+                              
+                              {currentQuestion.type === 'multiple-choice' && (
+                                <div className="grid gap-3">
+                                  {currentQuestion.options?.map((option: string) => (
+                                    <button
+                                      key={option}
+                                      onClick={() => setQuizAnswers(prev => ({ ...prev, [currentQuestion.id]: option }))}
+                                      className={cn(
+                                        "p-3 md:p-4 rounded-xl border-2 text-left transition-all font-bold text-xs md:text-sm w-full",
+                                        quizAnswers[currentQuestion.id] === option 
+                                          ? "border-primary bg-primary/5 text-primary" 
+                                          : "border-gray-100 hover:border-gray-200 text-gray-600"
+                                      )}
+                                    >
+                                      {option}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
 
-                            {q.type === 'link' && (
-                              <input
-                                type="url"
-                                placeholder="Insert Drive Link here..."
-                                value={quizAnswers[q.id] || ''}
-                                onChange={(e) => setQuizAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
-                                className="w-full p-4 rounded-xl border-2 border-gray-100 focus:border-primary outline-none text-sm font-medium"
-                              />
-                            )}
-                          </div>
-                        ))}
+                              {currentQuestion.type === 'text' && (
+                                <textarea
+                                  placeholder="Type your answer here..."
+                                  value={quizAnswers[currentQuestion.id] || ''}
+                                  onChange={(e) => setQuizAnswers(prev => ({ ...prev, [currentQuestion.id]: e.target.value }))}
+                                  className="w-full p-4 rounded-xl border-2 border-gray-100 focus:border-primary outline-none min-h-[120px] text-sm font-medium"
+                                />
+                              )}
+
+                              {currentQuestion.type === 'link' && (
+                                <input
+                                  type="url"
+                                  placeholder="Insert Drive Link here..."
+                                  value={quizAnswers[currentQuestion.id] || ''}
+                                  onChange={(e) => setQuizAnswers(prev => ({ ...prev, [currentQuestion.id]: e.target.value }))}
+                                  className="w-full p-4 rounded-xl border-2 border-gray-100 focus:border-primary outline-none text-sm font-medium"
+                                />
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between gap-3 flex-col sm:flex-row">
+                              <button
+                                onClick={() => setCurrentQuestionIndex(prev => Math.max(prev - 1, 0))}
+                                disabled={safeQuestionIndex === 0}
+                                className={cn(
+                                  "w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm md:text-base transition-all",
+                                  safeQuestionIndex === 0
+                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+                                )}
+                              >
+                                Previous
+                              </button>
+                              <button
+                                onClick={() => setCurrentQuestionIndex(prev => Math.min(prev + 1, activeQuiz.questions.length - 1))}
+                                disabled={safeQuestionIndex >= activeQuiz.questions.length - 1}
+                                className={cn(
+                                  "w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm md:text-base transition-all",
+                                  safeQuestionIndex >= activeQuiz.questions.length - 1
+                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+                                )}
+                              >
+                                Next
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center text-gray-500">No questions available for this quiz.</div>
+                        )}
                       </div>
 
                       <div className="pt-8 md:pt-12 flex justify-center">
@@ -743,7 +805,13 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                               handleQuizSubmit(content.weeks[activeWeek].quiz);
                             }
                           }}
-                          className="w-full md:w-auto px-12 py-4 bg-primary text-white font-bold rounded-xl md:rounded-full hover:bg-primary/90 transition-all shadow-xl shadow-primary/20"
+                          disabled={!areAllQuestionsAnswered(activeQuiz?.questions)}
+                          className={cn(
+                            "w-full md:w-auto px-12 py-4 rounded-xl md:rounded-full font-bold transition-all shadow-xl shadow-primary/20",
+                            areAllQuestionsAnswered(activeQuiz?.questions)
+                              ? "bg-primary text-white hover:bg-primary/90"
+                              : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          )}
                         >
                           Finish Quiz
                         </button>
@@ -812,6 +880,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                             onClick={() => {
                               setQuizResult(null);
                               setQuizAnswers({});
+                              setCurrentQuestionIndex(0);
                             }}
                             className="w-full sm:w-auto px-8 py-3 bg-red-600 text-white font-bold rounded-xl md:rounded-full hover:bg-red-700 transition-all text-sm md:text-base"
                           >
@@ -1210,6 +1279,8 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                                       setActiveLesson(null);
                                       setActiveWeek(idx); // Tells the player exactly which week we are in!
                                       setQuizResult(null);
+                                      setQuizAnswers({});
+                                      setCurrentQuestionIndex(0);
                                       setShowMobileSidebar(false); // Auto close sidebar on mobile selection
                                     }}
                                     className={cn(
