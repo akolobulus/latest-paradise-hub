@@ -36,13 +36,41 @@ export default function App() {
 
   // 1. Listen for Auth Changes on mount
   useEffect(() => {
-    setIsLoading(true);
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setIsLoggedIn(!!session);
-      if (session) fetchUserData(session.user.id);
-      setIsLoading(false);
-    });
+    const initializeAuth = async () => {
+      setIsLoading(true);
+      try {
+        const url = window.location.href;
+        const hasAuthParams = url.includes('access_token=') || url.includes('refresh_token=') || url.includes('type=') || url.includes('provider_token=');
+
+        if (hasAuthParams) {
+          const { data, error } = await supabase.auth.getSessionFromUrl();
+          if (error) {
+            console.error('Supabase auth callback failed:', error.message ?? error);
+          }
+          const session = data?.session ?? null;
+          setSession(session);
+          setIsLoggedIn(!!session);
+          if (session) {
+            fetchUserData(session.user.id);
+          }
+
+          if (window.history.replaceState) {
+            window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+          }
+        } else {
+          const { data: { session } } = await supabase.auth.getSession();
+          setSession(session);
+          setIsLoggedIn(!!session);
+          if (session) fetchUserData(session.user.id);
+        }
+      } catch (error) {
+        console.error('Error initializing Supabase auth:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
