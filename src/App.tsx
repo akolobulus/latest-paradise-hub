@@ -444,6 +444,8 @@ export default function App() {
             availablePoints={points}
             expiringPoints={0}
             onBack={() => setCurrentPage("dashboard")}
+            userProfile={userProfile}
+            onViewProfile={() => setCurrentPage("profile")}
           />
           {analytics}
         </>

@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
+import type { ProfileData } from "../lib/profileCompletion";
 
 export default function Hero({ 
   isLoggedIn, 
@@ -8,12 +9,12 @@ export default function Hero({
   onDashboardClick
 }: { 
   isLoggedIn?: boolean,
-  userProfile?: { full_name?: string, avatar_url?: string | null } | null,
+  userProfile?: ProfileData | null,
   onStartClick?: () => void,
   onDashboardClick?: () => void
 }) {
   // Helper to get initials from full name
-  const getInitials = (name?: string) => {
+  const getInitials = (name?: string | null) => {
     if (!name) return "U";
     return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
   };

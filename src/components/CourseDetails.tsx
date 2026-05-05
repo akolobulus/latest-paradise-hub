@@ -23,6 +23,7 @@ import {
 import BrandLogo from "./BrandLogo";
 import PageFooter from "./PageFooter";
 import { cn } from "@/src/lib/utils";
+import { ProfileData } from "@/src/lib/profileCompletion";
 
 interface CourseDetailsProps {
   course: {
@@ -44,7 +45,7 @@ interface CourseDetailsProps {
       status: "Available" | "TBA";
     }[];
   };
-  userProfile?: { full_name?: string; avatar_url?: string | null } | null;
+  userProfile?: ProfileData | null;
   onBack: () => void;
   onLogoClick?: () => void;
   onEnroll: (course: any) => void;
@@ -65,7 +66,7 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
   const [isDarkTheme, setIsDarkTheme] = useState(false);
 
   // Helper to get initials from full name
-  const getInitials = (name?: string) => {
+  const getInitials = (name?: string | null) => {
     if (!name) return "U";
     return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
   };

@@ -24,10 +24,11 @@ import { cn } from "@/src/lib/utils";
 import { Week, Lesson, Quiz } from "@/src/data/courseContent";
 import { fetchCourseContent } from "@/src/lib/courseApi";
 import { supabase } from "@/src/lib/supabase";
+import { ProfileData } from "@/src/lib/profileCompletion";
 
 interface CoursePlayerProps {
   course: any;
-  userProfile?: { full_name?: string; avatar_url?: string | null } | null;
+  userProfile?: ProfileData | null;
   onBack: () => void;
   onLogoClick?: () => void;
   onAwardPoints: (amount: number) => void;

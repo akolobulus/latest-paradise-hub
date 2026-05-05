@@ -9,10 +9,11 @@ import {
 import BrandLogo from "./BrandLogo";
 import PageFooter from "./PageFooter";
 import { cn } from "@/src/lib/utils";
+import { ProfileData } from "@/src/lib/profileCompletion";
 
 interface AllProgramsProps {
   programs: any[];
-  userProfile?: { full_name?: string; avatar_url?: string | null } | null;
+  userProfile?: ProfileData | null;
   enrolledPrograms?: any[];
   onBack: () => void;
   onLogoClick?: () => void;

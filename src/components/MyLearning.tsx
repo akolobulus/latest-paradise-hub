@@ -25,6 +25,7 @@ import { cn } from "@/src/lib/utils";
 import BrandLogo from "./BrandLogo";
 import PageFooter from "./PageFooter";
 import { PaystackButton } from "react-paystack";
+import { ProfileData } from "@/src/lib/profileCompletion";
 
 interface EnrolledProgram {
   id: number;
@@ -39,7 +40,7 @@ interface EnrolledProgram {
 
 interface MyLearningProps {
   enrolledPrograms: EnrolledProgram[];
-  userProfile?: { full_name?: string; avatar_url?: string | null } | null;
+  userProfile?: ProfileData | null;
   onBack: () => void;
   onLogoClick?: () => void;
   onViewCourse: (course: any) => void;

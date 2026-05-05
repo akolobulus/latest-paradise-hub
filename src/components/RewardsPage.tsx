@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Leaf, Trophy, Gift, GraduationCap, ChevronDown, ChevronUp, Clock, ArrowUpRight, ExternalLink, Plus, Sparkles } from "lucide-react";
+import { ProfileData } from "@/src/lib/profileCompletion";
 
 interface Reward {
   id: string;
@@ -51,7 +52,7 @@ const REWARDS: Reward[] = [
     title: "Branded Merch from Paradise Hub",
     description: "Exclusive branded merchandise sponsored by Pd Farms ltd.",
     points: 600,
-    image: "https://images.unsplash.com/photo-1576053139778-7e32f2ae3cfd?auto=format&fit=crop&q=80&w=800",
+    image: "https://pdfarms.com/wp-content/uploads/2026/01/IMG_20251226_171605-Copy-Copy-scaled.jpg?auto=format&fit=crop&q=80&w=800",
     category: "Merchandise",
     badge: "600 pts"
   },
@@ -88,10 +89,17 @@ interface RewardsPageProps {
   availablePoints: number;
   expiringPoints?: number;
   onBack: () => void;
+  userProfile?: ProfileData | null;
+  onViewProfile?: () => void;
 }
 
-export default function RewardsPage({ availablePoints, expiringPoints = 0, onBack }: RewardsPageProps) {
+export default function RewardsPage({ availablePoints, expiringPoints = 0, onBack, userProfile, onViewProfile }: RewardsPageProps) {
   const [isWaysToEarnOpen, setIsWaysToEarnOpen] = useState(true);
+
+  const getInitials = (name?: string | null) => {
+    if (!name) return "U";
+    return name.split(" ").filter(Boolean).map((part) => part[0]).join("").substring(0, 2).toUpperCase();
+  };
 
   return (
     <div className="min-h-screen bg-background text-ink selection:bg-primary/20 selection:text-primary">
@@ -104,7 +112,17 @@ export default function RewardsPage({ availablePoints, expiringPoints = 0, onBac
           <Sparkles size={20} className="text-primary" />
           <span className="text-sm font-bold">Harvest Rewards</span>
         </div>
-        <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 font-bold">RH</div>
+        <button
+          onClick={() => onViewProfile?.()}
+          className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center text-gray-700 font-bold"
+          aria-label="View Profile"
+        >
+          {userProfile?.avatar_url ? (
+            <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            <span>{getInitials(userProfile?.full_name)}</span>
+          )}
+        </button>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-12">

@@ -27,6 +27,7 @@ import { cn } from "@/src/lib/utils";
 import { LeaderboardList } from "./Leaderboard";
 import { supabase } from "@/src/lib/supabase";
 import { calculateTrendingTopics, TrendingTopic, formatNumber } from "@/src/lib/trendingUtils";
+import { ProfileData } from "@/src/lib/profileCompletion";
 
 interface Post {
   id: string;
@@ -79,7 +80,7 @@ interface CommunityHubProps {
   onLogoClick?: () => void;
   onProfileClick?: () => void;
   points: number;
-  userProfile?: { full_name?: string; avatar_url?: string | null } | null;
+  userProfile?: ProfileData | null;
   initialChannel?: string;
 }
 

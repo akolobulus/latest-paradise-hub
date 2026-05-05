@@ -3,6 +3,7 @@ import { Menu, X, Trophy, User } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/src/lib/utils";
 import BrandLogo from "./BrandLogo";
+import type { ProfileData } from "../lib/profileCompletion";
 
 export default function Navbar({ 
   isLoggedIn,
@@ -15,7 +16,7 @@ export default function Navbar({
   onAboutClick
 }: { 
   isLoggedIn?: boolean,
-  userProfile?: { full_name?: string, avatar_url?: string | null } | null,
+  userProfile?: ProfileData | null,
   onLoginClick?: () => void,
   onProfileClick?: () => void, 
   onIncubationClick?: () => void,
@@ -26,7 +27,7 @@ export default function Navbar({
   const [isOpen, setIsOpen] = useState(false);
 
   // Helper to get initials from full name
-  const getInitials = (name?: string) => {
+  const getInitials = (name?: string | null) => {
     if (!name) return "U";
     return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
   };
