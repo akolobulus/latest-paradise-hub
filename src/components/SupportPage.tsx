@@ -39,7 +39,7 @@ export default function SupportPage({ availablePoints, onBack }: SupportPageProp
     setIsLoading(true);
 
     if (!geminiApiKey) {
-      setMessages(prev => [...prev, { role: "model", text: "Support is not available right now. Please check the API configuration." }]);
+      setMessages(prev => [...prev, { role: "model", text: "Hello Welcome TO Paradise Hub" }]);
       setIsLoading(false);
       return;
     }

@@ -957,11 +957,9 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
         </button>
         
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-1.5 bg-orange-50 text-orange-600 px-2.5 py-1 rounded-full border border-orange-100 hover:bg-orange-100 transition-colors">
-            <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center">
-              <div className="w-2 h-2 bg-orange-500 rounded-full" />
-            </div>
-            <span className="text-xs font-bold">{profile?.points?.toLocaleString() || 0}</span>
+          <button className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-4 py-2 hover:bg-accent/15 transition-colors">
+            <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
+            <span className="font-bold text-sm tracking-tight">{profile?.points?.toLocaleString() || 0}</span>
           </button>
 
           <div className="relative">

@@ -221,11 +221,9 @@ export default function Dashboard({ points, user, userProfile, programs = [], en
           </div>
 
           <div className="flex items-center gap-2 md:gap-6">
-            <div className="flex items-center gap-2 bg-orange-50 text-orange-600 px-2 md:px-3 py-1 md:py-1.5 rounded-full border border-orange-100">
-              <div className="w-5 h-5 bg-orange-400 rounded flex items-center justify-center text-white">
-                <Gem size={12} fill="currentColor" />
-              </div>
-              <span className="text-xs md:text-sm font-bold">{points.toLocaleString()} points</span>
+          <div className="bg-accent/10 border border-accent/20 rounded-full px-4 py-2 flex items-center gap-2">
+              <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
+              <span className="font-bold text-sm tracking-tight">{points.toLocaleString()} points</span>
             </div>
             
             <div className="relative">
