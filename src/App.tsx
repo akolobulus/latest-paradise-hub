@@ -515,6 +515,9 @@ export default function App() {
             onPaymentSuccess={handlePaymentSuccess}
             onViewProfile={() => setCurrentPage("profile")}
             onViewCommunity={() => setCurrentPage("community")}
+            onSupportClick={() => {
+              handleViewSupport();
+            }}
             onLogout={handleLogout}
           />
           {analytics}
@@ -560,6 +563,9 @@ export default function App() {
             onViewProfile={() => setCurrentPage("profile")}
             onViewCommunity={() => setCurrentPage("community")}
             onViewLearning={() => setCurrentPage("learning")}
+            onSupportClick={() => {
+              handleViewSupport();
+            }}
             onLogout={() => {
               handleLogout();
               setSelectedCourse(null);

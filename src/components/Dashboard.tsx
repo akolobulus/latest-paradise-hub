@@ -432,20 +432,15 @@ export default function Dashboard({ points, user, userProfile, programs = [], en
                         <span className="text-sm font-bold">My Learning</span>
                       </button>
 
+                      <div className="h-px bg-gray-100 mx-2" />
+
                       <button 
                         onClick={() => {
                           setIsProfileOpen(false);
-                          onViewProfile();
+                          if (onSupportClick) onSupportClick();
                         }}
                         className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
                       >
-                        <Settings size={18} className="text-gray-400" />
-                        <span className="text-sm font-bold">Settings</span>
-                      </button>
-
-                      <div className="h-px bg-gray-100 mx-2" />
-
-                      <button className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink">
                         <HelpCircle size={18} className="text-gray-400" />
                         <span className="text-sm font-bold">Support</span>
                       </button>

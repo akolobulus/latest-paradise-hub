@@ -57,9 +57,10 @@ interface CourseDetailsProps {
   onViewCommunity?: () => void;
   onViewLearning?: () => void;
   onLogout?: () => void;
+  onSupportClick?: () => void;
 }
 
-export default function CourseDetails({ course, userProfile, onBack, onLogoClick, onEnroll, onPlayCourse, onViewCourseByTitle, isEnrolled, paymentStatus, onViewProfile, onViewCommunity, onViewLearning, onLogout }: CourseDetailsProps) {
+export default function CourseDetails({ course, userProfile, onBack, onLogoClick, onEnroll, onPlayCourse, onViewCourseByTitle, isEnrolled, paymentStatus, onViewProfile, onViewCommunity, onViewLearning, onLogout, onSupportClick }: CourseDetailsProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -86,9 +87,15 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
   const displayFee = "Free";
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className={cn(
+      "min-h-screen transition-colors duration-500 selection:bg-primary selection:text-white",
+      isDarkTheme ? "bg-ink text-white" : "bg-[#F8FAFC] text-ink"
+    )}>
       {/* Navbar */}
-      <nav className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-[100]">
+      <nav className={cn(
+        "px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-[100]",
+        isDarkTheme ? "bg-slate-950 border-slate-700" : "bg-white border-gray-100"
+      )}>
         <div className="flex items-center gap-2 md:gap-8">
           <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onLogoClick}>
             <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
@@ -219,10 +226,16 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 overflow-hidden"
+                    className={cn(
+                      "absolute right-0 mt-2 w-64 rounded-2xl shadow-2xl py-2 z-50 overflow-hidden",
+                      isDarkTheme ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-100 text-ink"
+                    )}
                   >
                     {/* Dark Mode Toggle */}
-                    <div className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                    <div className={cn(
+                      "px-4 py-3 flex items-center justify-between transition-colors",
+                      isDarkTheme ? "hover:bg-slate-800" : "hover:bg-gray-50"
+                    )}>
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           "w-10 h-5 rounded-full relative transition-colors duration-300 cursor-pointer",
@@ -233,7 +246,7 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
                             isDarkTheme ? "left-6" : "left-1"
                           )} />
                         </div>
-                        <span className="text-sm font-bold text-ink">View dark theme</span>
+                        <span className={cn("text-sm font-bold", isDarkTheme ? "text-white" : "text-ink")}>View dark theme</span>
                       </div>
                     </div>
 
@@ -244,42 +257,55 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
                         setIsProfileOpen(false);
                         onViewProfile?.();
                       }}
-                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
-                    >
-                      <User size={18} className="text-gray-400" />
-                      <span className="text-sm font-bold">View profile</span>
-                    </button>
+className={cn(
+                          "w-full px-4 py-3 flex items-center gap-3 transition-colors",
+                          isDarkTheme ? "text-white hover:bg-slate-800" : "text-ink hover:bg-gray-50"
+                        )}
+                      >
+                        <User size={18} className="text-gray-400" />
+                        <span className="text-sm font-bold">View profile</span>
+                      </button>
 
-                    <button 
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        onViewLearning?.();
-                      }}
-                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
-                    >
-                      <GraduationCap size={18} className="text-gray-400" />
-                      <span className="text-sm font-bold">My Learning</span>
-                    </button>
+                      <button 
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          onViewLearning?.();
+                        }}
+                        className={cn(
+                          "w-full px-4 py-3 flex items-center gap-3 transition-colors",
+                          isDarkTheme ? "text-white hover:bg-slate-800" : "text-ink hover:bg-gray-50"
+                        )}
+                      >
+                        <GraduationCap size={18} className="text-gray-400" />
+                        <span className="text-sm font-bold">My Learning</span>
+                      </button>
 
-                    <button 
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        onViewCommunity?.();
-                      }}
-                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
-                    >
-                      <Users size={18} className="text-gray-400" />
-                      <span className="text-sm font-bold">Community</span>
-                    </button>
+                      <button 
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          onViewCommunity?.();
+                        }}
+                        className={cn(
+                          "w-full px-4 py-3 flex items-center gap-3 transition-colors",
+                          isDarkTheme ? "text-white hover:bg-slate-800" : "text-ink hover:bg-gray-50"
+                        )}
+                      >
+                        <Users size={18} className="text-gray-400" />
+                        <span className="text-sm font-bold">Community</span>
+                      </button>
 
-                    <button className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink">
-                      <Settings size={18} className="text-gray-400" />
-                      <span className="text-sm font-bold">Settings</span>
-                    </button>
+                      <div className="h-px mx-2" />
 
-                    <div className="h-px bg-gray-100 mx-2" />
-
-                    <button className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink">
+                      <button 
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          onSupportClick?.();
+                        }}
+                        className={cn(
+                          "w-full px-4 py-3 flex items-center gap-3 transition-colors",
+                          isDarkTheme ? "text-white hover:bg-slate-800" : "text-ink hover:bg-gray-50"
+                        )}
+                      >
                       <HelpCircle size={18} className="text-gray-400" />
                       <span className="text-sm font-bold">Support</span>
                     </button>
