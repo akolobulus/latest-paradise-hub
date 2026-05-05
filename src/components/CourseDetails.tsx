@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import PageFooter from "./PageFooter";
-import { cn } from "@/src/lib/utils";
 import { ProfileData, getCurrentUserPoints } from "@/src/lib/profileCompletion";
 
 interface CourseDetailsProps {
@@ -64,7 +63,7 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
+  // const [isDarkTheme, setIsDarkTheme] = useState(false);
   const [currentPoints, setCurrentPoints] = useState(0);
 
   // Fetch fresh points from database on mount
@@ -87,15 +86,9 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
   const displayFee = "Free";
 
   return (
-    <div className={cn(
-      "min-h-screen transition-colors duration-500 selection:bg-primary selection:text-white",
-      isDarkTheme ? "bg-ink text-white" : "bg-[#F8FAFC] text-ink"
-    )}>
+    <div className="min-h-screen transition-colors duration-500 selection:bg-primary selection:text-white bg-[#F8FAFC] text-ink">
       {/* Navbar */}
-      <nav className={cn(
-        "px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-[100]",
-        isDarkTheme ? "bg-slate-950 border-slate-700" : "bg-white border-gray-100"
-      )}>
+      <nav className="px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-[100] bg-white border-gray-100">
         <div className="flex items-center gap-2 md:gap-8">
           <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onLogoClick}>
             <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
@@ -226,29 +219,21 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className={cn(
-                      "absolute right-0 mt-2 w-64 rounded-2xl shadow-2xl py-2 z-50 overflow-hidden",
-                      isDarkTheme ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-100 text-ink"
-                    )}
+                    className="absolute right-0 mt-2 w-64 rounded-2xl shadow-2xl py-2 z-50 overflow-hidden bg-white border-gray-100 text-ink"
                   >
-                    {/* Dark Mode Toggle */}
-                    <div className={cn(
-                      "px-4 py-3 flex items-center justify-between transition-colors",
-                      isDarkTheme ? "hover:bg-slate-800" : "hover:bg-gray-50"
-                    )}>
+                    {/* Dark mode temporarily disabled */}
+                    {/*
+                    <div className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
                       <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-10 h-5 rounded-full relative transition-colors duration-300 cursor-pointer",
-                          isDarkTheme ? "bg-primary" : "bg-gray-200"
-                        )} onClick={() => setIsDarkTheme(!isDarkTheme)}>
-                          <div className={cn(
-                            "absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-300",
-                            isDarkTheme ? "left-6" : "left-1"
-                          )} />
+                        <div className="w-10 h-5 rounded-full relative bg-gray-200 transition-colors duration-300 cursor-pointer">
+                          <div className="absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-all duration-300" />
                         </div>
-                        <span className={cn("text-sm font-bold", isDarkTheme ? "text-white" : "text-ink")}>View dark theme</span>
+                        <span className="text-sm font-bold text-ink">View dark theme</span>
                       </div>
                     </div>
+
+                    <div className="h-px bg-gray-100 mx-2" />
+                    */}
 
                     <div className="h-px bg-gray-100 mx-2" />
                     
@@ -257,11 +242,8 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
                         setIsProfileOpen(false);
                         onViewProfile?.();
                       }}
-className={cn(
-                          "w-full px-4 py-3 flex items-center gap-3 transition-colors",
-                          isDarkTheme ? "text-white hover:bg-slate-800" : "text-ink hover:bg-gray-50"
-                        )}
-                      >
+                      className="w-full px-4 py-3 flex items-center gap-3 text-ink hover:bg-gray-50 transition-colors"
+                    >
                         <User size={18} className="text-gray-400" />
                         <span className="text-sm font-bold">View profile</span>
                       </button>
@@ -271,10 +253,7 @@ className={cn(
                           setIsProfileOpen(false);
                           onViewLearning?.();
                         }}
-                        className={cn(
-                          "w-full px-4 py-3 flex items-center gap-3 transition-colors",
-                          isDarkTheme ? "text-white hover:bg-slate-800" : "text-ink hover:bg-gray-50"
-                        )}
+                        className="w-full px-4 py-3 flex items-center gap-3 text-ink hover:bg-gray-50 transition-colors"
                       >
                         <GraduationCap size={18} className="text-gray-400" />
                         <span className="text-sm font-bold">My Learning</span>
@@ -285,10 +264,7 @@ className={cn(
                           setIsProfileOpen(false);
                           onViewCommunity?.();
                         }}
-                        className={cn(
-                          "w-full px-4 py-3 flex items-center gap-3 transition-colors",
-                          isDarkTheme ? "text-white hover:bg-slate-800" : "text-ink hover:bg-gray-50"
-                        )}
+                        className="w-full px-4 py-3 flex items-center gap-3 text-ink hover:bg-gray-50 transition-colors"
                       >
                         <Users size={18} className="text-gray-400" />
                         <span className="text-sm font-bold">Community</span>
@@ -301,10 +277,7 @@ className={cn(
                           setIsProfileOpen(false);
                           onSupportClick?.();
                         }}
-                        className={cn(
-                          "w-full px-4 py-3 flex items-center gap-3 transition-colors",
-                          isDarkTheme ? "text-white hover:bg-slate-800" : "text-ink hover:bg-gray-50"
-                        )}
+                        className="w-full px-4 py-3 flex items-center gap-3 text-ink hover:bg-gray-50 transition-colors"
                       >
                       <HelpCircle size={18} className="text-gray-400" />
                       <span className="text-sm font-bold">Support</span>
