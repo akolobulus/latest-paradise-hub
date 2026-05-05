@@ -66,7 +66,7 @@ export default function Hero({
               transition={{ delay: 0.2 }}
               className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl font-medium leading-relaxed"
             >
-              Choose Your Path. Transform your career. Master the intersection of <span className="text-primary font-bold">Agri-business</span> and <span className="text-primary font-bold">Technology</span>.
+              Choose Your Harvest. Transform your career. Master the intersection of <span className="text-primary font-bold">Agri-business</span> and <span className="text-primary font-bold">Technology</span>.
             </motion.h2>
 
             {/* Description */}

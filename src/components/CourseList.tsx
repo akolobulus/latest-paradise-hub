@@ -27,7 +27,13 @@ const pathways = [
   
 ];
 
-export default function CourseList() {
+interface CourseListProps {
+  isLoggedIn?: boolean;
+  onCourseClick?: (course: typeof pathways[0]) => void;
+  onAuthRequired?: () => void;
+}
+
+export default function CourseList({ isLoggedIn = false, onCourseClick, onAuthRequired }: CourseListProps = {}) {
   return (
     <section id="courses" className="my-12 py-32 px-4 bg-primary"> {/* Paradise Hub Deep Green */}
       <div className="max-w-7xl mx-auto">
@@ -68,7 +74,14 @@ export default function CourseList() {
           className="grid md:grid-cols-3 gap-12"
         >
           {pathways.map((path, index) => (
-            <PathwayCard key={index} path={path} index={index} />
+            <PathwayCard 
+              key={index} 
+              path={path} 
+              index={index} 
+              isLoggedIn={isLoggedIn}
+              onCourseClick={onCourseClick}
+              onAuthRequired={onAuthRequired}
+            />
           ))}
         </motion.div>
       </div>
@@ -76,15 +89,28 @@ export default function CourseList() {
   );
 }
 
-function PathwayCard({ path, index }: { path: typeof pathways[0]; index: number }) {
+function PathwayCard({ path, index, isLoggedIn, onCourseClick, onAuthRequired }: { 
+  path: typeof pathways[0]; 
+  index: number;
+  isLoggedIn?: boolean;
+  onCourseClick?: (course: typeof pathways[0]) => void;
+  onAuthRequired?: () => void;
+}) {
   return (
     <motion.div
       variants={{
         hidden: { opacity: 0, y: 30 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
       }}
+      onClick={() => {
+        if (isLoggedIn && onCourseClick) {
+          onCourseClick(path);
+        } else if (!isLoggedIn && onAuthRequired) {
+          onAuthRequired();
+        }
+      }}
       className={cn(
-        "relative rounded-[40px] md:rounded-[48px] p-6 md:p-10 flex flex-col justify-between min-h-[450px] md:min-h-[550px] overflow-hidden group border-4 border-ink shadow-[12px_12px_0px_0px_rgba(17,24,39,1)] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[16px_16px_0px_0px_rgba(17,24,39,1)]",
+        "relative rounded-[40px] md:rounded-[48px] p-6 md:p-10 flex flex-col justify-between min-h-[450px] md:min-h-[550px] overflow-hidden group border-4 border-ink shadow-[12px_12px_0px_0px_rgba(17,24,39,1)] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[16px_16px_0px_0px_rgba(17,24,39,1)] cursor-pointer",
         path.bgColor,
         path.textColor
       )}

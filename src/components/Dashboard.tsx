@@ -513,7 +513,8 @@ export default function Dashboard({ points, user, userProfile, programs = [], en
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="bg-white rounded-[24px] md:rounded-[32px] overflow-hidden shadow-sm hover:shadow-xl transition-all border border-gray-100 group"
+                className="bg-white rounded-[24px] md:rounded-[32px] overflow-hidden shadow-sm hover:shadow-xl transition-all border border-gray-100 group cursor-pointer"
+                onClick={() => onViewCourse(program)}
               >
                 <div className="h-40 md:h-48 overflow-hidden relative">
                   <img src={program.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={program.title} />
@@ -540,7 +541,10 @@ export default function Dashboard({ points, user, userProfile, programs = [], en
 
                   <div className="grid grid-cols-2 gap-2 md:gap-3">
                     <button 
-                      onClick={() => onViewCourse(program)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewCourse(program);
+                      }}
                       className="py-2.5 md:py-3 rounded-xl border-2 border-ink font-bold text-xs md:text-sm hover:bg-gray-50 transition-colors shadow-[4px_4px_0px_0px_rgba(17,24,39,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
                     >
                       View Details
@@ -551,7 +555,10 @@ export default function Dashboard({ points, user, userProfile, programs = [], en
                       );
                       return (
                         <button 
-                          onClick={() => !isEnrolled && onEnroll(program)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isEnrolled) onEnroll(program);
+                          }}
                           disabled={isEnrolled}
                           className={cn(
                             "py-2.5 md:py-3 rounded-xl border-2 font-bold text-xs md:text-sm transition-colors",

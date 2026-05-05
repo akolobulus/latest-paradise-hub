@@ -359,7 +359,17 @@ export default function App() {
               transition={{ duration: 1 }}
               viewport={{ once: true }}
             >
-              <CourseList />
+              <CourseList 
+                isLoggedIn={isLoggedIn}
+                onCourseClick={(course) => {
+                  // Find the corresponding program from RECOMMENDED_PROGRAMS
+                  const program = RECOMMENDED_PROGRAMS.find(p => p.title === course.title);
+                  if (program) {
+                    setSelectedCourse(program);
+                    setCurrentPage("course");
+                  }
+                }}
+              />
             </motion.div>
           </main>
 
@@ -659,7 +669,10 @@ export default function App() {
           transition={{ duration: 1 }}
           viewport={{ once: true }}
         >
-          <CourseList />
+          <CourseList 
+            isLoggedIn={isLoggedIn}
+            onAuthRequired={() => setShowAuth("signup")}
+          />
         </motion.div>
       </main>
 
