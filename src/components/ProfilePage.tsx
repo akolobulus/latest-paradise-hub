@@ -19,6 +19,7 @@ import {
   Bell,
   Grid
 } from "lucide-react";
+import { Country, State, City } from "country-state-city";
 import BrandLogo from "./BrandLogo";
 import PageFooter from "./PageFooter";
 import { cn } from "@/src/lib/utils";
@@ -71,6 +72,10 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
   const [isSaving, setIsSaving] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(3); // Mock notifications
+  
+  // Cascading dropdown states for residence
+  const [residenceStates, setResidenceStates] = useState<any[]>([]);
+  const [residenceCities, setResidenceCities] = useState<any[]>([]);
   
   // Form state for all fields
   const [editForm, setEditForm] = useState({
@@ -149,11 +154,71 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
             tiktok: ""
           }
         });
+
+        // Initialize residence cascading dropdowns
+        if (data.country_of_residence) {
+          const country = Country.getAllCountries().find((c: any) => c.name === data.country_of_residence);
+          if (country) {
+            const states = State.getStatesOfCountry(country.isoCode);
+            setResidenceStates(states);
+            
+            if (data.state_of_residence) {
+              const state = states.find((s: any) => s.name === data.state_of_residence);
+              if (state) {
+                const cities = City.getCitiesOfState(country.isoCode, state.isoCode);
+                setResidenceCities(cities);
+              }
+            }
+          }
+        }
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Cascading dropdown handlers for residence
+  const handleResidenceCountryChange = (countryName: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      country_of_residence: countryName,
+      state_of_residence: "", // Reset state when country changes
+      city_of_residence: ""   // Reset city when country changes
+    }));
+    
+    if (countryName) {
+      const country = Country.getAllCountries().find((c: any) => c.name === countryName);
+      if (country) {
+        const states = State.getStatesOfCountry(country.isoCode);
+        setResidenceStates(states);
+        setResidenceCities([]); // Clear cities when country changes
+      }
+    } else {
+      setResidenceStates([]);
+      setResidenceCities([]);
+    }
+  };
+
+  const handleResidenceStateChange = (stateName: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      state_of_residence: stateName,
+      city_of_residence: "" // Reset city when state changes
+    }));
+    
+    if (stateName && editForm.country_of_residence) {
+      const country = Country.getAllCountries().find((c: any) => c.name === editForm.country_of_residence);
+      if (country) {
+        const state = State.getStatesOfCountry(country.isoCode).find((s: any) => s.name === stateName);
+        if (state) {
+          const cities = City.getCitiesOfState(country.isoCode, state.isoCode);
+          setResidenceCities(cities);
+        }
+      }
+    } else {
+      setResidenceCities([]);
     }
   };
 
@@ -576,12 +641,12 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
                       <div className="relative">
                         <select 
                           value={editForm.country_of_residence}
-                          onChange={(e) => setEditForm({...editForm, country_of_residence: e.target.value})}
+                          onChange={(e) => handleResidenceCountryChange(e.target.value)}
                           className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white"
                         >
                           <option value="">Select country</option>
-                          {COUNTRIES.map((country) => (
-                            <option key={country} value={country}>{country}</option>
+                          {Country.getAllCountries().map((country: any) => (
+                            <option key={country.isoCode} value={country.name}>{country.name}</option>
                           ))}
                         </select>
                         <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -592,13 +657,21 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
                       <div className="relative">
                         <select 
                           value={editForm.state_of_residence}
-                          onChange={(e) => setEditForm({...editForm, state_of_residence: e.target.value})}
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white"
+                          onChange={(e) => handleResidenceStateChange(e.target.value)}
+                          disabled={!editForm.country_of_residence}
+                          className={cn(
+                            "w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none",
+                            editForm.country_of_residence 
+                              ? "border-gray-200 focus:border-primary bg-white" 
+                              : "border-gray-100 bg-gray-50 cursor-not-allowed"
+                          )}
                         >
-                          <option value="">Search</option>
-                          <option>Lagos</option>
-                          <option>Oyo</option>
-                          <option>FCT</option>
+                          <option value="">
+                            {editForm.country_of_residence ? "Select state" : "Select country first"}
+                          </option>
+                          {residenceStates.map((state) => (
+                            <option key={state.isoCode} value={state.name}>{state.name}</option>
+                          ))}
                         </select>
                         <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                       </div>
@@ -606,13 +679,25 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-ink">City of Residence</label>
                       <div className="relative">
-                        <input 
-                          type="text"
+                        <select 
                           value={editForm.city_of_residence}
                           onChange={(e) => setEditForm({...editForm, city_of_residence: e.target.value})}
-                          placeholder="Enter city"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                        />
+                          disabled={!editForm.state_of_residence}
+                          className={cn(
+                            "w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none",
+                            editForm.state_of_residence 
+                              ? "border-gray-200 focus:border-primary bg-white" 
+                              : "border-gray-100 bg-gray-50 cursor-not-allowed"
+                          )}
+                        >
+                          <option value="">
+                            {editForm.state_of_residence ? "Select city" : "Select state first"}
+                          </option>
+                          {residenceCities.map((city) => (
+                            <option key={city.name} value={city.name}>{city.name}</option>
+                          ))}
+                        </select>
+                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                       </div>
                     </div>
                   </div>
