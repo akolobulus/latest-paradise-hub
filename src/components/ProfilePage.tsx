@@ -1,23 +1,9 @@
 import { useState, useEffect, type ChangeEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  Camera, 
-  Edit2, 
-  X, 
-  Upload, 
-  ChevronDown, 
-  Plus, 
-  Linkedin, 
-  Facebook, 
-  Twitter, 
-  Youtube, 
-  Github,
-  Globe,
-  Heart,
-  Check,
-  ArrowLeft,
-  Bell,
-  Grid
+  Camera, Edit2, X, Upload, ChevronDown, Plus, 
+  Linkedin, Facebook, Twitter, Youtube, Github,
+  Globe, Heart, Check, ArrowLeft, Bell, Grid, FileText, Trophy
 } from "lucide-react";
 import { Country, State, City } from "country-state-city";
 import BrandLogo from "./BrandLogo";
