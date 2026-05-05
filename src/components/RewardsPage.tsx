@@ -91,10 +91,27 @@ interface RewardsPageProps {
   onBack: () => void;
   userProfile?: ProfileData | null;
   onViewProfile?: () => void;
+  onViewCommunity?: () => void;
+  onViewLearning?: () => void;
 }
 
-export default function RewardsPage({ availablePoints, expiringPoints = 0, onBack, userProfile, onViewProfile }: RewardsPageProps) {
+export default function RewardsPage({ availablePoints, expiringPoints = 0, onBack, userProfile, onViewProfile, onViewCommunity, onViewLearning }: RewardsPageProps) {
   const [isWaysToEarnOpen, setIsWaysToEarnOpen] = useState(true);
+
+  const handleActionClick = (actionLabel?: string) => {
+    if (!actionLabel) return;
+    if (actionLabel === "Post" || actionLabel === "View Stats" || actionLabel === "Invite") {
+      onViewCommunity?.();
+      return;
+    }
+    if (actionLabel === "Update Profile") {
+      onViewProfile?.();
+      return;
+    }
+    if (actionLabel === "Start Learning") {
+      onViewLearning?.();
+    }
+  };
 
   const getInitials = (name?: string | null) => {
     if (!name) return "U";
@@ -201,15 +218,23 @@ export default function RewardsPage({ availablePoints, expiringPoints = 0, onBac
                                 <p className="font-medium text-gray-900 flex flex-wrap items-center gap-2">
                                   {item.title}
                                   {item.actionLabel && (
-                                    <span className="text-primary-light text-[10px] uppercase tracking-wider font-bold bg-primary-light/10 px-2 py-0.5 rounded flex items-center gap-1 group-hover:bg-primary-light/20 transition-colors cursor-pointer">
-                                      {item.actionLabel} <ExternalLink size={10} />
-                                    </span>
-                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleActionClick(item.actionLabel)}
+                                    className="text-primary-light text-[10px] uppercase tracking-wider font-bold bg-primary-light/10 px-2 py-0.5 rounded flex items-center gap-1 group-hover:bg-primary-light/20 transition-colors"
+                                  >
+                                    {item.actionLabel} <ExternalLink size={10} />
+                                  </button>
+                                )}
                                 </p>
                                 <p className="text-xs text-gray-500 italic mt-0.5 leading-relaxed">{item.description}</p>
                               </div>
                             </div>
-                            <button className="opacity-0 group-hover:opacity-100 p-2 text-primary hover:bg-primary/10 rounded-lg transition-all transform scale-90 group-hover:scale-100 self-end sm:self-auto">
+                            <button
+                              type="button"
+                              onClick={() => handleActionClick(item.actionLabel)}
+                              className="opacity-0 group-hover:opacity-100 p-2 text-primary hover:bg-primary/10 rounded-lg transition-all transform scale-90 group-hover:scale-100 self-end sm:self-auto"
+                            >
                               <ArrowUpRight size={20} />
                             </button>
                           </div>

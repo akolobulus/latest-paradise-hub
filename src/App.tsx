@@ -473,6 +473,8 @@ export default function App() {
             onBack={() => setCurrentPage("dashboard")}
             userProfile={userProfile}
             onViewProfile={() => setCurrentPage("profile")}
+            onViewCommunity={() => setCurrentPage("community")}
+            onViewLearning={() => setCurrentPage("learning")}
           />
           {analytics}
         </>
