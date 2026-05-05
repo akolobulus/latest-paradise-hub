@@ -239,6 +239,9 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
     setIsSaving(true);
     
     try {
+      // 1. Calculate completion BEFORE saving
+      const currentCompletion = getProfileCompletionData(profile).percentage;
+
       const fullName = `${editForm.firstName} ${editForm.lastName}`.trim();
       const updateData = {
         full_name: fullName,
@@ -271,6 +274,17 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
       if (error) throw new Error(error.message);
 
       const updatedProfile = { ...profile, ...updateData };
+
+      // 2. Calculate completion AFTER saving the new data
+      const newCompletion = getProfileCompletionData(updatedProfile).percentage;
+
+      // 3. THE REWARD TRIGGER: If they hit 100% for the first time, give them 20 points!
+      if (newCompletion === 100 && currentCompletion < 100) {
+        await supabase.rpc('increment_points', { amount: 20, row_id: profile.id });
+        updatedProfile.points = (updatedProfile.points || 0) + 20;
+        alert("🎉 Congratulations! You earned 20 Harvest Points for completing your profile!");
+      }
+
       setProfile(updatedProfile);
       setEditingSection(null);
       if (onProfileUpdate) onProfileUpdate(updatedProfile as ProfileData);
