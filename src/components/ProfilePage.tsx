@@ -59,7 +59,9 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(3); // Mock notifications
   
-  // Cascading dropdown states for residence
+  // Cascading dropdown states for origin and residence
+  const [originStates, setOriginStates] = useState<any[]>([]);
+  const [originCities, setOriginCities] = useState<any[]>([]);
   const [residenceStates, setResidenceStates] = useState<any[]>([]);
   const [residenceCities, setResidenceCities] = useState<any[]>([]);
   
@@ -157,6 +159,23 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
             }
           }
         }
+
+        // Initialize origin cascading dropdowns
+        if (data.country_of_origin) {
+          const originCountry = Country.getAllCountries().find((c: any) => c.name === data.country_of_origin);
+          if (originCountry) {
+            const originStatesList = State.getStatesOfCountry(originCountry.isoCode);
+            setOriginStates(originStatesList);
+
+            if (data.state_of_origin) {
+              const originState = originStatesList.find((s: any) => s.name === data.state_of_origin);
+              if (originState) {
+                const originCitiesList = City.getCitiesOfState(originCountry.isoCode, originState.isoCode);
+                setOriginCities(originCitiesList);
+              }
+            }
+          }
+        }
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -165,7 +184,7 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
     }
   };
 
-  // Cascading dropdown handlers for residence
+  // Cascading dropdown handlers for origin and residence
   const handleResidenceCountryChange = (countryName: string) => {
     setEditForm(prev => ({
       ...prev,
@@ -205,6 +224,48 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
       }
     } else {
       setResidenceCities([]);
+    }
+  };
+
+  const handleOriginCountryChange = (countryName: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      country_of_origin: countryName,
+      state_of_origin: "",
+      city_of_origin: ""
+    }));
+
+    if (countryName) {
+      const country = Country.getAllCountries().find((c: any) => c.name === countryName);
+      if (country) {
+        const states = State.getStatesOfCountry(country.isoCode);
+        setOriginStates(states);
+        setOriginCities([]);
+      }
+    } else {
+      setOriginStates([]);
+      setOriginCities([]);
+    }
+  };
+
+  const handleOriginStateChange = (stateName: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      state_of_origin: stateName,
+      city_of_origin: ""
+    }));
+
+    if (stateName && editForm.country_of_origin) {
+      const country = Country.getAllCountries().find((c: any) => c.name === editForm.country_of_origin);
+      if (country) {
+        const state = State.getStatesOfCountry(country.isoCode).find((s: any) => s.name === stateName);
+        if (state) {
+          const cities = City.getCitiesOfState(country.isoCode, state.isoCode);
+          setOriginCities(cities);
+        }
+      }
+    } else {
+      setOriginCities([]);
     }
   };
 
@@ -580,12 +641,12 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
                       <div className="relative">
                         <select 
                           value={editForm.country_of_origin}
-                          onChange={(e) => setEditForm({...editForm, country_of_origin: e.target.value})}
+                          onChange={(e) => handleOriginCountryChange(e.target.value)}
                           className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white"
                         >
                           <option value="">Select country</option>
-                          {COUNTRIES.map((country) => (
-                            <option key={country} value={country}>{country}</option>
+                          {Country.getAllCountries().map((country: any) => (
+                            <option key={country.isoCode} value={country.name}>{country.name}</option>
                           ))}
                         </select>
                         <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -596,13 +657,17 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
                       <div className="relative">
                         <select 
                           value={editForm.state_of_origin}
-                          onChange={(e) => setEditForm({...editForm, state_of_origin: e.target.value})}
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white"
+                          onChange={(e) => handleOriginStateChange(e.target.value)}
+                          disabled={!editForm.country_of_origin}
+                          className={cn(
+                            "w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none",
+                            editForm.country_of_origin ? "border-gray-200 focus:border-primary bg-white" : "border-gray-100 bg-gray-50 cursor-not-allowed"
+                          )}
                         >
-                          <option value="">Search</option>
-                          <option>Lagos</option>
-                          <option>Oyo</option>
-                          <option>FCT</option>
+                          <option value="">{editForm.country_of_origin ? "Select state" : "Select country first"}</option>
+                          {originStates.map((state) => (
+                            <option key={state.isoCode} value={state.name}>{state.name}</option>
+                          ))}
                         </select>
                         <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                       </div>
@@ -610,13 +675,21 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-ink">City of Origin</label>
                       <div className="relative">
-                        <input 
-                          type="text"
+                        <select 
                           value={editForm.city_of_origin}
                           onChange={(e) => setEditForm({...editForm, city_of_origin: e.target.value})}
-                          placeholder="Enter city"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                        />
+                          disabled={!editForm.state_of_origin}
+                          className={cn(
+                            "w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none",
+                            editForm.state_of_origin ? "border-gray-200 focus:border-primary bg-white" : "border-gray-100 bg-gray-50 cursor-not-allowed"
+                          )}
+                        >
+                          <option value="">{editForm.state_of_origin ? "Select city" : "Select state first"}</option>
+                          {originCities.map((city) => (
+                            <option key={city.name} value={city.name}>{city.name}</option>
+                          ))}
+                        </select>
+                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                       </div>
                     </div>
                   </div>
