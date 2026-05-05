@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { useState, useEffect } from "react";
 import { 
   Bell, 
   Grid, 
@@ -9,7 +10,7 @@ import {
 import BrandLogo from "./BrandLogo";
 import PageFooter from "./PageFooter";
 import { cn } from "@/src/lib/utils";
-import { ProfileData } from "@/src/lib/profileCompletion";
+import { ProfileData, getCurrentUserPoints } from "@/src/lib/profileCompletion";
 
 interface AllProgramsProps {
   programs: any[];
@@ -23,6 +24,16 @@ interface AllProgramsProps {
 }
 
 export default function AllPrograms({ programs, userProfile, enrolledPrograms = [], onBack, onLogoClick, onViewDetails, onViewCourseByTitle, onEnroll }: AllProgramsProps) {
+  const [currentPoints, setCurrentPoints] = useState(0);
+
+  useEffect(() => {
+    const fetchPoints = async () => {
+      const freshPoints = await getCurrentUserPoints();
+      setCurrentPoints(freshPoints);
+    };
+    fetchPoints();
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Navbar */}
@@ -37,7 +48,7 @@ export default function AllPrograms({ programs, userProfile, enrolledPrograms = 
         <div className="flex items-center gap-3 md:gap-6">
           <div className="bg-accent/10 border border-accent/20 rounded-full px-4 py-2 flex items-center gap-2">
             <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
-            <span className="text-xs md:text-sm font-bold">0 points</span>
+            <span className="text-xs md:text-sm font-bold">{currentPoints} points</span>
           </div>
           <button className="p-2 text-gray-400 hover:text-primary transition-colors relative">
             <Bell size={22} />

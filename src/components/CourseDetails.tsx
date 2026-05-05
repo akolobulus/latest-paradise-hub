@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   ArrowLeft, 
   Bell, 
@@ -23,7 +23,7 @@ import {
 import BrandLogo from "./BrandLogo";
 import PageFooter from "./PageFooter";
 import { cn } from "@/src/lib/utils";
-import { ProfileData } from "@/src/lib/profileCompletion";
+import { ProfileData, getCurrentUserPoints } from "@/src/lib/profileCompletion";
 
 interface CourseDetailsProps {
   course: {
@@ -64,6 +64,16 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(false);
+  const [currentPoints, setCurrentPoints] = useState(0);
+
+  // Fetch fresh points from database on mount
+  useEffect(() => {
+    const fetchPoints = async () => {
+      const freshPoints = await getCurrentUserPoints();
+      setCurrentPoints(freshPoints);
+    };
+    fetchPoints();
+  }, []);
 
   // Helper to get initials from full name
   const getInitials = (name?: string | null) => {
@@ -91,7 +101,7 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
         <div className="flex items-center gap-3 md:gap-6">
           <div className="bg-accent/10 border border-accent/20 rounded-full px-4 py-2 flex items-center gap-2">
             <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
-            <span className="text-xs md:text-sm font-bold">0 points</span>
+            <span className="text-xs md:text-sm font-bold">{currentPoints} points</span>
           </div>
           <button 
             onClick={() => {

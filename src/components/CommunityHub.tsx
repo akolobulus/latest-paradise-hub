@@ -27,7 +27,7 @@ import { cn } from "@/src/lib/utils";
 import { LeaderboardList } from "./Leaderboard";
 import { supabase } from "@/src/lib/supabase";
 import { calculateTrendingTopics, TrendingTopic, formatNumber } from "@/src/lib/trendingUtils";
-import { ProfileData } from "@/src/lib/profileCompletion";
+import { ProfileData, getCurrentUserPoints } from "@/src/lib/profileCompletion";
 
 interface Post {
   id: string;
@@ -96,6 +96,7 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [currentPoints, setCurrentPoints] = useState(points);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Real-time data state
@@ -139,6 +140,15 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
       setCurrentUser(user);
     };
     setupUser();
+  }, []);
+
+  // Fetch fresh points from database
+  useEffect(() => {
+    const fetchPoints = async () => {
+      const freshPoints = await getCurrentUserPoints();
+      setCurrentPoints(freshPoints);
+    };
+    fetchPoints();
   }, []);
 
   useEffect(() => {
@@ -481,6 +491,10 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
       });
       if (pointsError) {
         console.error('Error awarding post points:', pointsError);
+      } else {
+        // Refresh points from database after awarding
+        const freshPoints = await getCurrentUserPoints();
+        setCurrentPoints(freshPoints);
       }
       
       // Force an immediate fetch so the user sees their post instantly, 
@@ -749,7 +763,7 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-bold text-ink truncate">{userProfile.full_name || "Learner"}</div>
-                <div className="text-xs text-gray-400">{points} points</div>
+                <div className="text-xs text-gray-400">{currentPoints} points</div>
               </div>
             </div>
           )}

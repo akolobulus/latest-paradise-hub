@@ -1,4 +1,5 @@
 // Profile completion tracking utility
+import { supabase } from './supabase';
 
 export interface ProfileData {
   id?: string;
@@ -84,4 +85,24 @@ export function getProfileCompletionDetails(profile: ProfileData | null) {
     sections,
     isComplete: percentage === 100,
   };
+}
+
+// Fetch current user's points from database
+export async function getCurrentUserPoints(): Promise<number> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return 0;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('points')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !data) return 0;
+    return data.points || 0;
+  } catch (error) {
+    console.error('Error fetching user points:', error);
+    return 0;
+  }
 }

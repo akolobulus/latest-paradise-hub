@@ -10,7 +10,7 @@ import BrandLogo from "./BrandLogo";
 import PageFooter from "./PageFooter";
 import { cn } from "@/src/lib/utils";
 import { supabase } from "@/src/lib/supabase";
-import { calculateProfileCompletion, getProfileSections, ProfileData } from "@/src/lib/profileCompletion";
+import { calculateProfileCompletion, getProfileSections, ProfileData, getCurrentUserPoints } from "@/src/lib/profileCompletion";
 
 interface ProfilePageProps {
   onBack: () => void;
@@ -285,7 +285,11 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
           console.error("RPC Error:", rpcError);
           throw new Error(`Failed to award points: ${rpcError.message}`);
         }
-        updatedProfile.points = (updatedProfile.points || 0) + 20;
+        
+        // Refresh points from database
+        const freshPoints = await getCurrentUserPoints();
+        updatedProfile.points = freshPoints;
+        
         alert("🎉 Congratulations! You earned 20 Harvest Points for completing your profile!");
       }
 
