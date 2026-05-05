@@ -2,7 +2,7 @@ import { useState, useEffect, type ChangeEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Camera, Edit2, X, Upload, ChevronDown, Plus, 
-  Linkedin, Facebook, Twitter, Youtube, Github,
+  Linkedin, Facebook, Twitter, Youtube, Instagram,
   Globe, Heart, Check, ArrowLeft, Bell, Grid, FileText, Trophy
 } from "lucide-react";
 import { Country, State, City } from "country-state-city";
@@ -74,12 +74,56 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
     employment_status: "",
     skill_level: "",
     english_proficiency: "",
-    social_profiles: { linkedin: "", facebook: "", twitter: "", youtube: "", github: "", tiktok: "" }
+    social_profiles: { linkedin: "", facebook: "", twitter: "", youtube: "", instagram: "", tiktok: "" }
   });
 
   const tabs: Tab[] = ["Personal Information", "Education Info", "Work Info"];
-  const profileCompletion = calculateProfileCompletion(profile);
-  const profileSections = getProfileSections(profile);
+
+  // --- Strict Local Profile Completion Tracker ---
+  const getProfileCompletionData = (p: any) => {
+    if (!p) return { percentage: 0, sections: [] };
+
+    // 1. Check if AT LEAST ONE social profile is filled out
+    const hasAtLeastOneSocial = p.social_profiles 
+      ? Object.values(p.social_profiles).some(link => Boolean(link)) 
+      : false;
+
+    // 2. Personal Info is strictly tied to personal/location/social fields
+    const isPersonalDone = Boolean(
+      p.full_name && p.gender && p.phone_number && 
+      p.country_of_origin && p.state_of_origin && 
+      p.country_of_residence && p.state_of_residence && 
+      p.about_me && p.interests && p.interests.length > 0 &&
+      hasAtLeastOneSocial
+    );
+
+    // 3. Education Info is strictly tied to the education modal fields
+    const isEducationDone = Boolean(
+      p.education_level && p.institution && p.course_of_study && 
+      p.year_of_graduation && p.graduation_class && p.nysc_completed
+    );
+
+    // 4. Work Info is strictly tied to the professional modal fields
+    const isWorkDone = Boolean(
+      p.employment_status && p.skill_level && p.english_proficiency && p.professional_experience
+    );
+
+    let completedCount = 0;
+    if (isPersonalDone) completedCount++;
+    if (isEducationDone) completedCount++;
+    if (isWorkDone) completedCount++;
+
+    return {
+      percentage: Math.round((completedCount / 3) * 100),
+      sections: [
+        { label: "Personal Info", completed: isPersonalDone },
+        { label: "Education Info", completed: isEducationDone },
+        { label: "Work Info", completed: isWorkDone }
+      ]
+    };
+  };
+
+  const { percentage: profileCompletion, sections: profileSections } = getProfileCompletionData(profile);
 
   useEffect(() => {
     fetchProfile();
@@ -121,7 +165,7 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
           employment_status: data.employment_status || "",
           skill_level: data.skill_level || "",
           english_proficiency: data.english_proficiency || "",
-          social_profiles: data.social_profiles || { linkedin: "", facebook: "", twitter: "", youtube: "", github: "", tiktok: "" }
+          social_profiles: data.social_profiles || { linkedin: "", facebook: "", twitter: "", youtube: "", instagram: "", tiktok: "" }
         });
 
         // Pre-fill location dropdowns if data exists
@@ -365,7 +409,7 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
 
               {editingSection === "Social Profile" && (
                 <div className="space-y-4">
-                  {["linkedin", "facebook", "twitter", "youtube", "github", "tiktok"].map((key) => (
+                  {["linkedin", "facebook", "twitter", "youtube", "instagram", "tiktok"].map((key) => (
                     <div key={key} className="space-y-1">
                       <label className="text-sm font-bold text-ink capitalize">{key}</label>
                       <input type="text" value={editForm.social_profiles[key as keyof typeof editForm.social_profiles] || ""} onChange={(e) => setEditForm({...editForm, social_profiles: {...editForm.social_profiles, [key]: e.target.value}})} placeholder={`https://${key}.com/`} className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none" />
@@ -584,6 +628,24 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
                     <button onClick={() => setEditingSection("About")} className="px-4 py-2 text-sm font-bold bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors">Edit</button>
                   </div>
                   <p className="font-bold text-ink whitespace-pre-wrap text-sm">{profile?.about_me || 'No description provided.'}</p>
+                </div>
+
+                <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm relative group">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-ink">Interests</h3>
+                    <button onClick={() => setEditingSection("Interests")} className="px-4 py-2 text-sm font-bold bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors">Edit</button>
+                  </div>
+                  {profile?.interests && profile.interests.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {profile.interests.map((interest: string, idx: number) => (
+                        <span key={idx} className="px-3 py-1.5 bg-gray-50 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium">
+                          {interest}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm font-bold text-ink">No interests added</p>
+                  )}
                 </div>
 
                 <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm relative group">
