@@ -51,8 +51,15 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const content = { 
     weeks: dbContent.map(week => {
       const rawQuiz = Array.isArray(week.quizzes) ? (week.quizzes[0] || null) : (week.quizzes || null);
+      const mappedLessons = (week.lessons || []).map((lesson: any) => ({
+        ...lesson,
+        videoUrl: lesson.video_url || lesson.videoUrl,
+        orderIndex: lesson.order_index ?? lesson.orderIndex,
+      }));
+
       return {
         ...week,
+        lessons: mappedLessons,
         quiz: rawQuiz ? {
           ...rawQuiz,
           passingGrade: rawQuiz.passing_grade,
