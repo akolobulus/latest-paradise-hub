@@ -1361,14 +1361,18 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
               <p className="text-xl font-bold text-ink">{formatNumber(totalMembers)}</p>
               <p className="text-[10px] font-bold text-gray-400 uppercase">Members</p>
             </div>
+            {/*
             <div>
               <p className="text-xl font-bold text-ink">{formatNumber(onlineMembers)}</p>
               <p className="text-[10px] font-bold text-gray-400 uppercase">Active</p>
             </div>
+            */}
           </div>
+          {/*
           <button className="w-full mt-6 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-light transition-colors">
             Invite Friends
           </button>
+          */}
         </div>
       </aside>
     </div>
