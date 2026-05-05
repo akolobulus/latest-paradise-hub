@@ -57,6 +57,8 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [unreadCount, setUnreadCount] = useState(3); // Mock notifications
   
   // Cascading dropdown states for origin and residence
@@ -965,7 +967,9 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
           <div className="relative">
             <button 
               onClick={() => {
-                setShowNotifications(!showNotifications);
+                setShowQuickActions(false);
+                setShowProfileMenu(false);
+                setShowNotifications((prev) => !prev);
                 if (!showNotifications && unreadCount > 0) setUnreadCount(0);
               }}
               className="p-1.5 text-gray-400 hover:bg-gray-50 rounded-full transition-colors relative"
@@ -998,17 +1002,113 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
             </AnimatePresence>
           </div>
           
-          <button className="p-1.5 text-gray-400 hover:bg-gray-50 rounded-full transition-colors">
-            <Grid size={20} />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => {
+                setShowNotifications(false);
+                setShowProfileMenu(false);
+                setShowQuickActions((prev) => !prev);
+              }}
+              className="p-1.5 text-gray-400 hover:bg-gray-50 rounded-full transition-colors"
+            >
+              <Grid size={20} />
+            </button>
+
+            <AnimatePresence>
+              {showQuickActions && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden"
+                >
+                  <button
+                    onClick={() => {
+                      setShowQuickActions(false);
+                      setShowNotifications(true);
+                    }}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    View notifications
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowQuickActions(false);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Scroll to top
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowQuickActions(false);
+                      onBack();
+                    }}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Back to dashboard
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           
-          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs overflow-hidden border border-gray-200 hover:border-primary transition-all">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              getInitials(profile?.full_name)
-            )}
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => {
+                setShowNotifications(false);
+                setShowQuickActions(false);
+                setShowProfileMenu((prev) => !prev);
+              }}
+              className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs overflow-hidden border border-gray-200 hover:border-primary transition-all"
+            >
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                getInitials(profile?.full_name)
+              )}
+            </button>
+
+            <AnimatePresence>
+              {showProfileMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden"
+                >
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      setEditingSection("Basic Info");
+                    }}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Edit profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      setEditingSection("Current Location");
+                    }}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Update location
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      onBack();
+                    }}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Back to dashboard
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </nav>
 
