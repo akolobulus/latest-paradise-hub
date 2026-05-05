@@ -69,7 +69,7 @@ const REWARDS: Reward[] = [
     title: "1-on-1 Growth Consultation",
     description: "Gain personal insights and personalized career strategy from hub professionals.",
     points: 1500,
-    image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&q=80&w=800",
+    image: "https://bondeducators.org/wp-content/uploads/2025/01/the-power-of-leadership-mentorship-and-love-in-black-communities.jpg?auto=format&fit=crop&q=80&w=800",
     category: "Mentorship",
     badge: "1500 pts"
   },
@@ -78,7 +78,7 @@ const REWARDS: Reward[] = [
     title: "Internship / Elite Mentorship",
     description: "Unlock high-level career opportunities and recurring direct guidance from industry masters.",
     points: 2000,
-    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800",
+    image: "https://cowrywise.com/blog/wp-content/uploads/2023/09/Oghenevoke@4x-scaled.webp?auto=format&fit=crop&q=80&w=800",
     category: "Career",
     badge: "2000 pts"
   }

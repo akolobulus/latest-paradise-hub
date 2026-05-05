@@ -105,20 +105,80 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
             <Bell size={22} />
             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
           </button>
-          <button 
-            onClick={() => {
-              setIsMenuOpen(!isMenuOpen);
-              setIsNotificationsOpen(false);
-              setIsProfileOpen(false);
-            }}
-            className="p-2 text-gray-400 hover:text-primary transition-colors"
-          >
-            <Grid size={22} />
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => {
+                setIsMenuOpen((prev) => !prev);
+                setIsNotificationsOpen(false);
+                setIsProfileOpen(false);
+              }}
+              className="p-2 text-gray-400 hover:text-primary transition-colors"
+            >
+              <Grid size={22} />
+            </button>
+
+            <AnimatePresence>
+              {isMenuOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsMenuOpen(false)} 
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-50 overflow-hidden"
+                  >
+                    <div className="mb-3 text-sm font-bold text-ink">Quick actions</div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <button 
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          onViewCommunity?.();
+                        }}
+                        className="flex flex-col items-center gap-2 text-gray-600 hover:text-primary transition-colors"
+                      >
+                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center group-hover:bg-primary/5 group-hover:border-primary transition-all">
+                          <Users size={20} />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wide">Community</span>
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          onViewLearning?.();
+                        }}
+                        className="flex flex-col items-center gap-2 text-gray-600 hover:text-primary transition-colors"
+                      >
+                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center group-hover:bg-primary/5 group-hover:border-primary transition-all">
+                          <GraduationCap size={20} />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wide">Learning</span>
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          onBack();
+                        }}
+                        className="flex flex-col items-center gap-2 text-gray-600 hover:text-primary transition-colors"
+                      >
+                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center group-hover:bg-primary/5 group-hover:border-primary transition-all">
+                          <ArrowLeft size={20} />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wide">Dashboard</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
           <div className="relative">
             <button
               onClick={() => {
-                setIsProfileOpen(!isProfileOpen);
+                setIsProfileOpen((prev) => !prev);
                 setIsNotificationsOpen(false);
                 setIsMenuOpen(false);
               }}
@@ -190,6 +250,17 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
                     >
                       <GraduationCap size={18} className="text-gray-400" />
                       <span className="text-sm font-bold">My Learning</span>
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        onViewCommunity?.();
+                      }}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
+                    >
+                      <Users size={18} className="text-gray-400" />
+                      <span className="text-sm font-bold">Community</span>
                     </button>
 
                     <button className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink">
