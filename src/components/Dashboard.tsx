@@ -158,6 +158,7 @@ interface DashboardProps {
   onViewProfile: () => void;
   onViewCourse: (course: any) => void;
   onViewCourseByTitle?: (courseTitle: string) => void;
+  onRewardsClick: () => void;
   onViewAllPrograms: (programs: any[]) => void;
   onEnroll: (course: any) => void;
   onViewLearning: () => void;
@@ -167,7 +168,7 @@ interface DashboardProps {
   onPrivacyClick?: () => void;
 }
 
-export default function Dashboard({ points, user, userProfile, programs = [], enrolledPrograms = [], onLogout, onLogoClick, onViewProfile, onViewCourse, onViewCourseByTitle, onViewAllPrograms, onEnroll, onViewLearning, onViewCommunity, onAboutClick, onSupportClick, onPrivacyClick }: DashboardProps) {
+export default function Dashboard({ points, user, userProfile, programs = [], enrolledPrograms = [], onLogout, onLogoClick, onViewProfile, onViewCourse, onViewCourseByTitle, onRewardsClick, onViewAllPrograms, onEnroll, onViewLearning, onViewCommunity, onAboutClick, onSupportClick, onPrivacyClick }: DashboardProps) {
   const [activeVideoSlide, setActiveVideoSlide] = useState(0);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -339,14 +340,14 @@ export default function Dashboard({ points, user, userProfile, programs = [], en
                           <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Incubation</span>
                         </button>
 
-                        <button className="flex flex-col items-center gap-3 group">
+                        <button onClick={() => { setIsMenuOpen(false); onRewardsClick(); }} className="flex flex-col items-center gap-3 group">
                           <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
                             <Trophy size={24} />
                           </div>
                           <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Rewards</span>
                         </button>
 
-                        <button className="flex flex-col items-center gap-3 group">
+                        <button onClick={() => { setIsMenuOpen(false); if (onSupportClick) onSupportClick(); }} className="flex flex-col items-center gap-3 group">
                           <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
                             <HelpCircle size={24} />
                           </div>

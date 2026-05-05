@@ -13,6 +13,8 @@ import CourseDetails from "./components/CourseDetails";
 import AllPrograms from "./components/AllPrograms";
 import MyLearning from "./components/MyLearning";
 import CoursePlayer from "./components/CoursePlayer";
+import RewardsPage from "./components/RewardsPage";
+import SupportPage from "./components/SupportPage";
 import CommunityHub from "./components/CommunityHub";
 import { generateAgroTechImages } from "./lib/imageGen";
 import { supabase } from "./lib/supabase";
@@ -25,7 +27,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [session, setSession] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState<"landing" | "dashboard" | "profile" | "course" | "all-programs" | "learning" | "course-player" | "community">("dashboard");
+  const [currentPage, setCurrentPage] = useState<"landing" | "dashboard" | "profile" | "course" | "all-programs" | "learning" | "course-player" | "community" | "rewards" | "support">("dashboard");
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [enrolledPrograms, setEnrolledPrograms] = useState<any[]>([]);
   const [allCourses, setAllCourses] = useState<any[]>([]);
@@ -276,6 +278,14 @@ export default function App() {
     setCurrentPage("course");
   };
 
+  const handleViewRewards = () => {
+    setCurrentPage("rewards");
+  };
+
+  const handleViewSupport = () => {
+    setCurrentPage("support");
+  };
+
   // 5. Logout function
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -401,11 +411,7 @@ export default function App() {
               }, 100);
             }}
             onSupportClick={() => {
-              setCurrentPage("landing");
-              setTimeout(() => {
-                const el = document.getElementById('about');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }, 100);
+              handleViewSupport();
             }}
             onPrivacyClick={() => {
               setCurrentPage("landing");
@@ -426,6 +432,29 @@ export default function App() {
             onBack={() => setCurrentPage("dashboard")}
             onProfileUpdate={(updatedProfile) => setUserProfile(updatedProfile)}
             onViewCourseByTitle={handleViewCourseByTitle}
+          />
+          {analytics}
+        </>
+      );
+    }
+    if (currentPage === "rewards") {
+      return (
+        <>
+          <RewardsPage
+            availablePoints={points}
+            expiringPoints={0}
+            onBack={() => setCurrentPage("dashboard")}
+          />
+          {analytics}
+        </>
+      );
+    }
+    if (currentPage === "support") {
+      return (
+        <>
+          <SupportPage
+            availablePoints={points}
+            onBack={() => setCurrentPage("dashboard")}
           />
           {analytics}
         </>
@@ -564,6 +593,7 @@ export default function App() {
           setCurrentPage("course");
         }}
         onViewCourseByTitle={handleViewCourseByTitle}
+        onRewardsClick={handleViewRewards}
         onViewAllPrograms={(programs) => {
           setSelectedCourse(programs);
           setCurrentPage("all-programs");
@@ -582,11 +612,7 @@ export default function App() {
           }, 100);
         }}
         onSupportClick={() => {
-          setCurrentPage("landing");
-          setTimeout(() => {
-            const el = document.getElementById('about');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
+          handleViewSupport();
         }}
         onPrivacyClick={() => {
           setCurrentPage("landing");
@@ -707,8 +733,7 @@ export default function App() {
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
         onSupportClick={() => {
-          const el = document.getElementById('about');
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
+          handleViewSupport();
         }}
         onPrivacyClick={() => {
           const el = document.getElementById('about');
