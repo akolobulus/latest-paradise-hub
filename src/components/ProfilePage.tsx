@@ -82,6 +82,16 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
     country_of_residence: "",
     state_of_residence: "",
     city_of_residence: "",
+    education_level: "",
+    institution: "",
+    course_of_study: "",
+    year_of_graduation: "",
+    graduation_class: "",
+    nysc_completed: "",
+    employment_status: "",
+    skill_level: "",
+    english_proficiency: "",
+    professional_experience: "",
     social_profiles: {
       linkedin: "",
       facebook: "",
@@ -133,6 +143,16 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
           country_of_residence: data.country_of_residence || "",
           state_of_residence: data.state_of_residence || "",
           city_of_residence: data.city_of_residence || "",
+          education_level: data.education_level || "",
+          institution: data.institution || "",
+          course_of_study: data.course_of_study || "",
+          year_of_graduation: data.year_of_graduation || "",
+          graduation_class: data.graduation_class || "",
+          nysc_completed: data.nysc_completed || "",
+          employment_status: data.employment_status || "",
+          skill_level: data.skill_level || "",
+          english_proficiency: data.english_proficiency || "",
+          professional_experience: data.professional_experience || "",
           social_profiles: data.social_profiles || {
             linkedin: "",
             facebook: "",
@@ -408,7 +428,7 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
               </button>
             </div>
 
-            <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <div className="p-8 max-h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar">
               {editingSection === "Basic Info" && (
                 <div className="space-y-6">
                   <div className="flex flex-col md:flex-row gap-8 items-center">
@@ -614,6 +634,142 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {editingSection === "Education Info" && (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-ink">Education Level</label>
+                    <select
+                      value={editForm.education_level}
+                      onChange={(e) => setEditForm({...editForm, education_level: e.target.value})}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white"
+                    >
+                      <option value="">Select education level</option>
+                      <option>Primary school leaving certificate</option>
+                      <option>Senior Secondary Certificate Exam (SSCE)</option>
+                      <option>Ordinary National Diploma (OND)</option>
+                      <option>Higher National Diploma (HND)</option>
+                      <option>Bachelor's Degree</option>
+                      <option>Master's Degree</option>
+                      <option>Doctor of Philosophy (PhD)</option>
+                      <option>No Education</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-ink">Institution</label>
+                      <input
+                        type="text"
+                        value={editForm.institution}
+                        onChange={(e) => setEditForm({...editForm, institution: e.target.value})}
+                        placeholder="e.g. University of Lagos"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-ink">Course of Study</label>
+                      <input
+                        type="text"
+                        value={editForm.course_of_study}
+                        onChange={(e) => setEditForm({...editForm, course_of_study: e.target.value})}
+                        placeholder="e.g. Business Administration"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-ink">Year of Graduation</label>
+                      <input
+                        type="text"
+                        value={editForm.year_of_graduation}
+                        onChange={(e) => setEditForm({...editForm, year_of_graduation: e.target.value})}
+                        placeholder="e.g. 2024"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-ink">Graduation Class</label>
+                      <input
+                        type="text"
+                        value={editForm.graduation_class}
+                        onChange={(e) => setEditForm({...editForm, graduation_class: e.target.value})}
+                        placeholder="e.g. First Class"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-ink">NYSC Status</label>
+                    <select
+                      value={editForm.nysc_completed}
+                      onChange={(e) => setEditForm({...editForm, nysc_completed: e.target.value})}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white"
+                    >
+                      <option value="">Select NYSC status</option>
+                      <option>Yes</option>
+                      <option>No</option>
+                      <option>Exempted</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {editingSection === "Work Info" && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-ink">Employment Status</label>
+                      <select
+                        value={editForm.employment_status}
+                        onChange={(e) => setEditForm({...editForm, employment_status: e.target.value})}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white"
+                      >
+                        <option value="">Select status</option>
+                        <option>Employed</option>
+                        <option>Unemployed</option>
+                        <option>Self-Employed</option>
+                        <option>Student</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-ink">Skill Level</label>
+                      <select
+                        value={editForm.skill_level}
+                        onChange={(e) => setEditForm({...editForm, skill_level: e.target.value})}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white"
+                      >
+                        <option value="">Select skill level</option>
+                        <option>Beginner</option>
+                        <option>Intermediate</option>
+                        <option>Advanced</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-ink">English Proficiency</label>
+                    <select
+                      value={editForm.english_proficiency}
+                      onChange={(e) => setEditForm({...editForm, english_proficiency: e.target.value})}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white"
+                    >
+                      <option value="">Select proficiency</option>
+                      <option>Beginner</option>
+                      <option>Intermediate</option>
+                      <option>Advanced</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-ink">Professional Experience</label>
+                    <textarea
+                      value={editForm.professional_experience}
+                      onChange={(e) => setEditForm({...editForm, professional_experience: e.target.value})}
+                      placeholder="Describe your experience..."
+                      className="w-full h-32 px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none transition-all"
+                    />
                   </div>
                 </div>
               )}
@@ -1010,169 +1166,245 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
 
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6 md:space-y-8">
-            {/* About Me Section */}
-            <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm relative group">
-              <div className="flex items-center justify-between mb-6 md:mb-8">
-                <h3 className="text-lg font-bold text-ink">About me</h3>
-                <button 
-                  onClick={() => setEditingSection("About")}
-                  className="p-2 text-gray-400 hover:text-primary transition-colors"
-                >
-                  <Edit2 size={18} />
-                </button>
-              </div>
+            {activeTab === "Personal Information" && (
+              <>
+                <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm relative group">
+                  <div className="flex items-center justify-between mb-6 md:mb-8">
+                    <h3 className="text-lg font-bold text-ink">About me</h3>
+                    <button 
+                      onClick={() => setEditingSection("About")}
+                      className="p-2 text-gray-400 hover:text-primary transition-colors"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                  </div>
 
-              {profile?.about_me ? (
-                <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{profile.about_me}</p>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
-                  <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
-                    <div className="w-14 h-9 md:w-16 md:h-10 border-2 border-gray-200 rounded-lg relative">
-                      <div className="absolute top-2 left-2 w-3 h-3 md:w-4 md:h-4 rounded-full bg-gray-200" />
-                      <div className="absolute top-2 right-2 w-5 h-1 md:w-6 md:h-1 bg-gray-200" />
-                      <div className="absolute top-4 right-2 w-5 h-1 md:w-6 md:h-1 bg-gray-200" />
-                      <div className="absolute top-6 right-2 w-5 h-1 md:w-6 md:h-1 bg-gray-200" />
+                  {profile?.about_me ? (
+                    <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{profile.about_me}</p>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
+                      <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                        <div className="w-14 h-9 md:w-16 md:h-10 border-2 border-gray-200 rounded-lg relative">
+                          <div className="absolute top-2 left-2 w-3 h-3 md:w-4 md:h-4 rounded-full bg-gray-200" />
+                          <div className="absolute top-2 right-2 w-5 h-1 md:w-6 md:h-1 bg-gray-200" />
+                          <div className="absolute top-4 right-2 w-5 h-1 md:w-6 md:h-1 bg-gray-200" />
+                          <div className="absolute top-6 right-2 w-5 h-1 md:w-6 md:h-1 bg-gray-200" />
+                        </div>
+                      </div>
+                      <h4 className="text-primary font-bold mb-2">You seem like someone interesting...</h4>
+                      <p className="text-sm text-gray-500 mb-8 max-w-xs">Tell us a little about you, your passion, what you live for...</p>
+                      <button 
+                        onClick={() => setEditingSection("About")}
+                        className="w-full md:w-auto px-8 py-3 rounded-full border border-primary text-primary font-bold hover:bg-primary/5 transition-colors"
+                      >
+                        Add About Me Info
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Languages */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-bold text-ink">Languages</h3>
+                      <button 
+                        onClick={() => setEditingSection("Languages")}
+                        className="p-1.5 text-gray-400 hover:text-primary transition-colors border border-gray-200 rounded-full"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                    <div className="h-24 flex items-center justify-center">
+                      <p className="text-xs text-gray-400">{profile?.languages && profile.languages.length > 0 ? profile.languages.join(', ') : 'No languages added'}</p>
                     </div>
                   </div>
-                  <h4 className="text-primary font-bold mb-2">You seem like someone interesting...</h4>
-                  <p className="text-sm text-gray-500 mb-8 max-w-xs">Tell us a little about you, your passion, what you live for...</p>
-                  <button 
-                    onClick={() => setEditingSection("About")}
-                    className="w-full md:w-auto px-8 py-3 rounded-full border border-primary text-primary font-bold hover:bg-primary/5 transition-colors"
-                  >
-                    Add About Me Info
-                  </button>
-                </div>
-              )}
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Languages */}
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-ink">Languages</h3>
-                  <button 
-                    onClick={() => setEditingSection("Languages")}
-                    className="p-1.5 text-gray-400 hover:text-primary transition-colors border border-gray-200 rounded-full"
-                  >
-                    <Plus size={16} />
-                  </button>
+                  {/* Phone Number */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-bold text-ink">Phone Number</h3>
+                      <button 
+                        onClick={() => setEditingSection("Phone Number")}
+                        className="p-1.5 text-gray-400 hover:text-primary transition-colors"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-ink">Primary</span>
+                        <span className="w-1 h-1 rounded-full bg-gray-300" />
+                        <span className="text-sm text-gray-600">{profile?.phone_number || 'Not provided'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-ink">WhatsApp</span>
+                        <span className="w-1 h-1 rounded-full bg-gray-300" />
+                        <span className="text-sm text-gray-600">{profile?.whatsapp_number || 'Not provided'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Social Profiles */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-bold text-ink">Social Profiles</h3>
+                      <button 
+                        onClick={() => setEditingSection("Social Profile")}
+                        className="p-1.5 text-gray-400 hover:text-primary transition-colors border border-gray-200 rounded-full"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                    {profile?.social_profiles && Object.values(profile.social_profiles).some(val => val) ? (
+                      <div className="space-y-3">
+                        {Object.entries(profile.social_profiles).map(([platform, link]) => {
+                          if (!link) return null;
+                          return (
+                            <div key={platform} className="flex items-center gap-2">
+                              <span className="capitalize text-xs font-bold text-ink">{platform}</span>
+                              <span className="w-1 h-1 rounded-full bg-gray-300" />
+                              <a href={link as string} target="_blank" rel="noreferrer" className="text-primary hover:underline text-sm truncate">Link</a>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="h-24 flex items-center justify-center">
+                        <p className="text-xs text-gray-400">No social links added</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Current Location */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-bold text-ink">Current Location</h3>
+                      <button 
+                        onClick={() => setEditingSection("Current Location")}
+                        className="p-1.5 text-gray-400 hover:text-primary transition-colors"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-ink">Origin</span>
+                        <span className="w-1 h-1 rounded-full bg-gray-300" />
+                        <span className="text-sm text-gray-600">{profile?.country_of_origin || 'Not provided'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-ink">Residence</span>
+                        <span className="w-1 h-1 rounded-full bg-gray-300" />
+                        <span className="text-sm text-gray-600">{[profile?.city_of_residence, profile?.country_of_residence].filter(Boolean).join(', ') || 'Not provided'}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="h-24 flex items-center justify-center">
-                  <p className="text-xs text-gray-400">No languages added</p>
+
+                <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-lg font-bold text-ink">Interests</h3>
+                    <button 
+                      onClick={() => setEditingSection("Interests")}
+                      className="p-2 text-gray-400 hover:text-primary transition-colors"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                      <div className="w-16 h-10 border-2 border-gray-200 rounded-lg relative flex items-center justify-center">
+                        <Heart size={20} className="text-gray-200" />
+                      </div>
+                    </div>
+                    <h4 className="text-primary font-bold mb-2">What are your interests?</h4>
+                    <p className="text-sm text-gray-500 mb-8">Share your interests to boost visibility and attract prospective employers</p>
+                    <button 
+                      onClick={() => setEditingSection("Interests")}
+                      className="px-8 py-3 rounded-full border border-primary text-primary font-bold hover:bg-primary/5 transition-colors"
+                    >
+                      Add Interests
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeTab === "Education Info" && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-ink">Education & Academics</h3>
+                    <button 
+                      onClick={() => setEditingSection("Education Info")}
+                      className="px-4 py-2 text-sm font-bold bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                    <div><p className="text-gray-400 mb-1">Level</p><p className="font-bold text-ink">{profile?.education_level || editForm.education_level || 'Not provided'}</p></div>
+                    <div><p className="text-gray-400 mb-1">Institution</p><p className="font-bold text-ink">{profile?.institution || editForm.institution || 'Not provided'}</p></div>
+                    <div><p className="text-gray-400 mb-1">Course of Study</p><p className="font-bold text-ink">{profile?.course_of_study || editForm.course_of_study || 'Not provided'}</p></div>
+                    <div><p className="text-gray-400 mb-1">Graduation Year</p><p className="font-bold text-ink">{profile?.year_of_graduation || editForm.year_of_graduation || 'Not provided'}</p></div>
+                    <div><p className="text-gray-400 mb-1">Class</p><p className="font-bold text-ink">{profile?.graduation_class || editForm.graduation_class || 'Not provided'}</p></div>
+                    <div><p className="text-gray-400 mb-1">NYSC Status</p><p className="font-bold text-ink">{profile?.nysc_completed || editForm.nysc_completed || 'Not provided'}</p></div>
+                  </div>
                 </div>
               </div>
+            )}
 
-              {/* Phone Number */}
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-ink">Phone Number</h3>
-                  <button 
-                    onClick={() => setEditingSection("Phone Number")}
-                    className="p-1.5 text-gray-400 hover:text-primary transition-colors"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-ink">Primary</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300" />
-                    <span className="text-sm text-gray-600">{profile?.phone_number || 'Not provided'}</span>
+            {activeTab === "Work Info" && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-ink">Work Experience</h3>
+                    <button 
+                      onClick={() => setEditingSection("Work Info")}
+                      className="px-4 py-2 text-sm font-bold bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                    >
+                      Edit
+                    </button>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-ink">WhatsApp</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300" />
-                    <span className="text-sm text-gray-600">{profile?.whatsapp_number || 'Not provided'}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                    <div><p className="text-gray-400 mb-1">Employment Status</p><p className="font-bold text-ink">{profile?.employment_status || editForm.employment_status || 'Not provided'}</p></div>
+                    <div><p className="text-gray-400 mb-1">Skill Level</p><p className="font-bold text-ink">{profile?.skill_level || editForm.skill_level || 'Not provided'}</p></div>
+                    <div><p className="text-gray-400 mb-1">English Proficiency</p><p className="font-bold text-ink">{profile?.english_proficiency || editForm.english_proficiency || 'Not provided'}</p></div>
+                    <div className="md:col-span-2"><p className="text-gray-400 mb-1">Professional Experience</p><p className="font-bold text-ink whitespace-pre-wrap">{profile?.professional_experience || editForm.professional_experience || 'Not provided'}</p></div>
                   </div>
                 </div>
               </div>
+            )}
 
-              {/* Social Profiles */}
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-ink">Social Profiles</h3>
-                  <button 
-                    onClick={() => setEditingSection("Social Profile")}
-                    className="p-1.5 text-gray-400 hover:text-primary transition-colors border border-gray-200 rounded-full"
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
-                {profile?.social_profiles && Object.values(profile.social_profiles).some(val => val) ? (
-                  <div className="space-y-3">
-                    {Object.entries(profile.social_profiles).map(([platform, link]) => {
-                      if (!link) return null;
-                      return (
-                        <div key={platform} className="flex items-center gap-2">
-                          <span className="capitalize text-xs font-bold text-ink">{platform}</span>
-                          <span className="w-1 h-1 rounded-full bg-gray-300" />
-                          <a href={link as string} target="_blank" rel="noreferrer" className="text-primary hover:underline text-sm truncate">Link</a>
-                        </div>
-                      )
-                    })}
+            {activeTab === "Demographic Info" && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-ink">Demographic Information</h3>
+                    <button 
+                      onClick={() => setEditingSection("Current Location")}
+                      className="px-4 py-2 text-sm font-bold bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                    >
+                      Edit
+                    </button>
                   </div>
-                ) : (
-                  <div className="h-24 flex items-center justify-center">
-                    <p className="text-xs text-gray-400">No social links added</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Current Location */}
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-ink">Current Location</h3>
-                  <button 
-                    onClick={() => setEditingSection("Current Location")}
-                    className="p-1.5 text-gray-400 hover:text-primary transition-colors"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-ink">Origin</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300" />
-                    <span className="text-sm text-gray-600">{profile?.country_of_origin || 'Not provided'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-ink">Residence</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300" />
-                    <span className="text-sm text-gray-600">{[profile?.city_of_residence, profile?.country_of_residence].filter(Boolean).join(', ') || 'Not provided'}</span>
+                  <div className="grid grid-cols-1 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-ink">Origin</span>
+                      <span className="w-1 h-1 rounded-full bg-gray-300" />
+                      <span className="text-sm text-gray-600">{[profile?.city_of_origin, profile?.state_of_origin, profile?.country_of_origin].filter(Boolean).join(', ') || 'Not provided'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-ink">Residence</span>
+                      <span className="w-1 h-1 rounded-full bg-gray-300" />
+                      <span className="text-sm text-gray-600">{[profile?.city_of_residence, profile?.state_of_residence, profile?.country_of_residence].filter(Boolean).join(', ') || 'Not provided'}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Interests Section */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-lg font-bold text-ink">Interests</h3>
-                <button 
-                  onClick={() => setEditingSection("Interests")}
-                  className="p-2 text-gray-400 hover:text-primary transition-colors"
-                >
-                  <Edit2 size={18} />
-                </button>
-              </div>
-
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
-                  <div className="w-16 h-10 border-2 border-gray-200 rounded-lg relative flex items-center justify-center">
-                    <Heart size={20} className="text-gray-200" />
-                  </div>
-                </div>
-                <h4 className="text-primary font-bold mb-2">What are your interests?</h4>
-                <p className="text-sm text-gray-500 mb-8">Share your interests to boost visibility and attract prospective employers</p>
-                <button 
-                  onClick={() => setEditingSection("Interests")}
-                  className="px-8 py-3 rounded-full border border-primary text-primary font-bold hover:bg-primary/5 transition-colors"
-                >
-                  Add Interests
-                </button>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Sidebar (Completion Card) - Moved to main content area for mobile */}
