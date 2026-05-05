@@ -258,6 +258,24 @@ export default function App() {
     }
   };
 
+  const handleViewCourseByTitle = (courseTitle: string) => {
+    if (!isLoggedIn) {
+      setShowAuth("login");
+      return;
+    }
+
+    const course = allCourses.find((c) => c.title?.toLowerCase() === courseTitle.toLowerCase())
+      || enrolledPrograms.find((p) => p.title?.toLowerCase() === courseTitle.toLowerCase());
+
+    if (!course) {
+      console.warn(`Course not found for title: ${courseTitle}`);
+      return;
+    }
+
+    setSelectedCourse(course);
+    setCurrentPage("course");
+  };
+
   // 5. Logout function
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -411,6 +429,7 @@ export default function App() {
           <ProfilePage 
             onBack={() => setCurrentPage("dashboard")}
             onProfileUpdate={(updatedProfile) => setUserProfile(updatedProfile)}
+            onViewCourseByTitle={handleViewCourseByTitle}
           />
           {analytics}
         </>
@@ -432,6 +451,7 @@ export default function App() {
               setSelectedCourse(course);
               setCurrentPage("course-player");
             }}
+            onViewCourseByTitle={handleViewCourseByTitle}
             onViewAllPrograms={(programs) => {
               setSelectedCourse(programs);
               setCurrentPage("all-programs");
@@ -458,6 +478,7 @@ export default function App() {
               setSelectedCourse(course);
               setCurrentPage("course");
             }}
+            onViewCourseByTitle={handleViewCourseByTitle}
             onEnroll={handleEnroll}
           />
           {analytics}
@@ -487,6 +508,7 @@ export default function App() {
               handleLogout();
               setSelectedCourse(null);
             }}
+            onViewCourseByTitle={handleViewCourseByTitle}
           />
           {analytics}
         </>
@@ -545,6 +567,7 @@ export default function App() {
           setSelectedCourse(course);
           setCurrentPage("course");
         }}
+        onViewCourseByTitle={handleViewCourseByTitle}
         onViewAllPrograms={(programs) => {
           setSelectedCourse(programs);
           setCurrentPage("all-programs");
