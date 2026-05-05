@@ -1,7 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Search, 
-  Bell, 
   Grid, 
   Zap, 
   Play, 
@@ -27,6 +26,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import BrandLogo from "./BrandLogo";
+import NotificationBell from "./NotificationBell";
 import PageFooter from "./PageFooter";
 import { cn } from "@/src/lib/utils";
 import { calculateProfileCompletion, getProfileSections, ProfileData } from "@/src/lib/profileCompletion";
@@ -151,6 +151,7 @@ interface DashboardProps {
   points: number;
   user?: { full_name?: string; email?: string };
   userProfile?: ProfileData | null;
+  currentUserId?: string;
   programs?: any[];
   enrolledPrograms?: any[];
   onLogout: () => void;
@@ -168,10 +169,9 @@ interface DashboardProps {
   onPrivacyClick?: () => void;
 }
 
-export default function Dashboard({ points, user, userProfile, programs = [], enrolledPrograms = [], onLogout, onLogoClick, onViewProfile, onViewCourse, onViewCourseByTitle, onRewardsClick, onViewAllPrograms, onEnroll, onViewLearning, onViewCommunity, onAboutClick, onSupportClick, onPrivacyClick }: DashboardProps) {
+export default function Dashboard({ points, user, userProfile, currentUserId, programs = [], enrolledPrograms = [], onLogout, onLogoClick, onViewProfile, onViewCourse, onViewCourseByTitle, onRewardsClick, onViewAllPrograms, onEnroll, onViewLearning, onViewCommunity, onAboutClick, onSupportClick, onPrivacyClick }: DashboardProps) {
   const [activeVideoSlide, setActiveVideoSlide] = useState(0);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(false);
 
@@ -227,66 +227,7 @@ export default function Dashboard({ points, user, userProfile, programs = [], en
             </div>
             
             <div className="relative">
-              <button 
-                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="p-1.5 md:p-2 text-gray-400 hover:text-primary transition-colors relative"
-              >
-                <Bell size={20} className="md:w-[22px] md:h-[22px]" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-              </button>
-
-              <AnimatePresence>
-                {isNotificationsOpen && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-40" 
-                      onClick={() => setIsNotificationsOpen(false)} 
-                    />
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute right-0 mt-2 w-[320px] md:w-[400px] bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-50 overflow-hidden"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-bold text-ink">Notifications</h4>
-                        <button className="text-xs text-primary font-bold hover:underline">Mark all as read</button>
-                      </div>
-
-                      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                        {MOCK_NOTIFICATIONS.map((notif) => (
-                          <div key={notif.id} className="flex gap-4 p-4 rounded-xl border border-gray-50 hover:bg-gray-50 transition-colors group relative">
-                            <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", notif.color)}>
-                              <GraduationCap size={20} />
-                            </div>
-                            <div className="flex-1 pr-6">
-                              <h5 className="text-sm font-bold text-ink mb-1">{notif.title}</h5>
-                              <p className="text-xs text-gray-500 leading-relaxed mb-3">{notif.description}</p>
-                              <button className="text-xs text-primary font-bold flex items-center gap-1 hover:underline">
-                                {notif.linkText}
-                                <ArrowRight size={12} />
-                              </button>
-                            </div>
-                            <button className="absolute top-4 right-4 text-gray-400 hover:text-ink">
-                              <MoreHorizontal size={16} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-
-                      {MOCK_NOTIFICATIONS.length === 0 && (
-                        <div className="py-12 text-center">
-                          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Bell size={24} className="text-gray-300" />
-                          </div>
-                          <p className="text-sm text-gray-400">No active notifications</p>
-                        </div>
-                      )}
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
+              <NotificationBell currentUserId={currentUserId} />
             </div>
             
             <div className="relative">

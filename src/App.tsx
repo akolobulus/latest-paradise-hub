@@ -456,6 +456,7 @@ export default function App() {
       return (
         <>
           <ProfilePage 
+            currentUserId={session?.user?.id}
             onBack={() => setCurrentPage("dashboard")}
             onProfileUpdate={(updatedProfile) => setUserProfile(updatedProfile)}
             onViewCourseByTitle={handleViewCourseByTitle}
@@ -495,6 +496,7 @@ export default function App() {
       return (
         <>
           <MyLearning 
+            currentUserId={session?.user?.id}
             userProfile={userProfile}
             enrolledPrograms={enrolledPrograms}
             onBack={() => setCurrentPage("dashboard")}
@@ -528,6 +530,7 @@ export default function App() {
       return (
         <>
           <AllPrograms 
+            currentUserId={session?.user?.id}
             userProfile={userProfile}
             programs={Array.isArray(selectedCourse) ? selectedCourse : allCourses} 
             enrolledPrograms={enrolledPrograms}
@@ -549,6 +552,7 @@ export default function App() {
       return (
         <>
           <CourseDetails 
+            currentUserId={session?.user?.id}
             userProfile={userProfile}
             course={selectedCourse} 
             isEnrolled={!!enrollment}
@@ -604,6 +608,7 @@ export default function App() {
       return (
         <>
           <CommunityHub 
+            currentUserId={session?.user?.id}
             userProfile={userProfile}
             onBack={() => setCurrentPage("dashboard")}
             onLogoClick={() => setCurrentPage("landing") } 
@@ -617,6 +622,7 @@ export default function App() {
     }
     return (
       <Dashboard 
+        currentUserId={session?.user?.id}
         points={points}
         user={session?.user.user_metadata}
         userProfile={userProfile}

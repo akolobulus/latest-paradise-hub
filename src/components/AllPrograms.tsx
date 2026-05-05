@@ -1,18 +1,19 @@
 import { motion } from "motion/react";
 import { useState, useEffect } from "react";
 import { 
-  Bell, 
   Grid, 
   Calendar, 
   Clock, 
   ArrowLeft
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
+import NotificationBell from "./NotificationBell";
 import PageFooter from "./PageFooter";
 import { cn } from "@/src/lib/utils";
 import { ProfileData, getCurrentUserPoints } from "@/src/lib/profileCompletion";
 
 interface AllProgramsProps {
+  currentUserId?: string;
   programs: any[];
   userProfile?: ProfileData | null;
   enrolledPrograms?: any[];
@@ -23,7 +24,7 @@ interface AllProgramsProps {
   onEnroll: (program: any) => void;
 }
 
-export default function AllPrograms({ programs, userProfile, enrolledPrograms = [], onBack, onLogoClick, onViewDetails, onViewCourseByTitle, onEnroll }: AllProgramsProps) {
+export default function AllPrograms({ currentUserId, programs, userProfile, enrolledPrograms = [], onBack, onLogoClick, onViewDetails, onViewCourseByTitle, onEnroll }: AllProgramsProps) {
   const [currentPoints, setCurrentPoints] = useState(0);
 
   useEffect(() => {
@@ -50,10 +51,7 @@ export default function AllPrograms({ programs, userProfile, enrolledPrograms = 
             <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
             <span className="text-xs md:text-sm font-bold">{currentPoints} points</span>
           </div>
-          <button className="p-2 text-gray-400 hover:text-primary transition-colors relative">
-            <Bell size={22} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-          </button>
+          <NotificationBell currentUserId={currentUserId} />
           <button className="p-2 text-gray-400 hover:text-primary transition-colors">
             <Grid size={22} />
           </button>

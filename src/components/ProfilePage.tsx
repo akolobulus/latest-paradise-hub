@@ -3,10 +3,11 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Camera, Edit2, X, Upload, ChevronDown, Plus, 
   Linkedin, Facebook, Twitter, Youtube, Github,
-  Globe, Heart, Check, ArrowLeft, Bell, Grid, FileText, Trophy
+  Globe, Heart, Check, ArrowLeft, Grid, FileText, Trophy
 } from "lucide-react";
 import { Country, State, City } from "country-state-city";
 import BrandLogo from "./BrandLogo";
+import NotificationBell from "./NotificationBell";
 import PageFooter from "./PageFooter";
 import { cn } from "@/src/lib/utils";
 import { supabase } from "@/src/lib/supabase";
@@ -40,6 +41,7 @@ const COUNTRIES = [
 ];
 
 interface ProfilePageProps {
+  currentUserId?: string;
   onBack: () => void;
   onProfileUpdate?: (profile: ProfileData) => void;
   onViewCourseByTitle?: (courseTitle: string) => void;
@@ -47,7 +49,7 @@ interface ProfilePageProps {
 
 type Tab = "Personal Information" | "Education Info" | "Work Info" | "Demographic Info";
 
-export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTitle }: ProfilePageProps) {
+export default function ProfilePage({ currentUserId, onBack, onProfileUpdate, onViewCourseByTitle }: ProfilePageProps) {
   const [activeTab, setActiveTab] = useState<Tab>("Personal Information");
   const [editingSection, setEditingSection] = useState<string | null>(null);
   
@@ -56,10 +58,8 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(3); // Mock notifications
   
   // Cascading dropdown states for origin and residence
   const [originStates, setOriginStates] = useState<any[]>([]);
@@ -962,48 +962,11 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
             <span className="font-bold text-sm tracking-tight">{profile?.points?.toLocaleString() || 0}</span>
           </button>
 
-          <div className="relative">
-            <button 
-              onClick={() => {
-                setShowQuickActions(false);
-                setShowProfileMenu(false);
-                setShowNotifications((prev) => !prev);
-                if (!showNotifications && unreadCount > 0) setUnreadCount(0);
-              }}
-              className="p-1.5 text-gray-400 hover:bg-gray-50 rounded-full transition-colors relative"
-            >
-              <Bell size={20} />
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-red-500 text-[8px] text-white font-bold border border-white">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-
-            <AnimatePresence>
-              {showNotifications && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden"
-                >
-                  <div className="px-4 py-3 border-b border-gray-50 font-bold text-ink flex justify-between items-center">
-                    Notifications
-                    <button onClick={() => setShowNotifications(false)}><X size={14} className="text-gray-400"/></button>
-                  </div>
-                  <div className="max-h-64 overflow-y-auto p-4 text-center text-sm text-gray-400">
-                    You're all caught up!
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <NotificationBell currentUserId={currentUserId} />
           
           <div className="relative">
             <button
               onClick={() => {
-                setShowNotifications(false);
                 setShowProfileMenu(false);
                 setShowQuickActions((prev) => !prev);
               }}
@@ -1023,11 +986,10 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
                   <button
                     onClick={() => {
                       setShowQuickActions(false);
-                      setShowNotifications(true);
                     }}
                     className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
                   >
-                    View notifications
+                    Close
                   </button>
                   <button
                     onClick={() => {
@@ -1055,7 +1017,6 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
           <div className="relative">
             <button
               onClick={() => {
-                setShowNotifications(false);
                 setShowQuickActions(false);
                 setShowProfileMenu((prev) => !prev);
               }}

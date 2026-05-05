@@ -23,6 +23,7 @@ import {
   X // Added X icon for the modal close button
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
+import NotificationBell from "./NotificationBell";
 import { cn } from "@/src/lib/utils";
 import { LeaderboardList } from "./Leaderboard";
 import { supabase } from "@/src/lib/supabase";
@@ -76,6 +77,7 @@ const TRENDING = [
 ];
 
 interface CommunityHubProps {
+  currentUserId?: string;
   onBack: () => void;
   onLogoClick?: () => void;
   onProfileClick?: () => void;
@@ -84,7 +86,7 @@ interface CommunityHubProps {
   initialChannel?: string;
 }
 
-export default function CommunityHub({ onBack, onLogoClick, onProfileClick, points, userProfile, initialChannel = "general" }: CommunityHubProps) {
+export default function CommunityHub({ currentUserId, onBack, onLogoClick, onProfileClick, points, userProfile, initialChannel = "general" }: CommunityHubProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [activeChannel, setActiveChannel] = useState(initialChannel);
   const [newPostContent, setNewPostContent] = useState("");
@@ -93,9 +95,6 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [currentPoints, setCurrentPoints] = useState(points);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -381,60 +380,6 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
     }
   };
 
-  const addNotification = (notification: { type: string; text: string; relatedId?: string }) => {
-    setNotifications((prev) => [
-      {
-        id: `${Date.now()}-${Math.random()}`,
-        isRead: false,
-        created_at: new Date().toISOString(),
-        ...notification,
-      },
-      ...prev,
-    ].slice(0, 12));
-    setUnreadCount((count) => count + 1);
-  };
-
-  const toggleNotifications = () => {
-    const next = !showNotifications;
-    setShowNotifications(next);
-    if (next) {
-      setNotifications((prev) => prev.map((notification) => ({ ...notification, isRead: true })));
-      setUnreadCount(0);
-    }
-  };
-
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const notificationChannel = supabase
-      .channel('community-notifications')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) => {
-        const newPost: any = payload.new;
-        if (currentUser && newPost.author_id === currentUser.id) return;
-        addNotification({
-          type: 'post',
-          text: `New post in #${newPost.channel}`,
-          relatedId: newPost.id,
-        });
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, (payload) => {
-        const newMessage: any = payload.new;
-        if (!currentUser || newMessage.sender_id === currentUser.id) return;
-        if (newMessage.receiver_id === currentUser.id) {
-          const sender = usersList.find((user) => user.id === newMessage.sender_id);
-          addNotification({
-            type: 'dm',
-            text: `New message from ${sender?.full_name || 'Someone'}`,
-            relatedId: newMessage.id,
-          });
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(notificationChannel);
-    };
-  }, [currentUser, usersList]);
 
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (!currentUser) {
@@ -876,69 +821,10 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
                 className="bg-transparent border-none outline-none text-sm w-full"
               />
             </div>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={toggleNotifications}
-                className="p-2 text-gray-500 hover:bg-gray-50 rounded-full relative"
-              >
-                <Bell size={20} />
-                {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-[10px] text-white font-bold border-2 border-white">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-
-              <AnimatePresence>
-                {showNotifications && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 mt-2 w-80 bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden z-50"
-                  >
-                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-bold text-ink">Notifications</p>
-                        <p className="text-xs text-gray-500">{notifications.length} recent update{notifications.length === 1 ? '' : 's'}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setNotifications([]);
-                          setUnreadCount(0);
-                        }}
-                        className="text-[10px] uppercase text-primary font-bold"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                    <div className="max-h-72 overflow-y-auto">
-                      {notifications.length === 0 ? (
-                        <div className="p-4 text-sm text-gray-400">No new notifications</div>
-                      ) : (
-                        notifications.map((notification) => (
-                          <div
-                            key={notification.id}
-                            className={cn(
-                              "px-4 py-3 border-b border-gray-100",
-                              notification.isRead ? "bg-white" : "bg-primary/5"
-                            )}
-                          >
-                            <p className="text-sm text-gray-700">{notification.text}</p>
-                            <p className="mt-1 text-[10px] text-gray-400">{timeAgo(notification.created_at)}</p>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            {userProfile && (
+            <NotificationBell currentUserId={currentUserId} />
+          </div>
+          {userProfile && (
               <div
-                onClick={() => onProfileClick?.()}
                 className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs border-2 border-transparent hover:border-primary transition-all overflow-hidden cursor-pointer"
               >
                 {userProfile.avatar_url ? (
@@ -948,9 +834,8 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
                 )}
               </div>
             )}
-          </div>
-        </header>
 
+        </header>
         {/* Scrollable Feed */}
         <div className="flex-1 overflow-y-auto bg-gray-50/50 p-6 custom-scrollbar">
           <div className="max-w-2xl mx-auto space-y-6">

@@ -2,7 +2,6 @@ import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { 
   ArrowLeft, 
-  Bell, 
   Grid, 
   Play, 
   Check, 
@@ -21,6 +20,7 @@ import {
   LogOut
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
+import NotificationBell from "./NotificationBell";
 import PageFooter from "./PageFooter";
 import { ProfileData, getCurrentUserPoints } from "@/src/lib/profileCompletion";
 
@@ -57,10 +57,10 @@ interface CourseDetailsProps {
   onViewLearning?: () => void;
   onLogout?: () => void;
   onSupportClick?: () => void;
+  currentUserId?: string;
 }
 
-export default function CourseDetails({ course, userProfile, onBack, onLogoClick, onEnroll, onPlayCourse, onViewCourseByTitle, isEnrolled, paymentStatus, onViewProfile, onViewCommunity, onViewLearning, onLogout, onSupportClick }: CourseDetailsProps) {
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+export default function CourseDetails({ course, currentUserId, userProfile, onBack, onLogoClick, onEnroll, onPlayCourse, onViewCourseByTitle, isEnrolled, paymentStatus, onViewProfile, onViewCommunity, onViewLearning, onLogout, onSupportClick }: CourseDetailsProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   // const [isDarkTheme, setIsDarkTheme] = useState(false);
@@ -103,22 +103,11 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
             <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
             <span className="text-xs md:text-sm font-bold">{currentPoints} points</span>
           </div>
-          <button 
-            onClick={() => {
-              setIsNotificationsOpen(!isNotificationsOpen);
-              setIsMenuOpen(false);
-              setIsProfileOpen(false);
-            }}
-            className="p-2 text-gray-400 hover:text-primary transition-colors relative"
-          >
-            <Bell size={22} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-          </button>
+          <NotificationBell currentUserId={currentUserId} />
           <div className="relative">
             <button 
               onClick={() => {
                 setIsMenuOpen((prev) => !prev);
-                setIsNotificationsOpen(false);
                 setIsProfileOpen(false);
               }}
               className="p-2 text-gray-400 hover:text-primary transition-colors"
@@ -188,7 +177,6 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
             <button
               onClick={() => {
                 setIsProfileOpen((prev) => !prev);
-                setIsNotificationsOpen(false);
                 setIsMenuOpen(false);
               }}
               className="flex items-center gap-2 md:gap-3 group"
@@ -303,35 +291,6 @@ export default function CourseDetails({ course, userProfile, onBack, onLogoClick
         </div>
       </nav>
 
-      {/* Notifications Dropdown */}
-      <AnimatePresence>
-        {isNotificationsOpen && (
-          <>
-            <div 
-              className="fixed inset-0 z-40" 
-              onClick={() => setIsNotificationsOpen(false)} 
-            />
-            <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="absolute right-4 md:right-8 top-16 w-[320px] md:w-[400px] bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-50"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-bold text-ink">Notifications</h4>
-                <button className="text-xs text-primary font-bold hover:underline">Mark all as read</button>
-              </div>
-              <div className="py-12 text-center">
-                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Bell size={24} className="text-gray-300" />
-                </div>
-                <p className="text-sm text-gray-400">No active notifications</p>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
       {/* Menu Dropdown */}
       <AnimatePresence>
