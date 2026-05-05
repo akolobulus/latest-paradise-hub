@@ -117,8 +117,8 @@ const RECOMMENDED_PROGRAMS = [
 const EXPLORE_CARDS = [
   { title: "Start Learning", icon: <BookOpen />, desc: "Access your program and stay on track with your learning journey here.", color: "bg-primary", image: "/start-learning.jpg" },
   { title: "Connect to Incubation", icon: <Users />, desc: "Collaborate with fellow learners to get peer support and celebrate successes.", color: "bg-green-500", image: "/connect-incubation.jpg" },
-  { title: "Earn Rewards", icon: <Trophy />, desc: "Check how many Legacy Points you have earned and how you can redeem them.", color: "bg-orange-500", image: "/earn-rewards.jpg" },
-  { title: "Need Support?", icon: <HelpCircle />, desc: "Chat with our AI learner support expert, LEA, or contact our support team directly.", color: "bg-primary-light", image: "/need-support.jpg" },
+  { title: "Earn Rewards", icon: <Trophy />, desc: "Check how many Harvest Points you have earned and how you can redeem them.", color: "bg-orange-500", image: "/earn-rewards.jpg" },
+  { title: "Need Support?", icon: <HelpCircle />, desc: "Chat with our AI learner support or contact our support team directly.", color: "bg-primary-light", image: "/need-support.jpg" },
 ];
 
 const DASHBOARD_VIDEOS = [
@@ -722,7 +722,9 @@ export default function Dashboard({ points, user, userProfile, programs = [], en
                 whileHover={{ y: -5 }}
                 onClick={() => {
                   if (card.title === "Connect to Incubation") onViewCommunity();
-                  if (card.title === "Start Learning") onViewLearning();
+                  else if (card.title === "Start Learning") onViewLearning();
+                  else if (card.title === "Earn Rewards") onRewardsClick();
+                  else if (card.title === "Need Support?" && onSupportClick) onSupportClick();
                 }}
                 className="bg-white rounded-[24px] md:rounded-[32px] overflow-hidden border-2 border-ink shadow-[4px_4px_0px_0px_rgba(17,24,39,1)] group cursor-pointer transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(17,24,39,1)]"
               >
