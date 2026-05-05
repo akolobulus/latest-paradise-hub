@@ -280,7 +280,11 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
 
       // 3. THE REWARD TRIGGER: If they hit 100% for the first time, give them 20 points!
       if (newCompletion === 100 && currentCompletion < 100) {
-        await supabase.rpc('increment_points', { amount: 20, row_id: profile.id });
+        const { error: rpcError } = await supabase.rpc('increment_points', { amount: 20, row_id: profile.id });
+        if (rpcError) {
+          console.error("RPC Error:", rpcError);
+          throw new Error(`Failed to award points: ${rpcError.message}`);
+        }
         updatedProfile.points = (updatedProfile.points || 0) + 20;
         alert("🎉 Congratulations! You earned 20 Harvest Points for completing your profile!");
       }
