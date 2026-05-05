@@ -77,14 +77,16 @@ export function Footer({
   onLogoClick,
   onAboutClick,
   onSupportClick,
-  onPrivacyClick
+  onPrivacyClick,
+  onViewCourseByTitle
 }: { 
   aiImage?: string,
   isLoggedIn?: boolean,
   onLogoClick?: () => void,
   onAboutClick?: () => void,
   onSupportClick?: () => void,
-  onPrivacyClick?: () => void
+  onPrivacyClick?: () => void,
+  onViewCourseByTitle?: (courseTitle: string) => void,
 }) {
   const [email, setEmail] = useState("");
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -168,9 +170,33 @@ export function Footer({
           <div>
             <h4 className="text-xl font-bold mb-8">Career Tracks</h4>
             <ul className="space-y-4 text-gray-400">
-              <li><FooterLink href="#">Agribusiness Innovation</FooterLink></li>
-              <li><FooterLink href="#">Sustainable Farm Management</FooterLink></li>
-              <li><FooterLink href="#">AI-Powered Business Automation</FooterLink></li>
+              <li>
+                {onViewCourseByTitle ? (
+                  <button type="button" onClick={() => onViewCourseByTitle("Agribusiness Innovation")} className="hover:text-primary-light transition-colors text-left">
+                    Agribusiness Innovation
+                  </button>
+                ) : (
+                  <FooterLink href="#">Agribusiness Innovation</FooterLink>
+                )}
+              </li>
+              <li>
+                {onViewCourseByTitle ? (
+                  <button type="button" onClick={() => onViewCourseByTitle("Sustainable Farm Management")} className="hover:text-primary-light transition-colors text-left">
+                    Sustainable Farm Management
+                  </button>
+                ) : (
+                  <FooterLink href="#">Sustainable Farm Management</FooterLink>
+                )}
+              </li>
+              <li>
+                {onViewCourseByTitle ? (
+                  <button type="button" onClick={() => onViewCourseByTitle("AI-Powered Business Automation")} className="hover:text-primary-light transition-colors text-left">
+                    AI-Powered Business Automation
+                  </button>
+                ) : (
+                  <FooterLink href="#">AI-Powered Business Automation</FooterLink>
+                )}
+              </li>
             </ul>
           </div>
 

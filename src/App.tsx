@@ -380,12 +380,7 @@ export default function App() {
               <CourseList 
                 isLoggedIn={isLoggedIn}
                 onCourseClick={(course) => {
-                  // Find the corresponding program from RECOMMENDED_PROGRAMS
-                  const program = RECOMMENDED_PROGRAMS.find(p => p.title === course.title);
-                  if (program) {
-                    setSelectedCourse(program);
-                    setCurrentPage("course");
-                  }
+                  handleViewCourseByTitle(course.title);
                 }}
               />
             </motion.div>
@@ -419,6 +414,7 @@ export default function App() {
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }, 100);
             }}
+            onViewCourseByTitle={handleViewCourseByTitle}
           />
         </div>
       );
@@ -718,6 +714,7 @@ export default function App() {
           const el = document.getElementById('about');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
+        onViewCourseByTitle={handleViewCourseByTitle}
       />
       {analytics}
 
