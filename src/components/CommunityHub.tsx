@@ -473,6 +473,15 @@ export default function CommunityHub({ onBack, onLogoClick, onProfileClick, poin
       });
 
       if (error) throw error;
+
+      // Award 1 Harvest Point for creating a new community post
+      const { error: pointsError } = await supabase.rpc('increment_points', {
+        amount: 1,
+        row_id: currentUser.id
+      });
+      if (pointsError) {
+        console.error('Error awarding post points:', pointsError);
+      }
       
       // Force an immediate fetch so the user sees their post instantly, 
       // rather than waiting for the Realtime broadcast to bounce back.

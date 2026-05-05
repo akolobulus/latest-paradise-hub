@@ -155,6 +155,33 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const profileSubscription = supabase
+      .channel('profile-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${session.user.id}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            setPoints(payload.new.points ?? 0);
+            setUserProfile(payload.new as ProfileData);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profileSubscription);
+    };
+  }, [session?.user?.id]);
+
   const handleAwardPoints = (amount: number) => {
     setPoints(prev => prev + amount);
   };
