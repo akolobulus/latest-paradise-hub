@@ -232,7 +232,7 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
   };
 
   // Helper to get initials from full name
-  const getInitials = (name?: string) => {
+  const getInitials = (name?: string | null) => {
     if (!name) return "U";
     return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
   };
