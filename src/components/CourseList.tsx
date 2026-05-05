@@ -44,7 +44,7 @@ export default function CourseList({ isLoggedIn = false, onCourseClick, onAuthRe
             viewport={{ once: true }}
             className="text-4xl sm:text-6xl md:text-8xl font-bold text-white mb-6 tracking-tight"
           >
-            Choose Your Path
+            Choose Your Harvest
           </motion.h2>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}

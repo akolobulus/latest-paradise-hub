@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Play, Instagram, Twitter, Linkedin, Youtube, Facebook, Users, CheckCircle, X, Github, Globe } from "lucide-react";
+import { Play, Instagram, Twitter, Linkedin, Youtube, Facebook, Users, CheckCircle, X, Globe } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 import { cn } from "@/src/lib/utils";
 import BrandLogo from "./BrandLogo";
@@ -158,7 +158,7 @@ export function Footer({
               Empowering the next generation of African leaders through interactive e-learning in technology and agribusiness.
             </p>
             <div className="flex gap-4">
-              <SocialIcon icon={<Github size={20} />} href="https://www.instagram.com/paradisedynamic/" />
+              <SocialIcon icon={<Instagram size={20} />} href="https://www.instagram.com/paradisedynamic/" />
               <SocialIcon icon={<Youtube size={20} />} href="https://www.youtube.com/@PARADISEDYNAMICFARMSLTD" />
               <SocialIcon icon={<Twitter size={20} />} href="https://x.com/pdfarms_48" />
               <SocialIcon icon={<Globe size={20} />} href="https://pdfarms.com/" />
