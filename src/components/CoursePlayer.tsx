@@ -39,10 +39,25 @@ interface CoursePlayerProps {
   onViewProfile?: () => void;
   onViewCommunity?: () => void;
   onViewLearning?: () => void;
+  onViewDashboard?: () => void;
   onLogout?: () => void;
 }
 
-export default function CoursePlayer({ course, userProfile, onBack, onLogoClick, onAwardPoints, onViewProfile, onViewCommunity, onViewLearning, onLogout }: CoursePlayerProps) {
+export default function CoursePlayer({ course, userProfile, onBack, onLogoClick, onAwardPoints, onViewProfile, onViewCommunity, onViewLearning, onViewDashboard, onLogout }: CoursePlayerProps) {
+  // Helper function to extract YouTube video ID
+  const getYouTubeVideoId = (url: string) => {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
+      /youtube\.com\/embed\/([^&\n?#]+)/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
+    }
+    return null;
+  };
+
   // Dynamic database content
   const [dbContent, setDbContent] = useState<any[]>([]);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
@@ -90,6 +105,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [videoStarted, setVideoStarted] = useState(false);
   const [session, setSession] = useState<any>(null);
 
   // Comment state
@@ -146,13 +162,19 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           
           // CRITICAL: Reset the player state when switching courses!
           const firstModule = dbData[0];
-          const firstLesson = Array.isArray(firstModule.lessons) ? firstModule.lessons[0] : null;
+          const rawFirstLesson = Array.isArray(firstModule.lessons) ? firstModule.lessons[0] : null;
           const rawFirstQuiz = Array.isArray(firstModule.quizzes) ? (firstModule.quizzes[0] || null) : (firstModule.quizzes || null);
           const hasFirstQuiz = Boolean(rawFirstQuiz);
 
-          setActiveLesson(firstLesson || null);
+          const mappedFirstLesson = rawFirstLesson ? {
+            ...rawFirstLesson,
+            videoUrl: rawFirstLesson.video_url || rawFirstLesson.videoUrl,
+            orderIndex: rawFirstLesson.order_index ?? rawFirstLesson.orderIndex,
+          } : null;
+
+          setActiveLesson(mappedFirstLesson || null);
           setActiveWeek(0);
-          setShowQuiz(!firstLesson && hasFirstQuiz);
+          setShowQuiz(!mappedFirstLesson && hasFirstQuiz);
           setQuizResult(null);
           setExpandedWeeks([String(firstModule.id)]);
         } else {
@@ -345,6 +367,11 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     }
   }, [showQuiz, activeWeek]);
 
+  // Reset video started state when lesson changes
+  useEffect(() => {
+    setVideoStarted(false);
+  }, [activeLesson?.id]);
+
   // THE MASTER QUIZ LOGIC
   const handleQuizSubmit = async (quiz: any) => {
     let score = 0;
@@ -452,11 +479,15 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const currentQuestion = activeQuiz?.questions?.[safeQuestionIndex];
 
   const getAllLessons = () => {
-    const lessons: { lesson: Lesson; weekIndex: number; lessonIndex: number }[] = [];
+    const lessons: { lesson: Lesson; weekIndex: number; lessonIndex: number; isQuiz?: boolean }[] = [];
     content.weeks.forEach((week, weekIndex) => {
       week.lessons.forEach((lesson, lessonIndex) => {
         lessons.push({ lesson, weekIndex, lessonIndex });
       });
+      // Add quiz after lessons if it exists
+      if (week.quiz) {
+        lessons.push({ lesson: { id: `quiz-${week.quiz.id}`, title: week.quiz.title, type: 'quiz' } as Lesson, weekIndex, lessonIndex: -1, isQuiz: true });
+      }
     });
     return lessons;
   };
@@ -470,16 +501,28 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const navigateToLesson = (lessonIndex: number) => {
     const allLessons = getAllLessons();
     if (lessonIndex >= 0 && lessonIndex < allLessons.length) {
-      const { lesson, weekIndex } = allLessons[lessonIndex];
-      setActiveLesson(lesson);
-      setActiveWeek(weekIndex);
-      setShowQuiz(false);
-      setQuizResult(null);
-      setExpandedWeeks(prev => 
-        prev.includes(String(content.weeks[weekIndex].id)) 
-          ? prev 
-          : [...prev, String(content.weeks[weekIndex].id)]
-      );
+      const { lesson, weekIndex, isQuiz } = allLessons[lessonIndex];
+      if (isQuiz) {
+        setActiveLesson(null);
+        setActiveWeek(weekIndex);
+        setShowQuiz(true);
+        setQuizResult(null);
+        setExpandedWeeks(prev => 
+          prev.includes(String(content.weeks[weekIndex].id)) 
+            ? prev 
+            : [...prev, String(content.weeks[weekIndex].id)]
+        );
+      } else {
+        setActiveLesson(lesson);
+        setActiveWeek(weekIndex);
+        setShowQuiz(false);
+        setQuizResult(null);
+        setExpandedWeeks(prev => 
+          prev.includes(String(content.weeks[weekIndex].id)) 
+            ? prev 
+            : [...prev, String(content.weeks[weekIndex].id)]
+        );
+      }
     }
   };
 
@@ -494,6 +537,15 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     const currentIndex = getCurrentLessonIndex();
     const allLessons = getAllLessons();
     if (currentIndex < allLessons.length - 1) {
+      const nextItem = allLessons[currentIndex + 1];
+      // Check if trying to go to next week but current week's quiz not passed
+      if (nextItem.weekIndex > activeWeek && content.weeks[activeWeek]?.quiz && !passedQuizzes.includes(content.weeks[activeWeek].quiz.id)) {
+        // Stay on current quiz
+        setShowQuiz(true);
+        setActiveLesson(null);
+        setQuizResult(null);
+        return;
+      }
       navigateToLesson(currentIndex + 1);
     }
   };
@@ -555,6 +607,15 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                   </span>
                 </button>
               </div>
+
+              {onViewDashboard && (
+                <button
+                  onClick={onViewDashboard}
+                  className="w-full mb-6 px-4 py-2 bg-primary text-white rounded-lg font-bold hover:bg-primary/90 transition-colors text-left"
+                >
+                  ← Back to Dashboard
+                </button>
+              )}
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-gray-400 uppercase tracking-widest">
@@ -1050,20 +1111,47 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                     <div className="space-y-6 md:space-y-8">
                       <div className="aspect-video bg-black rounded-xl md:rounded-3xl overflow-hidden shadow-lg md:shadow-2xl relative group w-full">
                         {activeLesson.videoUrl?.includes("youtube.com") || activeLesson.videoUrl?.includes("youtu.be") ? (
-                          <iframe
-                            src={activeLesson.videoUrl.includes("v=") 
-                              ? `https://www.youtube.com/embed/${activeLesson.videoUrl.split("v=")[1].split("&")[0]}`
-                              : activeLesson.videoUrl.includes("youtu.be/")
-                              ? `https://www.youtube.com/embed/${activeLesson.videoUrl.split("youtu.be/")[1].split("?")[0]}`
-                              : activeLesson.videoUrl
-                            }
-                            title={activeLesson.title}
-                            className="w-full h-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          ></iframe>
+                          (() => {
+                            const videoId = getYouTubeVideoId(activeLesson.videoUrl);
+                            return videoId ? (
+                              <div className="relative w-full h-full">
+                                {!videoStarted ? (
+                                  <div 
+                                    className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-black cursor-pointer"
+                                    onClick={() => setVideoStarted(true)}
+                                  >
+                                    <div className="text-center text-white">
+                                      <div className="w-20 h-20 md:w-24 md:h-24 bg-white/10 rounded-full flex items-center justify-center mb-4 mx-auto hover:bg-white/20 transition-colors">
+                                        <Play size={40} className="text-white ml-2" fill="currentColor" />
+                                      </div>
+                                      <h3 className="text-lg md:text-xl font-bold mb-2">Click to Start Video</h3>
+                                      <p className="text-sm md:text-base text-gray-300">Begin your learning journey</p>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <iframe
+                                    key={activeLesson.videoUrl}
+                                    src={`https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`}
+                                    title={activeLesson.title}
+                                    className="w-full h-full"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                  />
+                                )}
+                              </div>
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500">
+                                <div className="text-center">
+                                  <Play size={48} className="mx-auto mb-4 opacity-50" />
+                                  <p className="text-sm">Unable to load video</p>
+                                  <p className="text-xs mt-1">Invalid YouTube URL</p>
+                                </div>
+                              </div>
+                            );
+                          })()
                         ) : (
                           <iframe 
+                            key={activeLesson.videoUrl}
                             src={activeLesson.videoUrl} 
                             className="w-full h-full"
                             allow="autoplay; fullscreen; picture-in-picture" 
@@ -1162,7 +1250,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                         )}
                       >
                         <ArrowLeft size={16} />
-                        <span className="hidden sm:inline">Previous</span>
+                        Previous
                       </button>
                       <button 
                         onClick={goToNextLesson}
@@ -1328,6 +1416,18 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                       />
                     </div>
                   </div>
+
+                  {onViewDashboard && (
+                    <button
+                      onClick={() => {
+                        setShowMobileSidebar(false);
+                        onViewDashboard();
+                      }}
+                      className="w-full mt-4 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors text-sm text-left"
+                    >
+                      ← Back to Dashboard
+                    </button>
+                  )}
                 </div>
 
                 {/* Mobile Sidebar Content Menu */}

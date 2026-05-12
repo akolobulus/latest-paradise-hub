@@ -27,6 +27,8 @@ import NotificationBell from "./NotificationBell";
 import PageFooter from "./PageFooter";
 import { PaystackButton } from "react-paystack";
 import { ProfileData, getCurrentUserPoints } from "@/src/lib/profileCompletion";
+import { supabase } from "@/src/lib/supabase";
+import { fetchCourseContent } from "@/src/lib/courseApi";
 
 interface EnrolledProgram {
   id: number;
@@ -62,6 +64,7 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const [currentPoints, setCurrentPoints] = useState(0);
+  const [courseProgress, setCourseProgress] = useState<Record<number, number>>({});
 
   useEffect(() => {
     const fetchPoints = async () => {
@@ -82,6 +85,69 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
 
   // Paystack Public Key from environment variables
   const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "pk_test_your_public_key_here";
+
+  // Calculate progress for each course
+  const calculateCourseProgress = async (courseId: number) => {
+    try {
+      // Fetch course content
+      const courseContent = await fetchCourseContent(courseId);
+      if (!courseContent || !courseContent.weeks) return 0;
+
+      // Calculate total items (lessons + quizzes)
+      const totalItems = courseContent.weeks.reduce((acc: number, week: any) => 
+        acc + week.lessons.length + (week.quiz ? 1 : 0), 0);
+
+      if (totalItems === 0) return 0;
+
+      // Fetch completed lessons
+      const { data: lessonProgress, error: lessonError } = await supabase
+        .from('lesson_progress')
+        .select('lesson_id')
+        .eq('user_id', currentUserId)
+        .in('lesson_id', courseContent.weeks.flatMap((w: any) => w.lessons.map((l: any) => l.id)));
+
+      if (lessonError) {
+        console.error('Error loading lesson progress:', lessonError);
+        return 0;
+      }
+
+      // Fetch passed quizzes
+      const { data: quizProgress, error: quizError } = await supabase
+        .from('quiz_progress')
+        .select('quiz_id')
+        .eq('user_id', currentUserId)
+        .eq('passed', true)
+        .in('quiz_id', courseContent.weeks.map((w: any) => w.quiz?.id).filter(Boolean));
+
+      if (quizError) {
+        console.error('Error loading quiz progress:', quizError);
+        return 0;
+      }
+
+      const completedLessons = lessonProgress?.length || 0;
+      const passedQuizzes = quizProgress?.length || 0;
+      const completedItems = completedLessons + passedQuizzes;
+
+      return Math.round((completedItems / totalItems) * 100);
+    } catch (error) {
+      console.error('Error calculating course progress:', error);
+      return 0;
+    }
+  };
+
+  // Load progress for all enrolled programs
+  useEffect(() => {
+    const loadProgress = async () => {
+      const progress: Record<number, number> = {};
+      for (const program of verifiedPrograms) {
+        progress[program.id] = await calculateCourseProgress(program.id);
+      }
+      setCourseProgress(progress);
+    };
+    if (verifiedPrograms.length > 0 && currentUserId) {
+      loadProgress();
+    }
+  }, [verifiedPrograms, currentUserId]);
 
   return (
     <div className={cn(
@@ -474,13 +540,13 @@ className={cn(
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-bold text-gray-500">Course Progress</span>
                             <span className="text-xs font-bold text-primary">
-                              {program.id === 101 ? '15%' : '0%'}
+                              {courseProgress[program.id] || 0}%
                             </span>
                           </div>
                           <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-primary transition-all duration-1000" 
-                              style={{ width: program.id === 101 ? '15%' : '0%' }} 
+                              style={{ width: `${courseProgress[program.id] || 0}%` }} 
                             />
                           </div>
                         </div>

@@ -626,6 +626,7 @@ export default function App() {
             onViewProfile={() => setCurrentPage("profile")}
             onViewCommunity={() => setCurrentPage("community")}
             onViewLearning={() => setCurrentPage("learning")}
+            onViewDashboard={() => setCurrentPage("dashboard")}
             onLogout={() => {
               handleLogout();
               setSelectedCourse(null);
