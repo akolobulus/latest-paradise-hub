@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Camera, Edit2, X, Upload, ChevronDown, Plus, 
   Linkedin, Facebook, Twitter, Youtube, Instagram,
-  Globe, Heart, Check, ArrowLeft, Grid, FileText, Trophy,
-  GraduationCap, Users, HelpCircle, User, LogOut
+  Globe, Heart, Check, ArrowLeft, FileText, Trophy,
+  GraduationCap, Users, HelpCircle, User, LogOut, Menu, Bell
 } from "lucide-react";
 import { Country, State, City } from "country-state-city";
 import BrandLogo from "./BrandLogo";
@@ -68,6 +68,8 @@ export default function ProfilePage({ currentUserId, points, user, onBack, onPro
   const [isSaving, setIsSaving] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   
   // Cascading dropdown states for origin and residence
   const [originStates, setOriginStates] = useState<any[]>([]);
@@ -943,41 +945,45 @@ export default function ProfilePage({ currentUserId, points, user, onBack, onPro
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Navbar (Mobile matching image) */}
       <nav className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-[50]">
-        <button onClick={onBack} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onBack}>
           <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
           <span className="font-display font-bold text-xl tracking-tight text-ink hidden sm:block">
             Paradise <span className="text-primary">Hub</span>
           </span>
-        </button>
-        
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={onRewardsClick}
-            className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-4 py-2 hover:bg-accent/15 transition-colors cursor-pointer"
-          >
-            <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
-            <span className="font-bold text-sm tracking-tight">{points.toLocaleString()} points</span>
-          </button>
+        </div>
 
-          <NotificationBell currentUserId={currentUserId} />
-          
-          <div className="relative">
+        <div className="flex items-center gap-3">
+          {/* Desktop: Show points, notification, menu, profile */}
+          <div className="hidden md:flex items-center gap-3">
+            <button
+              onClick={onRewardsClick}
+              className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-4 py-2 hover:bg-accent/15 transition-colors cursor-pointer"
+            >
+              <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
+              <span className="font-bold text-sm tracking-tight">{points.toLocaleString()} points</span>
+            </button>
+
+            <NotificationBell currentUserId={currentUserId} />
+          </div>
+
+          {/* Mobile: Only show menu toggle */}
+          <div className="md:hidden relative">
             <button
               onClick={() => {
-                setShowProfileMenu(false);
                 setShowQuickActions((prev) => !prev);
+                setShowProfileMenu(false);
               }}
-              className="p-1.5 text-gray-400 hover:bg-gray-50 rounded-full transition-colors"
+              className="p-1.5 rounded-full text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
             >
-              <Grid size={20} />
+              <Menu size={20} />
             </button>
 
             <AnimatePresence>
               {showQuickActions && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setShowQuickActions(false)} 
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowQuickActions(false)}
                   />
                   <motion.div
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -986,45 +992,52 @@ export default function ProfilePage({ currentUserId, points, user, onBack, onPro
                     transition={{ duration: 0.2 }}
                     className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-50"
                   >
-                    <div className="grid grid-cols-3 gap-y-8 gap-x-4">
-                      <button 
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => {
+                          setShowQuickActions(false);
+                          onBack();
+                        }}
+                        className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                      >
+                        <span className="font-bold text-ink">Dashboard</span>
+                      </button>
+
+                      <button
                         onClick={() => {
                           setShowQuickActions(false);
                           onViewLearning();
                         }}
-                        className="flex flex-col items-center gap-3 group"
+                        className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                       >
-                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
-                          <GraduationCap size={24} />
-                        </div>
-                        <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Learning</span>
+                        <span className="font-bold text-ink">Learning</span>
+                        <GraduationCap size={20} className="text-primary" />
                       </button>
 
-                      <button 
+                      <button
                         onClick={() => {
                           setShowQuickActions(false);
                           onViewCommunity();
                         }}
-                        className="flex flex-col items-center gap-3 group"
+                        className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                       >
-                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
-                          <Users size={24} />
-                        </div>
-                        <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Incubation</span>
+                        <span className="font-bold text-ink">Incubation</span>
+                        <Users size={20} className="text-primary" />
                       </button>
 
-                      <button onClick={() => { setShowQuickActions(false); onRewardsClick(); }} className="flex flex-col items-center gap-3 group">
-                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
-                          <Trophy size={24} />
-                        </div>
-                        <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Rewards</span>
+                      <button onClick={() => { setShowQuickActions(false); onRewardsClick(); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <span className="font-bold text-ink">Rewards</span>
+                        <span className="text-sm text-gray-500">{points.toLocaleString()}</span>
                       </button>
 
-                      <button onClick={() => { setShowQuickActions(false); if (onSupportClick) onSupportClick(); }} className="flex flex-col items-center gap-3 group">
-                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
-                          <HelpCircle size={24} />
-                        </div>
-                        <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Support</span>
+                      <button onClick={() => { setShowQuickActions(false); if (onSupportClick) onSupportClick(); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <span className="font-bold text-ink">Support</span>
+                        <HelpCircle size={20} className="text-primary" />
+                      </button>
+
+                      <button onClick={() => { setShowQuickActions(false); setShowProfileMenu(true); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <span className="font-bold text-ink">Profile</span>
+                        <User size={20} className="text-primary" />
                       </button>
                     </div>
                   </motion.div>
@@ -1032,89 +1045,164 @@ export default function ProfilePage({ currentUserId, points, user, onBack, onPro
               )}
             </AnimatePresence>
           </div>
-          
-          <div className="h-6 md:h-8 w-px bg-gray-200 mx-1" />
 
-          <div className="relative">
-            <button 
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-2 md:gap-3 group"
-            >
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border-2 border-transparent group-hover:border-primary transition-all text-sm md:text-base overflow-hidden">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  getInitials(profile?.full_name || user?.full_name)
+          {/* Desktop: Menu toggle and profile menu */}
+          <div className="hidden md:flex items-center gap-3">
+            <div className="h-6 md:h-8 w-px bg-gray-200 mx-1" />
+
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  setShowQuickActions((prev) => !prev);
+                }}
+                className="p-1.5 rounded-full text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+              >
+                <Menu size={20} />
+              </button>
+
+              <AnimatePresence>
+                {showQuickActions && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowQuickActions(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-50"
+                    >
+                      <div className="grid grid-cols-3 gap-y-8 gap-x-4">
+                        <button
+                          onClick={() => {
+                            setShowQuickActions(false);
+                            onViewLearning();
+                          }}
+                          className="flex flex-col items-center gap-3 group"
+                        >
+                          <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
+                            <GraduationCap size={24} />
+                          </div>
+                          <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Learning</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setShowQuickActions(false);
+                            onViewCommunity();
+                          }}
+                          className="flex flex-col items-center gap-3 group"
+                        >
+                          <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
+                            <Users size={24} />
+                          </div>
+                          <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Incubation</span>
+                        </button>
+
+                        <button onClick={() => { setShowQuickActions(false); onRewardsClick(); }} className="flex flex-col items-center gap-3 group">
+                          <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
+                            <Trophy size={24} />
+                          </div>
+                          <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Rewards</span>
+                        </button>
+
+                        <button onClick={() => { setShowQuickActions(false); if (onSupportClick) onSupportClick(); }} className="flex flex-col items-center gap-3 group">
+                          <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
+                            <HelpCircle size={24} />
+                          </div>
+                          <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Support</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
                 )}
-              </div>
-              <div className="hidden lg:block text-left">
-                <div className="text-sm font-bold text-ink">{profile?.full_name || user?.full_name || "Learner"}</div>
-                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Learner</div>
-              </div>
-            </button>
+              </AnimatePresence>
+            </div>
 
-            <AnimatePresence>
-              {showProfileMenu && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setShowProfileMenu(false)} 
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 overflow-hidden"
-                  >
-                    <button 
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        setEditingSection("Basic Info");
-                      }}
-                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="flex items-center gap-2 md:gap-3 group"
+              >
+                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border-2 border-transparent group-hover:border-primary transition-all text-sm md:text-base overflow-hidden">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    getInitials(profile?.full_name || user?.full_name)
+                  )}
+                </div>
+                <div className="hidden lg:block text-left">
+                  <div className="text-sm font-bold text-ink">{profile?.full_name || user?.full_name || "Learner"}</div>
+                  <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Learner</div>
+                </div>
+              </button>
+
+              <AnimatePresence>
+                {showProfileMenu && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowProfileMenu(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 overflow-hidden"
                     >
-                      <User size={18} className="text-gray-400" />
-                      <span className="text-sm font-bold">Edit profile</span>
-                    </button>
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          setEditingSection("Basic Info");
+                        }}
+                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
+                      >
+                        <User size={18} className="text-gray-400" />
+                        <span className="text-sm font-bold">Edit profile</span>
+                      </button>
 
-                    <button 
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        onViewLearning();
-                      }}
-                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
-                    >
-                      <GraduationCap size={18} className="text-gray-400" />
-                      <span className="text-sm font-bold">My Learning</span>
-                    </button>
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          onViewLearning();
+                        }}
+                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
+                      >
+                        <GraduationCap size={18} className="text-gray-400" />
+                        <span className="text-sm font-bold">My Learning</span>
+                      </button>
 
-                    <div className="h-px bg-gray-100 mx-2" />
+                      <div className="h-px bg-gray-100 mx-2" />
 
-                    <button 
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        if (onSupportClick) onSupportClick();
-                      }}
-                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
-                    >
-                      <HelpCircle size={18} className="text-gray-400" />
-                      <span className="text-sm font-bold">Support</span>
-                    </button>
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onSupportClick) onSupportClick();
+                        }}
+                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
+                      >
+                        <HelpCircle size={18} className="text-gray-400" />
+                        <span className="text-sm font-bold">Support</span>
+                      </button>
 
-                    <div className="h-px bg-gray-100 mx-2" />
+                      <div className="h-px bg-gray-100 mx-2" />
 
-                    <button 
-                      onClick={onLogout}
-                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-red-500"
-                    >
-                      <LogOut size={18} />
-                      <span className="text-sm font-bold">Log out</span>
-                    </button>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
+                      <button
+                        onClick={onLogout}
+                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-red-500"
+                      >
+                        <LogOut size={18} />
+                        <span className="text-sm font-bold">Log out</span>
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </nav>

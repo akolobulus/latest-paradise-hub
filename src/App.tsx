@@ -486,6 +486,8 @@ export default function App() {
             onViewProfile={() => setCurrentPage("profile")}
             onViewCommunity={() => setCurrentPage("community")}
             onViewLearning={() => setCurrentPage("learning")}
+            onSupportClick={() => setCurrentPage("support")}
+            currentUserId={session?.user?.id}
           />
           {analytics}
         </>
@@ -498,6 +500,12 @@ export default function App() {
             availablePoints={points}
             onBack={() => setCurrentPage("dashboard")}
             userProfile={userProfile}
+            onViewLearning={() => setCurrentPage("learning")}
+            onViewCommunity={() => setCurrentPage("community")}
+            onRewardsClick={() => setCurrentPage("rewards")}
+            onSupportClick={() => setCurrentPage("support")}
+            onViewProfile={() => setCurrentPage("profile")}
+            currentUserId={session?.user?.id}
           />
           {analytics}
         </>
@@ -634,8 +642,15 @@ export default function App() {
             currentUserId={session?.user?.id}
             userProfile={userProfile}
             onBack={() => setCurrentPage("dashboard")}
-            onLogoClick={() => setCurrentPage("landing") } 
+            onLogoClick={() => setCurrentPage("landing")}
+            onIncubationClick={() => {
+              setCommunityChannel("general");
+              setCurrentPage("community");
+            }}
             onProfileClick={() => setCurrentPage("profile")}
+            onViewLearning={() => setCurrentPage("learning")}
+            onRewardsClick={handleViewRewards}
+            onSupportClick={handleViewSupport}
             points={points} 
             initialChannel={communityChannel} 
           />

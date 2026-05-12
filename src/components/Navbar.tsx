@@ -85,7 +85,7 @@ export default function Navbar({
 
           {/* Mobile Menu Toggle */}
           <button 
-            className="md:hidden p-2"
+            className="md:hidden p-2 rounded-full text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X /> : <Menu />}

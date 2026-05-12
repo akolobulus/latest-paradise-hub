@@ -1,7 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Search, 
-  Grid, 
   Zap, 
   Play, 
   ChevronLeft, 
@@ -10,6 +9,8 @@ import {
   Users, 
   Trophy, 
   HelpCircle,
+  Bell,
+  Menu,
   Calendar,
   Clock,
   ArrowRight,
@@ -173,6 +174,7 @@ export default function Dashboard({ points, user, userProfile, currentUserId, pr
   const [activeVideoSlide, setActiveVideoSlide] = useState(0);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(false);
 
   // Calculate profile completion percentage
@@ -221,21 +223,24 @@ export default function Dashboard({ points, user, userProfile, currentUserId, pr
           </div>
 
           <div className="flex items-center gap-2 md:gap-6">
-          <div className="bg-accent/10 border border-accent/20 rounded-full px-4 py-2 flex items-center gap-2">
+            <button 
+              onClick={onRewardsClick}
+              className="hidden md:flex bg-accent/10 border border-accent/20 rounded-full px-4 py-2 items-center gap-2 hover:bg-accent/15 transition-colors cursor-pointer"
+            >
               <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
               <span className="font-bold text-sm tracking-tight">{points.toLocaleString()} points</span>
-            </div>
+            </button>
             
-            <div className="relative">
-              <NotificationBell currentUserId={currentUserId} />
+            <div className="hidden md:block relative">
+              <NotificationBell currentUserId={currentUserId} open={isNotificationOpen} onOpenChange={setIsNotificationOpen} />
             </div>
             
             <div className="relative">
               <button 
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-1.5 md:p-2 text-gray-400 hover:text-primary transition-colors"
+                className="p-1.5 md:p-2 rounded-full text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
               >
-                <Grid size={20} className="md:w-[22px] md:h-[22px]" />
+                <Menu size={20} className="md:w-[22px] md:h-[22px]" />
               </button>
 
               <AnimatePresence>
@@ -252,18 +257,16 @@ export default function Dashboard({ points, user, userProfile, currentUserId, pr
                       transition={{ duration: 0.2 }}
                       className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-50"
                     >
-                      <div className="grid grid-cols-3 gap-y-8 gap-x-4">
+                      <div className="space-y-2">
                         <button 
                           onClick={() => {
                             setIsMenuOpen(false);
                             onViewLearning();
                           }}
-                          className="flex flex-col items-center gap-3 group"
+                          className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                         >
-                          <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
-                            <GraduationCap size={24} />
-                          </div>
-                          <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Learning</span>
+                          <span className="font-bold text-ink">Learning</span>
+                          <GraduationCap size={20} className="text-primary" />
                         </button>
 
                         <button 
@@ -271,26 +274,28 @@ export default function Dashboard({ points, user, userProfile, currentUserId, pr
                             setIsMenuOpen(false);
                             onViewCommunity();
                           }}
-                          className="flex flex-col items-center gap-3 group"
+                          className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                         >
-                          <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
-                            <Users size={24} />
-                          </div>
-                          <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Incubation</span>
+                          <span className="font-bold text-ink">Incubation</span>
+                          <Users size={20} className="text-primary" />
                         </button>
 
-                        <button onClick={() => { setIsMenuOpen(false); onRewardsClick(); }} className="flex flex-col items-center gap-3 group">
-                          <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
-                            <Trophy size={24} />
-                          </div>
-                          <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Rewards</span>
+                        <button
+                          onClick={() => { setIsMenuOpen(false); onRewardsClick(); }}
+                          className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                        >
+                          <span className="font-bold text-ink">Rewards</span>
+                          <span className="text-sm text-gray-500">{points.toLocaleString()}</span>
                         </button>
 
-                        <button onClick={() => { setIsMenuOpen(false); if (onSupportClick) onSupportClick(); }} className="flex flex-col items-center gap-3 group">
-                          <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
-                            <HelpCircle size={24} />
-                          </div>
-                          <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Support</span>
+                        <button onClick={() => { setIsMenuOpen(false); if (onSupportClick) onSupportClick(); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                          <span className="font-bold text-ink">Support</span>
+                          <HelpCircle size={20} className="text-primary" />
+                        </button>
+
+                        <button onClick={() => { setIsMenuOpen(false); onViewProfile(); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                          <span className="font-bold text-ink">Profile</span>
+                          <User size={20} className="text-primary" />
                         </button>
                       </div>
                     </motion.div>
@@ -299,9 +304,9 @@ export default function Dashboard({ points, user, userProfile, currentUserId, pr
               </AnimatePresence>
             </div>
 
-            <div className="h-6 md:h-8 w-px bg-gray-200 mx-1" />
+            <div className="h-6 md:h-8 w-px bg-gray-200 mx-1 hidden md:block" />
 
-            <div className="relative">
+            <div className="relative hidden md:flex">
               <button 
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center gap-2 md:gap-3 group"

@@ -2,7 +2,6 @@ import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { 
   ArrowLeft, 
-  Grid, 
   Play, 
   Check, 
   Calendar, 
@@ -18,7 +17,9 @@ import {
   HelpCircle,
   GraduationCap,
   Trophy,
-  LogOut
+  LogOut,
+  Menu,
+  Bell
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import NotificationBell from "./NotificationBell";
@@ -66,6 +67,7 @@ interface CourseDetailsProps {
 export default function CourseDetails({ course, currentUserId, user, userProfile, onBack, onLogoClick, onEnroll, onPlayCourse, onViewCourseByTitle, isEnrolled, paymentStatus, onViewProfile, onViewCommunity, onViewLearning, onRewardsClick, onLogout, onSupportClick }: CourseDetailsProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   // const [isDarkTheme, setIsDarkTheme] = useState(false);
   const [currentPoints, setCurrentPoints] = useState(0);
 
@@ -102,27 +104,31 @@ export default function CourseDetails({ course, currentUserId, user, userProfile
         </div>
 
         <div className="flex items-center gap-3 md:gap-6">
-          <button
-            type="button"
-            onClick={() => onRewardsClick?.()}
-            className="bg-accent/10 border border-accent/20 rounded-full px-4 py-2 flex items-center gap-2 hover:bg-accent/90 transition-colors"
-          >
-            <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
-            <span className="text-xs md:text-sm font-bold">{currentPoints} points</span>
-          </button>
+          {/* Desktop: Show points, notification, menu, profile */}
+          <div className="hidden md:flex items-center gap-3 md:gap-6">
+            <button
+              type="button"
+              onClick={() => onRewardsClick?.()}
+              className="bg-accent/10 border border-accent/20 rounded-full px-4 py-2 flex items-center gap-2 hover:bg-accent/90 transition-colors"
+            >
+              <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
+              <span className="text-xs md:text-sm font-bold">{currentPoints} points</span>
+            </button>
 
-          <NotificationBell currentUserId={currentUserId} />
+            <NotificationBell currentUserId={currentUserId} />
+          </div>
 
-          <div className="relative">
+          {/* Mobile: Only show menu toggle */}
+          <div className="md:hidden relative">
             <button
               type="button"
               onClick={() => {
                 setIsMenuOpen((prev) => !prev);
                 setIsProfileOpen(false);
               }}
-              className="p-2 text-gray-400 hover:text-primary transition-colors"
+              className="p-2 rounded-full text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
             >
-              <Grid size={22} />
+              <Menu size={22} />
             </button>
 
             <AnimatePresence>
@@ -134,61 +140,44 @@ export default function CourseDetails({ course, currentUserId, user, userProfile
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-50 overflow-hidden"
+                    className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-50"
                   >
-                    <div className="mb-3 text-sm font-bold text-ink">Quick actions</div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
                       <button
-                        type="button"
                         onClick={() => {
                           setIsMenuOpen(false);
                           onViewLearning?.();
                         }}
-                        className="flex flex-col items-center gap-2 text-gray-600 hover:text-primary transition-colors"
+                        className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                       >
-                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center group-hover:bg-primary/5 group-hover:border-primary transition-all">
-                          <GraduationCap size={20} />
-                        </div>
-                        <span className="text-[10px] font-bold uppercase tracking-wide">Learning</span>
+                        <span className="font-bold text-ink">Learning</span>
+                        <GraduationCap size={20} className="text-primary" />
                       </button>
+
                       <button
-                        type="button"
                         onClick={() => {
                           setIsMenuOpen(false);
                           onViewCommunity?.();
                         }}
-                        className="flex flex-col items-center gap-2 text-gray-600 hover:text-primary transition-colors"
+                        className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                       >
-                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center group-hover:bg-primary/5 group-hover:border-primary transition-all">
-                          <Users size={20} />
-                        </div>
-                        <span className="text-[10px] font-bold uppercase tracking-wide">Community</span>
+                        <span className="font-bold text-ink">Incubation</span>
+                        <Users size={20} className="text-primary" />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          onRewardsClick?.();
-                        }}
-                        className="flex flex-col items-center gap-2 text-gray-600 hover:text-primary transition-colors"
-                      >
-                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center group-hover:bg-primary/5 group-hover:border-primary transition-all">
-                          <Trophy size={20} />
-                        </div>
-                        <span className="text-[10px] font-bold uppercase tracking-wide">Rewards</span>
+
+                      <button onClick={() => { setIsMenuOpen(false); onRewardsClick?.(); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <span className="font-bold text-ink">Rewards</span>
+                        <span className="text-sm text-gray-500">{currentPoints}</span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          onSupportClick?.();
-                        }}
-                        className="flex flex-col items-center gap-2 text-gray-600 hover:text-primary transition-colors"
-                      >
-                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center group-hover:bg-primary/5 group-hover:border-primary transition-all">
-                          <HelpCircle size={20} />
-                        </div>
-                        <span className="text-[10px] font-bold uppercase tracking-wide">Support</span>
+
+                      <button onClick={() => { setIsMenuOpen(false); onSupportClick?.(); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <span className="font-bold text-ink">Support</span>
+                        <HelpCircle size={20} className="text-primary" />
+                      </button>
+
+                      <button onClick={() => { setIsMenuOpen(false); onViewProfile?.(); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <span className="font-bold text-ink">Profile</span>
+                        <User size={20} className="text-primary" />
                       </button>
                     </div>
                   </motion.div>
@@ -197,101 +186,188 @@ export default function CourseDetails({ course, currentUserId, user, userProfile
             </AnimatePresence>
           </div>
 
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setIsProfileOpen((prev) => !prev);
-                setIsMenuOpen(false);
-              }}
-              className="flex items-center gap-2 md:gap-3 group"
-            >
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border-2 border-transparent group-hover:border-primary transition-all text-sm md:text-base overflow-hidden">
-                {userProfile?.avatar_url ? (
-                  <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  getInitials(userProfile?.full_name || user?.full_name)
-                )}
-              </div>
-              <div className="hidden lg:block text-left">
-                <div className="text-sm font-bold text-ink">{userProfile?.full_name || user?.full_name || "Learner"}</div>
-                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Learner</div>
-              </div>
-            </button>
+          {/* Desktop: Menu toggle and profile menu */}
+          <div className="hidden md:flex items-center gap-3 md:gap-6">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen((prev) => !prev);
+                  setIsProfileOpen(false);
+                }}
+                className="p-2 text-gray-400 hover:text-primary transition-colors"
+              >
+                <Menu size={22} />
+              </button>
 
-            <AnimatePresence>
-              {isProfileOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)} />
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-2 w-64 rounded-2xl shadow-2xl py-2 z-50 overflow-hidden bg-white border border-gray-100 text-ink"
-                  >
-                    <div className="h-px bg-gray-100 mx-2" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        onViewProfile?.();
-                      }}
-                      className="w-full px-4 py-3 flex items-center gap-3 text-ink hover:bg-gray-50 transition-colors"
+              <AnimatePresence>
+                {isMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-50 overflow-hidden"
                     >
-                      <User size={18} className="text-gray-400" />
-                      <span className="text-sm font-bold">View profile</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        onViewLearning?.();
-                      }}
-                      className="w-full px-4 py-3 flex items-center gap-3 text-ink hover:bg-gray-50 transition-colors"
+                      <div className="mb-3 text-sm font-bold text-ink">Quick actions</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            onViewLearning?.();
+                          }}
+                          className="flex flex-col items-center gap-2 text-gray-600 hover:text-primary transition-colors"
+                        >
+                          <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center group-hover:bg-primary/5 group-hover:border-primary transition-all">
+                            <GraduationCap size={20} />
+                          </div>
+                          <span className="text-[10px] font-bold uppercase tracking-wide">Learning</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            onViewCommunity?.();
+                          }}
+                          className="flex flex-col items-center gap-2 text-gray-600 hover:text-primary transition-colors"
+                        >
+                          <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center group-hover:bg-primary/5 group-hover:border-primary transition-all">
+                            <Users size={20} />
+                          </div>
+                          <span className="text-[10px] font-bold uppercase tracking-wide">Community</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            onRewardsClick?.();
+                          }}
+                          className="flex flex-col items-center gap-2 text-gray-600 hover:text-primary transition-colors"
+                        >
+                          <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center group-hover:bg-primary/5 group-hover:border-primary transition-all">
+                            <Trophy size={20} />
+                          </div>
+                          <span className="text-[10px] font-bold uppercase tracking-wide">Rewards</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            onSupportClick?.();
+                          }}
+                          className="flex flex-col items-center gap-2 text-gray-600 hover:text-primary transition-colors"
+                        >
+                          <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center group-hover:bg-primary/5 group-hover:border-primary transition-all">
+                            <HelpCircle size={20} />
+                          </div>
+                          <span className="text-[10px] font-bold uppercase tracking-wide">Support</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsProfileOpen((prev) => !prev);
+                  setIsMenuOpen(false);
+                }}
+                className="flex items-center gap-2 md:gap-3 group"
+              >
+                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border-2 border-transparent group-hover:border-primary transition-all text-sm md:text-base overflow-hidden">
+                  {userProfile?.avatar_url ? (
+                    <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    getInitials(userProfile?.full_name || user?.full_name)
+                  )}
+                </div>
+                <div className="hidden lg:block text-left">
+                  <div className="text-sm font-bold text-ink">{userProfile?.full_name || user?.full_name || "Learner"}</div>
+                  <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Learner</div>
+                </div>
+              </button>
+
+              <AnimatePresence>
+                {isProfileOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-64 rounded-2xl shadow-2xl py-2 z-50 overflow-hidden bg-white border border-gray-100 text-ink"
                     >
-                      <GraduationCap size={18} className="text-gray-400" />
-                      <span className="text-sm font-bold">My Learning</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        onViewCommunity?.();
-                      }}
-                      className="w-full px-4 py-3 flex items-center gap-3 text-ink hover:bg-gray-50 transition-colors"
-                    >
-                      <Users size={18} className="text-gray-400" />
-                      <span className="text-sm font-bold">Community</span>
-                    </button>
-                    <div className="h-px mx-2" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        onSupportClick?.();
-                      }}
-                      className="w-full px-4 py-3 flex items-center gap-3 text-ink hover:bg-gray-50 transition-colors"
-                    >
-                      <HelpCircle size={18} className="text-gray-400" />
-                      <span className="text-sm font-bold">Support</span>
-                    </button>
-                    <div className="h-px bg-gray-100 mx-2" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        onLogout?.();
-                      }}
-                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-red-500"
-                    >
-                      <LogOut size={18} />
-                      <span className="text-sm font-bold">Logout</span>
-                    </button>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
+                      <div className="h-px bg-gray-100 mx-2" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          onViewProfile?.();
+                        }}
+                        className="w-full px-4 py-3 flex items-center gap-3 text-ink hover:bg-gray-50 transition-colors"
+                      >
+                        <User size={18} className="text-gray-400" />
+                        <span className="text-sm font-bold">View profile</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          onViewLearning?.();
+                        }}
+                        className="w-full px-4 py-3 flex items-center gap-3 text-ink hover:bg-gray-50 transition-colors"
+                      >
+                        <GraduationCap size={18} className="text-gray-400" />
+                        <span className="text-sm font-bold">My Learning</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          onViewCommunity?.();
+                        }}
+                        className="w-full px-4 py-3 flex items-center gap-3 text-ink hover:bg-gray-50 transition-colors"
+                      >
+                        <Users size={18} className="text-gray-400" />
+                        <span className="text-sm font-bold">Community</span>
+                      </button>
+                      <div className="h-px mx-2" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          onSupportClick?.();
+                        }}
+                        className="w-full px-4 py-3 flex items-center gap-3 text-ink hover:bg-gray-50 transition-colors"
+                      >
+                        <HelpCircle size={18} className="text-gray-400" />
+                        <span className="text-sm font-bold">Support</span>
+                      </button>
+                      <div className="h-px bg-gray-100 mx-2" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          onLogout?.();
+                        }}
+                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-red-500"
+                      >
+                        <LogOut size={18} />
+                        <span className="text-sm font-bold">Logout</span>
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </nav>

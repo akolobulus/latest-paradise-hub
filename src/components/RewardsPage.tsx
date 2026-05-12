@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Leaf, Trophy, Gift, GraduationCap, ChevronDown, ChevronUp, Clock, ArrowUpRight, ExternalLink, Plus, Sparkles } from "lucide-react";
+import { Leaf, Trophy, Gift, GraduationCap, ChevronDown, ChevronUp, Clock, ArrowUpRight, ExternalLink, Plus, Sparkles, Menu, Bell, Users, HelpCircle, User } from "lucide-react";
 import { ProfileData } from "@/src/lib/profileCompletion";
+import BrandLogo from "./BrandLogo";
+import NotificationBell from "./NotificationBell";
 
 interface Reward {
   id: string;
@@ -93,10 +95,14 @@ interface RewardsPageProps {
   onViewProfile?: () => void;
   onViewCommunity?: () => void;
   onViewLearning?: () => void;
+  onSupportClick?: () => void;
+  currentUserId?: string;
 }
 
-export default function RewardsPage({ availablePoints, expiringPoints = 0, onBack, userProfile, onViewProfile, onViewCommunity, onViewLearning }: RewardsPageProps) {
+export default function RewardsPage({ availablePoints, expiringPoints = 0, onBack, userProfile, onViewProfile, onViewCommunity, onViewLearning, onSupportClick, currentUserId }: RewardsPageProps) {
   const [isWaysToEarnOpen, setIsWaysToEarnOpen] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   const handleActionClick = (actionLabel?: string) => {
     if (!actionLabel) return;
@@ -121,25 +127,99 @@ export default function RewardsPage({ availablePoints, expiringPoints = 0, onBac
   return (
     <div className="min-h-screen bg-background text-ink selection:bg-primary/20 selection:text-primary">
       <nav className="sticky top-0 z-50 glass border-b border-gray-200/50 px-4 md:px-8 h-20 flex items-center justify-between">
-        <button onClick={onBack} className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors font-bold">
-          <ArrowUpRight size={18} className="rotate-180" />
-          Back
-        </button>
-        <div className="flex items-center gap-3">
-          <Sparkles size={20} className="text-primary" />
-          <span className="text-sm font-bold">Harvest Rewards</span>
+        <div className="flex items-center gap-3 md:gap-8">
+          <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onViewLearning}>
+            <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
+            <span className="font-display font-bold text-xl tracking-tight hidden xs:block">
+              Paradise <span className="text-primary">Hub</span>
+            </span>
+          </div>
         </div>
-        <button
-          onClick={() => onViewProfile?.()}
-          className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center text-gray-700 font-bold"
-          aria-label="View Profile"
-        >
-          {userProfile?.avatar_url ? (
-            <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-          ) : (
-            <span>{getInitials(userProfile?.full_name)}</span>
-          )}
-        </button>
+
+        <div className="flex items-center gap-2 md:gap-6">
+          <div className="hidden md:block">
+            <NotificationBell currentUserId={currentUserId} open={isNotificationOpen} onOpenChange={setIsNotificationOpen} />
+          </div>
+          
+          <div className="relative">
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-1.5 md:p-2 rounded-full text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+            >
+              <Menu size={20} className="md:w-[22px] md:h-[22px]" />
+            </button>
+
+            <AnimatePresence>
+              {isMenuOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsMenuOpen(false)} 
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-50"
+                  >
+                    <div className="space-y-2">
+                      <button 
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          onBack();
+                        }}
+                        className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                      >
+                        <span className="font-bold text-ink">Dashboard</span>
+                      </button>
+
+                      <button 
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          onViewLearning?.();
+                        }}
+                        className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                      >
+                        <span className="font-bold text-ink">Learning</span>
+                        <GraduationCap size={20} className="text-primary" />
+                      </button>
+
+                      <button 
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          onViewCommunity?.();
+                        }}
+                        className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                      >
+                        <span className="font-bold text-ink">Incubation</span>
+                        <Users size={20} className="text-primary" />
+                      </button>
+
+                      <button
+                        onClick={() => { setIsMenuOpen(false); }}
+                        className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                      >
+                        <span className="font-bold text-ink">Rewards</span>
+                        <span className="text-sm text-gray-500">{availablePoints.toLocaleString()}</span>
+                      </button>
+
+                      <button onClick={() => { setIsMenuOpen(false); onSupportClick?.(); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <span className="font-bold text-ink">Support</span>
+                        <HelpCircle size={20} className="text-primary" />
+                      </button>
+
+                      <button onClick={() => { setIsMenuOpen(false); onViewProfile?.(); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <span className="font-bold text-ink">Profile</span>
+                        <User size={20} className="text-primary" />
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-12">

@@ -17,7 +17,11 @@ import {
   Clock,
   HelpCircle,
   Trophy,
-  AlertCircle
+  AlertCircle,
+  Menu,
+  GraduationCap,
+  Users,
+  User
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import { cn } from "@/src/lib/utils";
@@ -692,32 +696,103 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col relative bg-white w-full">
         {/* Header */}
-        <header className="h-16 border-b border-gray-100 flex items-center justify-between px-4 md:px-8 bg-primary text-white shrink-0">
-          <div className="flex items-center gap-2 md:gap-4">
-            {!isMobile && (
-            <button 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="px-4 py-2 text-sm font-bold rounded-lg hover:bg-white/10 transition-colors"
-            >
-              {isSidebarOpen ? "<<" : ">>"}
-            </button>
-            )}
-            {isMobile && (
-            <button 
-              onClick={() => setShowMobileSidebar(true)}
-              className="p-2 text-sm font-bold rounded-lg hover:bg-white/10 transition-colors flex items-center justify-center"
-            >
-              <span className="text-xl leading-none">☰</span>
-            </button>
-            )}
-            <h2 className="font-bold text-xs sm:text-sm md:text-base truncate max-w-[200px] sm:max-w-md">{course.title}</h2>
-          </div>
-          <div className="flex items-center gap-6">
-            <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-              <X size={20} onClick={onBack} />
-            </button>
-          </div>
-        </header>
+        {!isMobile && (
+          <header className="h-16 border-b border-gray-100 flex items-center justify-between px-4 md:px-8 bg-primary text-white shrink-0">
+            <div className="flex items-center gap-2 md:gap-4">
+              <button
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="px-4 py-2 text-sm font-bold rounded-lg hover:bg-white/10 transition-colors"
+              >
+                {isSidebarOpen ? "<<" : ">>"}
+              </button>
+              <h2 className="font-bold text-xs sm:text-sm md:text-base truncate max-w-[200px] sm:max-w-md">{course.title}</h2>
+            </div>
+            <div className="flex items-center gap-6">
+              <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                <X size={20} onClick={onBack} />
+              </button>
+            </div>
+          </header>
+        )}
+
+        {/* Mobile Header */}
+        {isMobile && (
+          <header className="h-16 border-b border-gray-100 flex items-center justify-between px-4 md:px-8 bg-white shrink-0 sticky top-0 z-[100]">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onLogoClick}>
+                <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
+                <span className="font-display font-bold text-xl tracking-tight hidden xs:block">
+                  Paradise <span className="text-primary">Hub</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <button
+                  onClick={() => setShowMobileSidebar(!showMobileSidebar)}
+                  className="p-2 rounded-full text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+                >
+                  <Menu size={22} />
+                </button>
+
+                <AnimatePresence>
+                  {showMobileSidebar && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowMobileSidebar(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-50"
+                      >
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => {
+                              setShowMobileSidebar(false);
+                              onViewLearning?.();
+                            }}
+                            className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                          >
+                            <span className="font-bold text-ink">Learning</span>
+                            <GraduationCap size={20} className="text-primary" />
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setShowMobileSidebar(false);
+                              onViewCommunity?.();
+                            }}
+                            className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                          >
+                            <span className="font-bold text-ink">Incubation</span>
+                            <Users size={20} className="text-primary" />
+                          </button>
+
+                          <button onClick={() => { setShowMobileSidebar(false); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                            <span className="font-bold text-ink">Rewards</span>
+                            <span className="text-sm text-gray-500">0 points</span>
+                          </button>
+
+                          <button onClick={() => { setShowMobileSidebar(false); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                            <span className="font-bold text-ink">Support</span>
+                            <HelpCircle size={20} className="text-primary" />
+                          </button>
+
+                          <button onClick={() => { setShowMobileSidebar(false); onViewProfile?.(); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                            <span className="font-bold text-ink">Profile</span>
+                            <User size={20} className="text-primary" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </header>
+        )}
 
         {/* Content Scrolling Area */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white">

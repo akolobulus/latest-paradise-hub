@@ -20,7 +20,9 @@ import {
   Trophy,
   Edit2,
   Trash2,
-  X // Added X icon for the modal close button
+  X, // Added X icon for the modal close button
+  Menu,
+  HelpCircle
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import NotificationBell from "./NotificationBell";
@@ -80,13 +82,18 @@ interface CommunityHubProps {
   currentUserId?: string;
   onBack: () => void;
   onLogoClick?: () => void;
+  onIncubationClick?: () => void;
   onProfileClick?: () => void;
+  onViewLearning?: () => void;
+  onRewardsClick?: () => void;
+  onSupportClick?: () => void;
+  onNotificationClick?: () => void;
   points: number;
   userProfile?: ProfileData | null;
   initialChannel?: string;
 }
 
-export default function CommunityHub({ currentUserId, onBack, onLogoClick, onProfileClick, points, userProfile, initialChannel = "general" }: CommunityHubProps) {
+export default function CommunityHub({ currentUserId, onBack, onLogoClick, onIncubationClick, onProfileClick, onViewLearning, onRewardsClick, onSupportClick, onNotificationClick, points, userProfile, initialChannel = "general" }: CommunityHubProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [activeChannel, setActiveChannel] = useState(initialChannel);
   const [newPostContent, setNewPostContent] = useState("");
@@ -96,6 +103,7 @@ export default function CommunityHub({ currentUserId, onBack, onLogoClick, onPro
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPoints, setCurrentPoints] = useState(points);
+  const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Real-time data state
@@ -585,18 +593,27 @@ export default function CommunityHub({ currentUserId, onBack, onLogoClick, onPro
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}
-              className="fixed inset-y-0 left-0 w-72 bg-white z-[70] lg:hidden flex flex-col shadow-2xl"
+              className="fixed inset-y-0 left-0 w-full max-w-sm bg-white z-[70] lg:hidden flex flex-col shadow-2xl"
             >
-              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <div className="p-5 border-b border-gray-100 space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <button
+                    onClick={onBack}
+                    className="flex-1 flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-primary hover:bg-gray-100 transition-colors rounded-2xl px-3 py-2"
+                  >
+                    <ArrowLeft size={18} />
+                    Back to Dashboard
+                  </button>
+                  <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                    <X size={22} />
+                  </button>
+                </div>
                 <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onLogoClick}>
                   <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
                   <span className="font-display font-bold text-xl tracking-tight text-ink">
-                    Incubation
+                    Paradise Hub
                   </span>
                 </div>
-                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
-                  <ArrowLeft size={20} />
-                </button>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-6">
                 <div>
@@ -623,7 +640,6 @@ export default function CommunityHub({ currentUserId, onBack, onLogoClick, onPro
                     ))}
                   </div>
                 </div>
-
                 <div>
                   <h3 className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Direct Messages</h3>
                   <div className="space-y-3 px-4">
@@ -789,21 +805,18 @@ export default function CommunityHub({ currentUserId, onBack, onLogoClick, onPro
       {/* Main Feed Area */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-6 shrink-0">
+        <header className="sticky top-0 z-50 h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-6 shrink-0">
           <div className="flex items-center gap-2 md:gap-4">
-            <button className="lg:hidden p-2 hover:bg-gray-100 rounded-lg" onClick={() => setIsMobileMenuOpen(true)}>
-              <Hash size={20} className="text-primary" />
-            </button>
-            <button className="hidden sm:flex items-center gap-2 text-gray-500 hover:text-primary transition-colors" onClick={onBack}>
-              <ArrowLeft size={18} />
-            </button>
-            <h2 className="text-base md:text-lg font-bold text-ink flex items-center gap-2">
-              <span className="hidden sm:inline">#</span>
-              {activeChannel}
-            </h2>
+            <div className="flex items-center gap-2 cursor-pointer" onClick={onLogoClick}>
+              <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
+              <span className="hidden sm:inline font-display font-bold text-ink">Paradise Hub</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
+            <button className="lg:hidden p-2 hover:bg-gray-100 rounded-lg" onClick={() => setIsMobileMenuOpen(true)}>
+              <Menu size={20} className="text-primary" />
+            </button>
             <div className="hidden md:flex items-center bg-gray-50 border border-gray-100 rounded-full px-4 py-2 w-64">
               <button
                 type="button"
@@ -821,19 +834,26 @@ export default function CommunityHub({ currentUserId, onBack, onLogoClick, onPro
                 className="bg-transparent border-none outline-none text-sm w-full"
               />
             </div>
-            <NotificationBell currentUserId={currentUserId} />
-          </div>
-          {userProfile && (
-              <div
-                className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs border-2 border-transparent hover:border-primary transition-all overflow-hidden cursor-pointer"
+            <div className="hidden md:block">
+              <NotificationBell currentUserId={currentUserId} open={isNotificationPanelOpen} onOpenChange={setIsNotificationPanelOpen} />
+            </div>
+            <div className="hidden md:flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onBack}
+                className="px-3 py-2 rounded-full text-sm font-bold text-gray-600 hover:bg-gray-100 hover:text-primary transition-colors"
               >
-                {userProfile.avatar_url ? (
-                  <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  getInitials(userProfile.full_name)
-                )}
-              </div>
-            )}
+                Dashboard
+              </button>
+              <button
+                type="button"
+                onClick={() => onProfileClick?.()}
+                className="px-3 py-2 rounded-full text-sm font-bold text-gray-600 hover:bg-gray-100 hover:text-primary transition-colors"
+              >
+                Profile
+              </button>
+            </div>
+          </div>
 
         </header>
         {/* Scrollable Feed */}

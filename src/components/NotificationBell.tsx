@@ -139,19 +139,35 @@ const useNotifications = (currentUserId?: string) => {
 
 interface NotificationBellProps {
   currentUserId?: string;
+  open?: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
-export default function NotificationBell({ currentUserId }: NotificationBellProps) {
+export default function NotificationBell({ currentUserId, open, onOpenChange }: NotificationBellProps) {
   const { notifications, unreadCount, markAllRead } = useNotifications(currentUserId);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(open ?? false);
 
   const toggleNotifications = () => {
-    const next = !isOpen;
-    setIsOpen(next);
+    const next = open !== undefined ? !open : !isOpen;
+    if (open !== undefined) {
+      onOpenChange?.(next);
+    } else {
+      setIsOpen(next);
+    }
     if (next) {
       markAllRead();
     }
   };
+
+  const closeNotifications = () => {
+    if (open !== undefined) {
+      onOpenChange?.(false);
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  const isNotificationOpen = open !== undefined ? open : isOpen;
 
   return (
     <div className="relative">
@@ -169,9 +185,9 @@ export default function NotificationBell({ currentUserId }: NotificationBellProp
       </button>
 
       <AnimatePresence>
-        {isOpen && (
+        {isNotificationOpen && (
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+            <div className="fixed inset-0 z-40" onClick={closeNotifications} />
             <motion.div
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}

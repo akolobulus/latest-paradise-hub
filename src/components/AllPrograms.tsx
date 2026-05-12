@@ -1,14 +1,16 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState } from "react";
 import { 
-  Grid, 
   Calendar, 
   Clock, 
   ArrowLeft,
   Users,
   Trophy,
   HelpCircle,
-  GraduationCap
+  GraduationCap,
+  Menu,
+  Bell,
+  User
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import NotificationBell from "./NotificationBell";
@@ -37,6 +39,7 @@ interface AllProgramsProps {
 
 export default function AllPrograms({ currentUserId, programs, user, userProfile, points = 0, enrolledPrograms = [], onBack, onLogoClick, onViewDetails, onViewCourseByTitle, onViewProfile, onViewLearning, onViewCommunity, onRewardsClick, onSupportClick, onEnroll }: AllProgramsProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   // Helper to get initials from full name
   const getInitials = (name?: string | null) => {
@@ -55,30 +58,33 @@ export default function AllPrograms({ currentUserId, programs, user, userProfile
           </span>
         </div>
         
-        <div className="relative flex items-center gap-3 md:gap-6">
-          <button
-            onClick={() => onViewProfile?.()}
-            className="bg-accent/10 border border-accent/20 rounded-full px-4 py-2 flex items-center gap-2 hover:bg-accent/90 transition-colors"
-          >
-            <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
-            <span className="text-xs md:text-sm font-bold">{points.toLocaleString()} points</span>
-          </button>
-          <NotificationBell currentUserId={currentUserId} />
+        <div className="relative flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3 md:gap-6">
+            <button
+              onClick={() => onViewProfile?.()}
+              className="bg-accent/10 border border-accent/20 rounded-full px-4 py-2 flex items-center gap-2 hover:bg-accent/90 transition-colors"
+            >
+              <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
+              <span className="text-xs md:text-sm font-bold">{points.toLocaleString()} points</span>
+            </button>
+            <NotificationBell currentUserId={currentUserId} />
+            <button
+              onClick={() => onViewProfile?.()}
+              className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm md:text-base overflow-hidden border border-gray-200 hover:border-primary transition-all"
+            >
+              {userProfile?.avatar_url ? (
+                <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                getInitials(userProfile?.full_name || user?.full_name)
+              )}
+            </button>
+          </div>
+
           <button
             onClick={() => setIsMenuOpen((prev) => !prev)}
-            className="p-2 text-gray-400 hover:text-primary transition-colors"
+            className="p-2 rounded-full text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
           >
-            <Grid size={22} />
-          </button>
-          <button
-            onClick={() => onViewProfile?.()}
-            className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm md:text-base overflow-hidden border border-gray-200 hover:border-primary transition-all"
-          >
-            {userProfile?.avatar_url ? (
-              <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              getInitials(userProfile?.full_name || user?.full_name)
-            )}
+            <Menu size={22} />
           </button>
 
           <AnimatePresence>
@@ -92,18 +98,16 @@ export default function AllPrograms({ currentUserId, programs, user, userProfile
                   transition={{ duration: 0.2 }}
                   className="absolute right-0 top-full mt-3 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-50"
                 >
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <button
                       onClick={() => {
                         setIsMenuOpen(false);
                         onViewLearning?.();
                       }}
-                      className="flex flex-col items-center gap-3 group"
+                      className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                     >
-                      <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary transition-all">
-                        <GraduationCap size={24} />
-                      </div>
-                      <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Learning</span>
+                      <span className="font-bold text-ink">Learning</span>
+                      <GraduationCap size={20} className="text-primary" />
                     </button>
 
                     <button
@@ -111,38 +115,25 @@ export default function AllPrograms({ currentUserId, programs, user, userProfile
                         setIsMenuOpen(false);
                         onViewCommunity?.();
                       }}
-                      className="flex flex-col items-center gap-3 group"
+                      className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                     >
-                      <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary transition-all">
-                        <Users size={24} />
-                      </div>
-                      <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Incubation</span>
+                      <span className="font-bold text-ink">Incubation</span>
+                      <Users size={20} className="text-primary" />
                     </button>
 
-                    <button
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        onRewardsClick?.();
-                      }}
-                      className="flex flex-col items-center gap-3 group"
-                    >
-                      <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary transition-all">
-                        <Trophy size={24} />
-                      </div>
-                      <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Rewards</span>
+                    <button onClick={() => { setIsMenuOpen(false); onRewardsClick?.(); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <span className="font-bold text-ink">Rewards</span>
+                      <span className="text-sm text-gray-500">{points.toLocaleString()}</span>
                     </button>
 
-                    <button
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        onSupportClick?.();
-                      }}
-                      className="flex flex-col items-center gap-3 group"
-                    >
-                      <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary transition-all">
-                        <HelpCircle size={24} />
-                      </div>
-                      <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Support</span>
+                    <button onClick={() => { setIsMenuOpen(false); onSupportClick?.(); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <span className="font-bold text-ink">Support</span>
+                      <HelpCircle size={20} className="text-primary" />
+                    </button>
+
+                    <button onClick={() => { setIsMenuOpen(false); onViewProfile?.(); }} className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <span className="font-bold text-ink">Profile</span>
+                      <User size={20} className="text-primary" />
                     </button>
                   </div>
                 </motion.div>

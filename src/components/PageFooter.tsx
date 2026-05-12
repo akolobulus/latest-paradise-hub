@@ -141,7 +141,7 @@ export default function PageFooter({
             <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
           </div>
           <div>
-            © Copyright 2026 <a href="https://pdfarms.com" target="_blank" rel="noreferrer" className="text-primary hover:text-white transition-colors">Paradise Dynamic Farms</a>. All rights reserved.
+            © Copyright 2026 Paradise Hub by <a href="https://pdfarms.com" target="_blank" rel="noreferrer" className="text-primary hover:text-white transition-colors">Paradise Dynamic Farms LTD</a>. All rights reserved.
           </div>
         </div>
       </div>
