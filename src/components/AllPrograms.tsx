@@ -1,39 +1,48 @@
-import { motion } from "motion/react";
-import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { useState } from "react";
 import { 
   Grid, 
   Calendar, 
   Clock, 
-  ArrowLeft
+  ArrowLeft,
+  Users,
+  Trophy,
+  HelpCircle,
+  GraduationCap
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import NotificationBell from "./NotificationBell";
 import PageFooter from "./PageFooter";
 import { cn } from "@/src/lib/utils";
-import { ProfileData, getCurrentUserPoints } from "@/src/lib/profileCompletion";
+import { ProfileData } from "@/src/lib/profileCompletion";
 
 interface AllProgramsProps {
   currentUserId?: string;
   programs: any[];
+  user?: { full_name?: string };
   userProfile?: ProfileData | null;
+  points?: number;
   enrolledPrograms?: any[];
   onBack: () => void;
   onLogoClick?: () => void;
   onViewDetails: (program: any) => void;
   onViewCourseByTitle?: (courseTitle: string) => void;
+  onViewProfile?: () => void;
+  onViewLearning?: () => void;
+  onViewCommunity?: () => void;
+  onRewardsClick?: () => void;
+  onSupportClick?: () => void;
   onEnroll: (program: any) => void;
 }
 
-export default function AllPrograms({ currentUserId, programs, userProfile, enrolledPrograms = [], onBack, onLogoClick, onViewDetails, onViewCourseByTitle, onEnroll }: AllProgramsProps) {
-  const [currentPoints, setCurrentPoints] = useState(0);
+export default function AllPrograms({ currentUserId, programs, user, userProfile, points = 0, enrolledPrograms = [], onBack, onLogoClick, onViewDetails, onViewCourseByTitle, onViewProfile, onViewLearning, onViewCommunity, onRewardsClick, onSupportClick, onEnroll }: AllProgramsProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchPoints = async () => {
-      const freshPoints = await getCurrentUserPoints();
-      setCurrentPoints(freshPoints);
-    };
-    fetchPoints();
-  }, []);
+  // Helper to get initials from full name
+  const getInitials = (name?: string | null) => {
+    if (!name) return "U";
+    return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+  };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -46,18 +55,100 @@ export default function AllPrograms({ currentUserId, programs, userProfile, enro
           </span>
         </div>
         
-        <div className="flex items-center gap-3 md:gap-6">
-          <div className="bg-accent/10 border border-accent/20 rounded-full px-4 py-2 flex items-center gap-2">
+        <div className="relative flex items-center gap-3 md:gap-6">
+          <button
+            onClick={() => onViewProfile?.()}
+            className="bg-accent/10 border border-accent/20 rounded-full px-4 py-2 flex items-center gap-2 hover:bg-accent/90 transition-colors"
+          >
             <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
-            <span className="text-xs md:text-sm font-bold">{currentPoints} points</span>
-          </div>
+            <span className="text-xs md:text-sm font-bold">{points.toLocaleString()} points</span>
+          </button>
           <NotificationBell currentUserId={currentUserId} />
-          <button className="p-2 text-gray-400 hover:text-primary transition-colors">
+          <button
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+            className="p-2 text-gray-400 hover:text-primary transition-colors"
+          >
             <Grid size={22} />
           </button>
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm md:text-base">
-            PA
-          </div>
+          <button
+            onClick={() => onViewProfile?.()}
+            className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm md:text-base overflow-hidden border border-gray-200 hover:border-primary transition-all"
+          >
+            {userProfile?.avatar_url ? (
+              <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              getInitials(userProfile?.full_name || user?.full_name)
+            )}
+          </button>
+
+          <AnimatePresence>
+            {isMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute right-0 top-full mt-3 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-50"
+                >
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        onViewLearning?.();
+                      }}
+                      className="flex flex-col items-center gap-3 group"
+                    >
+                      <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary transition-all">
+                        <GraduationCap size={24} />
+                      </div>
+                      <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Learning</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        onViewCommunity?.();
+                      }}
+                      className="flex flex-col items-center gap-3 group"
+                    >
+                      <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary transition-all">
+                        <Users size={24} />
+                      </div>
+                      <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Incubation</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        onRewardsClick?.();
+                      }}
+                      className="flex flex-col items-center gap-3 group"
+                    >
+                      <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary transition-all">
+                        <Trophy size={24} />
+                      </div>
+                      <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Rewards</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        onSupportClick?.();
+                      }}
+                      className="flex flex-col items-center gap-3 group"
+                    >
+                      <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary transition-all">
+                        <HelpCircle size={24} />
+                      </div>
+                      <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Support</span>
+                    </button>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </nav>
 
@@ -91,7 +182,8 @@ export default function AllPrograms({ currentUserId, programs, userProfile, enro
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="bg-white rounded-3xl overflow-hidden border-2 border-ink shadow-[8px_8px_0px_0px_rgba(17,24,39,1)] group flex flex-col transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(17,24,39,1)]"
+                onClick={() => onViewDetails(program)}
+                className="bg-white rounded-3xl overflow-hidden border-2 border-ink shadow-[8px_8px_0px_0px_rgba(17,24,39,1)] group flex flex-col transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(17,24,39,1)] cursor-pointer"
               >
                 <div className="h-48 md:h-56 overflow-hidden relative">
                   <img 
@@ -123,7 +215,10 @@ export default function AllPrograms({ currentUserId, programs, userProfile, enro
 
                   <div className="grid grid-cols-2 gap-3">
                     <button 
-                      onClick={() => onViewDetails(program)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDetails(program);
+                      }}
                       className="py-3 rounded-xl border-2 border-ink font-bold text-sm hover:bg-gray-50 transition-colors shadow-[4px_4px_0px_0px_rgba(17,24,39,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
                     >
                       View Details
@@ -134,7 +229,10 @@ export default function AllPrograms({ currentUserId, programs, userProfile, enro
                       );
                       return (
                         <button 
-                          onClick={() => !isEnrolled && onEnroll(program)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isEnrolled) onEnroll(program);
+                          }}
                           disabled={isEnrolled}
                           className={cn(
                             "py-3 rounded-xl border-2 font-bold text-sm transition-colors",

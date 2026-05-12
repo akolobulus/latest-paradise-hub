@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { Bot, ArrowLeft, Send, Loader2, Sparkles } from "lucide-react";
 import { GoogleGenAI } from "@google/genai";
+import { ProfileData } from "@/src/lib/profileCompletion";
 
 const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
 const ai = new GoogleGenAI({ apiKey: geminiApiKey });
@@ -14,15 +15,22 @@ interface Message {
 interface SupportPageProps {
   availablePoints: number;
   onBack: () => void;
+  userProfile?: ProfileData | null;
 }
 
-export default function SupportPage({ availablePoints, onBack }: SupportPageProps) {
+export default function SupportPage({ availablePoints, onBack, userProfile }: SupportPageProps) {
   const [messages, setMessages] = useState<Message[]>([
     { role: "model", text: "Hello! I'm your Paradise Hub assistant. How can I help you blossom today?" }
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Helper to get initials from full name
+  const getInitials = (name?: string | null) => {
+    if (!name) return "U";
+    return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -100,7 +108,13 @@ export default function SupportPage({ availablePoints, onBack }: SupportPageProp
           <Bot size={20} />
           Support Assistant
         </div>
-        <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 font-bold">PH</div>
+        <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 font-bold overflow-hidden">
+          {userProfile?.avatar_url ? (
+            <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            getInitials(userProfile?.full_name)
+          )}
+        </div>
       </nav>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 flex flex-col h-[calc(100vh-80px)] sm:h-[calc(100vh-120px)]">

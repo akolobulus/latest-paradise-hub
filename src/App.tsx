@@ -487,6 +487,7 @@ export default function App() {
           <SupportPage
             availablePoints={points}
             onBack={() => setCurrentPage("dashboard")}
+            userProfile={userProfile}
           />
           {analytics}
         </>
@@ -531,6 +532,8 @@ export default function App() {
         <>
           <AllPrograms 
             currentUserId={session?.user?.id}
+            user={session?.user.user_metadata}
+            points={points}
             userProfile={userProfile}
             programs={Array.isArray(selectedCourse) ? selectedCourse : allCourses} 
             enrolledPrograms={enrolledPrograms}
@@ -541,6 +544,14 @@ export default function App() {
               setCurrentPage("course");
             }}
             onViewCourseByTitle={handleViewCourseByTitle}
+            onViewProfile={() => setCurrentPage("profile")}
+            onViewLearning={() => setCurrentPage("learning")}
+            onViewCommunity={() => {
+              setCommunityChannel("general");
+              setCurrentPage("community");
+            }}
+            onRewardsClick={handleViewRewards}
+            onSupportClick={handleViewSupport}
             onEnroll={handleEnroll}
           />
           {analytics}
@@ -553,6 +564,7 @@ export default function App() {
         <>
           <CourseDetails 
             currentUserId={session?.user?.id}
+            user={session?.user.user_metadata}
             userProfile={userProfile}
             course={selectedCourse} 
             isEnrolled={!!enrollment}
@@ -567,6 +579,7 @@ export default function App() {
             onViewProfile={() => setCurrentPage("profile")}
             onViewCommunity={() => setCurrentPage("community")}
             onViewLearning={() => setCurrentPage("learning")}
+            onRewardsClick={handleViewRewards}
             onSupportClick={() => {
               handleViewSupport();
             }}
@@ -759,6 +772,9 @@ export default function App() {
         >
           <CourseList 
             isLoggedIn={isLoggedIn}
+            onCourseClick={(course) => {
+              handleViewCourseByTitle(course.title);
+            }}
             onAuthRequired={() => setShowAuth("signup")}
           />
         </motion.div>
