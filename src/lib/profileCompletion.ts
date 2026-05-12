@@ -7,7 +7,6 @@ export interface ProfileData {
   avatar_url?: string | null;
   email?: string | null;
   about_me?: string | null;
-  title?: string | null;
   gender?: string | null;
   languages?: string[] | null;
   phone_number?: string | null;
@@ -20,6 +19,16 @@ export interface ProfileData {
   country_of_residence?: string | null;
   state_of_residence?: string | null;
   city_of_residence?: string | null;
+  education_level?: string | null;
+  institution?: string | null;
+  course_of_study?: string | null;
+  year_of_graduation?: string | null;
+  graduation_class?: string | null;
+  nysc_completed?: string | null;
+  employment_status?: string | null;
+  skill_level?: string | null;
+  english_proficiency?: string | null;
+  professional_experience?: string | null;
   points?: number | null;
 }
 
@@ -43,17 +52,17 @@ export function getProfileSections(profile: ProfileData | null): ProfileSection[
   return [
     {
       label: "Personal Info",
-      completed: !!(profile.full_name && profile.avatar_url && profile.title),
+      completed: !!(profile.full_name && profile.avatar_url && profile.about_me && profile.languages && profile.languages.length > 0 && profile.phone_number && profile.whatsapp_number && profile.interests && profile.interests.length > 0 && profile.social_profiles && Object.values(profile.social_profiles).some(v => v)),
       category: 'personal',
     },
     {
       label: "Education Info",
-      completed: !!(profile.about_me && profile.languages && profile.languages.length > 0),
+      completed: !!(profile.education_level && profile.institution && profile.course_of_study && profile.year_of_graduation && profile.graduation_class && profile.nysc_completed),
       category: 'education',
     },
     {
       label: "Work Info",
-      completed: !!(profile.phone_number && profile.whatsapp_number && (profile.social_profiles && Object.values(profile.social_profiles).some(v => v))),
+      completed: !!(profile.employment_status && profile.skill_level && profile.english_proficiency && profile.professional_experience),
       category: 'work',
     },
     {

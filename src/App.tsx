@@ -457,9 +457,19 @@ export default function App() {
         <>
           <ProfilePage 
             currentUserId={session?.user?.id}
+            points={points}
+            user={session?.user.user_metadata}
             onBack={() => setCurrentPage("dashboard")}
             onProfileUpdate={(updatedProfile) => setUserProfile(updatedProfile)}
             onViewCourseByTitle={handleViewCourseByTitle}
+            onRewardsClick={handleViewRewards}
+            onViewLearning={() => setCurrentPage("learning")}
+            onViewCommunity={() => {
+              setCommunityChannel("general");
+              setCurrentPage("community");
+            }}
+            onSupportClick={handleViewSupport}
+            onLogout={handleLogout}
           />
           {analytics}
         </>

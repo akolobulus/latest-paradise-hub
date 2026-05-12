@@ -2,8 +2,9 @@ import { useState, useEffect, type ChangeEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Camera, Edit2, X, Upload, ChevronDown, Plus, 
-  Linkedin, Facebook, Twitter, Youtube, Github,
-  Globe, Heart, Check, ArrowLeft, Grid, FileText, Trophy
+  Linkedin, Facebook, Twitter, Youtube, Instagram,
+  Globe, Heart, Check, ArrowLeft, Grid, FileText, Trophy,
+  GraduationCap, Users, HelpCircle, User, LogOut
 } from "lucide-react";
 import { Country, State, City } from "country-state-city";
 import BrandLogo from "./BrandLogo";
@@ -42,14 +43,21 @@ const COUNTRIES = [
 
 interface ProfilePageProps {
   currentUserId?: string;
+  points: number;
+  user?: { full_name?: string; email?: string };
   onBack: () => void;
   onProfileUpdate?: (profile: ProfileData) => void;
   onViewCourseByTitle?: (courseTitle: string) => void;
+  onRewardsClick: () => void;
+  onViewLearning: () => void;
+  onViewCommunity: () => void;
+  onSupportClick?: () => void;
+  onLogout: () => void;
 }
 
 type Tab = "Personal Information" | "Education Info" | "Work Info" | "Demographic Info";
 
-export default function ProfilePage({ currentUserId, onBack, onProfileUpdate, onViewCourseByTitle }: ProfilePageProps) {
+export default function ProfilePage({ currentUserId, points, user, onBack, onProfileUpdate, onViewCourseByTitle, onRewardsClick, onViewLearning, onViewCommunity, onSupportClick, onLogout }: ProfilePageProps) {
   const [activeTab, setActiveTab] = useState<Tab>("Personal Information");
   const [editingSection, setEditingSection] = useState<string | null>(null);
   
@@ -71,7 +79,6 @@ export default function ProfilePage({ currentUserId, onBack, onProfileUpdate, on
   const [editForm, setEditForm] = useState({
     firstName: "",
     lastName: "",
-    title: "",
     gender: "",
     about_me: "",
     languages: [] as string[],
@@ -99,7 +106,7 @@ export default function ProfilePage({ currentUserId, onBack, onProfileUpdate, on
       facebook: "",
       twitter: "",
       youtube: "",
-      github: "",
+      instagram: "",
       tiktok: ""
     }
   });
@@ -132,7 +139,6 @@ export default function ProfilePage({ currentUserId, onBack, onProfileUpdate, on
         setEditForm({
           firstName: names[0] || "",
           lastName: names.slice(1).join(" ") || "",
-          title: data.title || "",
           gender: data.gender || "",
           about_me: data.about_me || "",
           languages: data.languages || [],
@@ -160,7 +166,7 @@ export default function ProfilePage({ currentUserId, onBack, onProfileUpdate, on
             facebook: "",
             twitter: "",
             youtube: "",
-            github: "",
+            instagram: "",
             tiktok: ""
           }
         });
@@ -299,7 +305,6 @@ export default function ProfilePage({ currentUserId, onBack, onProfileUpdate, on
       const fullName = `${editForm.firstName} ${editForm.lastName}`.trim();
       const updateData = {
         full_name: fullName,
-        title: editForm.title,
         gender: editForm.gender,
         about_me: editForm.about_me,
         languages: editForm.languages.filter(Boolean),
@@ -511,17 +516,6 @@ export default function ProfilePage({ currentUserId, onBack, onProfileUpdate, on
                       </div>
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-ink">Title</label>
-                    <input 
-                      type="text" 
-                      value={editForm.title}
-                      onChange={(e) => setEditForm({...editForm, title: e.target.value})}
-                      placeholder="What is your title?"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    />
-                  </div>
                 </div>
               )}
 
@@ -612,7 +606,7 @@ export default function ProfilePage({ currentUserId, onBack, onProfileUpdate, on
                       { key: "twitter", label: "X (Twitter)", icon: <Twitter size={18} />, placeholder: "https://twitter.com/" },
                       { key: "youtube", label: "Youtube", icon: <Youtube size={18} />, placeholder: "https://youtube.com/" },
                       { key: "tiktok", label: "TikTok", icon: <Globe size={18} />, placeholder: "https://tiktok.com/" },
-                      { key: "github", label: "GitHub", icon: <Github size={18} />, placeholder: "https://github.com/" },
+                      { key: "instagram", label: "Instagram", icon: <Instagram size={18} />, placeholder: "https://instagram.com/" },
                     ].map((social) => (
                       <div key={social.label} className="space-y-2">
                         <label className="text-sm font-bold text-ink">{social.label}</label>
@@ -957,9 +951,12 @@ export default function ProfilePage({ currentUserId, onBack, onProfileUpdate, on
         </button>
         
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-4 py-2 hover:bg-accent/15 transition-colors">
+          <button 
+            onClick={onRewardsClick}
+            className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-4 py-2 hover:bg-accent/15 transition-colors cursor-pointer"
+          >
             <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
-            <span className="font-bold text-sm tracking-tight">{profile?.points?.toLocaleString() || 0}</span>
+            <span className="font-bold text-sm tracking-tight">{points.toLocaleString()} points</span>
           </button>
 
           <NotificationBell currentUserId={currentUserId} />
@@ -977,94 +974,145 @@ export default function ProfilePage({ currentUserId, onBack, onProfileUpdate, on
 
             <AnimatePresence>
               {showQuickActions && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden"
-                >
-                  <button
-                    onClick={() => {
-                      setShowQuickActions(false);
-                    }}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowQuickActions(false)} 
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-50"
                   >
-                    Close
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowQuickActions(false);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
-                  >
-                    Scroll to top
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowQuickActions(false);
-                      onBack();
-                    }}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
-                  >
-                    Back to dashboard
-                  </button>
-                </motion.div>
+                    <div className="grid grid-cols-3 gap-y-8 gap-x-4">
+                      <button 
+                        onClick={() => {
+                          setShowQuickActions(false);
+                          onViewLearning();
+                        }}
+                        className="flex flex-col items-center gap-3 group"
+                      >
+                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
+                          <GraduationCap size={24} />
+                        </div>
+                        <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Learning</span>
+                      </button>
+
+                      <button 
+                        onClick={() => {
+                          setShowQuickActions(false);
+                          onViewCommunity();
+                        }}
+                        className="flex flex-col items-center gap-3 group"
+                      >
+                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
+                          <Users size={24} />
+                        </div>
+                        <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Incubation</span>
+                      </button>
+
+                      <button onClick={() => { setShowQuickActions(false); onRewardsClick(); }} className="flex flex-col items-center gap-3 group">
+                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
+                          <Trophy size={24} />
+                        </div>
+                        <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Rewards</span>
+                      </button>
+
+                      <button onClick={() => { setShowQuickActions(false); if (onSupportClick) onSupportClick(); }} className="flex flex-col items-center gap-3 group">
+                        <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-primary/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
+                          <HelpCircle size={24} />
+                        </div>
+                        <span className="text-xs font-medium text-gray-600 group-hover:text-primary">Support</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
               )}
             </AnimatePresence>
           </div>
           
+          <div className="h-6 md:h-8 w-px bg-gray-200 mx-1" />
+
           <div className="relative">
-            <button
-              onClick={() => {
-                setShowQuickActions(false);
-                setShowProfileMenu((prev) => !prev);
-              }}
-              className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs overflow-hidden border border-gray-200 hover:border-primary transition-all"
+            <button 
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center gap-2 md:gap-3 group"
             >
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                getInitials(profile?.full_name)
-              )}
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border-2 border-transparent group-hover:border-primary transition-all text-sm md:text-base overflow-hidden">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(profile?.full_name || user?.full_name)
+                )}
+              </div>
+              <div className="hidden lg:block text-left">
+                <div className="text-sm font-bold text-ink">{profile?.full_name || user?.full_name || "Learner"}</div>
+                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Learner</div>
+              </div>
             </button>
 
             <AnimatePresence>
               {showProfileMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden"
-                >
-                  <button
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      setEditingSection("Basic Info");
-                    }}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowProfileMenu(false)} 
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 overflow-hidden"
                   >
-                    Edit profile
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      setEditingSection("Current Location");
-                    }}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
-                  >
-                    Update location
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      onBack();
-                    }}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
-                  >
-                    Back to dashboard
-                  </button>
-                </motion.div>
+                    <button 
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        setEditingSection("Basic Info");
+                      }}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
+                    >
+                      <User size={18} className="text-gray-400" />
+                      <span className="text-sm font-bold">Edit profile</span>
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        onViewLearning();
+                      }}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
+                    >
+                      <GraduationCap size={18} className="text-gray-400" />
+                      <span className="text-sm font-bold">My Learning</span>
+                    </button>
+
+                    <div className="h-px bg-gray-100 mx-2" />
+
+                    <button 
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        if (onSupportClick) onSupportClick();
+                      }}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-ink"
+                    >
+                      <HelpCircle size={18} className="text-gray-400" />
+                      <span className="text-sm font-bold">Support</span>
+                    </button>
+
+                    <div className="h-px bg-gray-100 mx-2" />
+
+                    <button 
+                      onClick={onLogout}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-red-500"
+                    >
+                      <LogOut size={18} />
+                      <span className="text-sm font-bold">Log out</span>
+                    </button>
+                  </motion.div>
+                </>
               )}
             </AnimatePresence>
           </div>
@@ -1372,21 +1420,31 @@ export default function ProfilePage({ currentUserId, onBack, onProfileUpdate, on
                     </button>
                   </div>
 
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
-                      <div className="w-16 h-10 border-2 border-gray-200 rounded-lg relative flex items-center justify-center">
-                        <Heart size={20} className="text-gray-200" />
-                      </div>
+                  {profile?.interests && profile.interests.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {profile.interests.map((interest, index) => (
+                        <span key={index} className="px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full">
+                          {interest}
+                        </span>
+                      ))}
                     </div>
-                    <h4 className="text-primary font-bold mb-2">What are your interests?</h4>
-                    <p className="text-sm text-gray-500 mb-8">Share your interests to boost visibility and attract prospective employers</p>
-                    <button 
-                      onClick={() => setEditingSection("Interests")}
-                      className="px-8 py-3 rounded-full border border-primary text-primary font-bold hover:bg-primary/5 transition-colors"
-                    >
-                      Add Interests
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                        <div className="w-16 h-10 border-2 border-gray-200 rounded-lg relative flex items-center justify-center">
+                          <Heart size={20} className="text-gray-200" />
+                        </div>
+                      </div>
+                      <h4 className="text-primary font-bold mb-2">What are your interests?</h4>
+                      <p className="text-sm text-gray-500 mb-8">Share your interests to boost visibility and attract prospective employers</p>
+                      <button 
+                        onClick={() => setEditingSection("Interests")}
+                        className="px-8 py-3 rounded-full border border-primary text-primary font-bold hover:bg-primary/5 transition-colors"
+                      >
+                        Add Interests
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             )}

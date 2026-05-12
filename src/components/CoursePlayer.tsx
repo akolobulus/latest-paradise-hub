@@ -1024,7 +1024,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                                   </div>
                                   <div className="min-w-0">
                                     <div className="text-xs md:text-sm font-bold text-ink truncate">{res.title}</div>
-                                    <div className="text-[9px] md:text-[10px] text-gray-400 uppercase font-bold">{res.type || res.resource_type}</div>
+                                    <div className="text-[9px] md:text-[10px] text-gray-400 uppercase font-bold">{res.type}</div>
                                   </div>
                                 </a>
                               ))}
