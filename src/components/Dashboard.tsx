@@ -93,7 +93,7 @@ const RECOMMENDED_PROGRAMS = [
     title: "AI-Powered Business Automation",
     headline: "Lead the Future of Tech with AI",
     description: "Work smarter, not harder: Use AI and low-code tools to eliminate manual tasks, optimize workflows, and scale business impact.",
-    image: "/ai-automation.jpg",
+    image: "/ai-automate.jpg",
     startDate: "18 May 2026",
     duration: "24 weeks",
     commitment: "20-30 hrs/week",

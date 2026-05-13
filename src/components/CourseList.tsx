@@ -20,7 +20,7 @@ const pathways = [
   {
     title: "AI-Powered Business Automation",
     description: "Work smarter, not harder: Use AI and low-code tools to eliminate manual tasks, optimize workflows, and scale business impact.",
-    image: "/ai-automation.jpg",
+    image: "/ai-automate.jpg",
     bgColor: "bg-[#EDE9FE]",
     textColor: "text-ink",
   },
