@@ -13,6 +13,7 @@ import PageFooter from "./PageFooter";
 import { cn } from "@/src/lib/utils";
 import { supabase } from "@/src/lib/supabase";
 import { calculateProfileCompletion, getProfileSections, ProfileData } from "@/src/lib/profileCompletion";
+import { generateReferralLink } from "@/src/lib/referral";
 
 const COUNTRIES = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
@@ -70,6 +71,23 @@ export default function ProfilePage({ currentUserId, points, user, onBack, onPro
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [referralCount, setReferralCount] = useState<number>(0);
+
+  const inviteLink = currentUserId
+    ? generateReferralLink(currentUserId)
+    : window.location.origin;
+
+  const handleCopyLink = async () => {
+    if (!currentUserId) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy referral link:", err);
+    }
+  };
   
   // Cascading dropdown states for origin and residence
   const [originStates, setOriginStates] = useState<any[]>([]);
@@ -136,6 +154,18 @@ export default function ProfilePage({ currentUserId, points, user, onBack, onPro
       
       if (data) {
         setProfile(data);
+
+        const { count: referredCount, error: referralError } = await supabase
+          .from("profiles")
+          .select("id", { count: "exact", head: true })
+          .eq("referred_by", user.id);
+
+        if (referralError) {
+          console.error("Error fetching referral count:", referralError);
+        } else if (typeof referredCount === "number") {
+          setReferralCount(referredCount);
+        }
+
         // Initialize form with profile data
         const names = (data.full_name || "").split(" ");
         setEditForm({
@@ -1224,7 +1254,7 @@ export default function ProfilePage({ currentUserId, points, user, onBack, onPro
 
           <div className="flex flex-col gap-2">
             <h1 className="text-3xl md:text-6xl font-display font-bold text-white tracking-tight">
-              <span className="text-yellow-400">Showcase</span> your Potential Here
+              Update Your Paradise Hub Profile
             </h1>
           </div>
 
@@ -1233,10 +1263,6 @@ export default function ProfilePage({ currentUserId, points, user, onBack, onPro
               <div className="w-32 h-32 border-4 border-white/20 rounded-2xl -rotate-12" />
             </div>
           </div>
-
-          <button className="absolute right-6 top-8 p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors">
-            <Camera size={20} />
-          </button>
         </div>
       </div>
 
@@ -1268,15 +1294,38 @@ export default function ProfilePage({ currentUserId, points, user, onBack, onPro
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-lg shadow-sm hover:bg-primary-light transition-colors">
-              Copy link
-            </button>
             <button 
               onClick={() => setEditingSection("Basic Info")}
               className="p-2 border border-gray-200 text-primary rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Edit2 size={18} />
             </button>
+          </div>
+        </div>
+
+        {/* Referral card */}
+        <div className="block mb-6">
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Referrals</p>
+                <p className="mt-2 text-3xl font-bold text-ink">{referralCount.toLocaleString()}</p>
+              </div>
+              <button
+                onClick={handleCopyLink}
+                disabled={!currentUserId}
+                className={cn(
+                  "px-4 py-2 text-sm font-bold rounded-full transition-all",
+                  currentUserId
+                    ? copied
+                      ? "bg-emerald-500 text-white"
+                      : "bg-primary text-white hover:bg-primary-light"
+                    : "bg-gray-100 text-gray-500 cursor-not-allowed"
+                )}
+              >
+                {copied ? "Copied" : "Copy link"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1304,9 +1353,9 @@ export default function ProfilePage({ currentUserId, points, user, onBack, onPro
 
         {/* Content Grid */}
         <div className="flex flex-col lg:grid lg:grid-cols-3 gap-8 py-8">
-          {/* Sidebar (Completion Card) - Appears first on mobile */}
+          {/* Sidebar (Completion Card) - COMMENTED OUT */}
+          {/* 
           <div className="order-first lg:order-last space-y-8">
-            {/* Completion Card */}
             <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm">
               <h3 className="text-lg font-bold text-ink mb-6">Profile Completion</h3>
               
@@ -1358,6 +1407,7 @@ export default function ProfilePage({ currentUserId, points, user, onBack, onPro
               </div>
             </div>
           </div>
+          */}
 
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6 md:space-y-8">

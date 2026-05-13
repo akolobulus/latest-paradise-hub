@@ -36,6 +36,25 @@ export default function App() {
   const [userProfile, setUserProfile] = useState<ProfileData | null>(null);
   const analytics = <Analytics />;
 
+  const isValidReferralCode = (value: string | null): value is string =>
+    !!value && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(value);
+
+  const captureReferralFromUrl = () => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref && isValidReferralCode(ref)) {
+      sessionStorage.setItem("paradise_ref_code", ref);
+    }
+  };
+
+  useEffect(() => {
+    captureReferralFromUrl();
+    if (!isLoggedIn && window.location.pathname === "/signup") {
+      setShowAuth("signup");
+    }
+  }, [isLoggedIn]);
+
   // 1. Listen for Auth Changes on mount
   useEffect(() => {
     const initializeAuth = async () => {

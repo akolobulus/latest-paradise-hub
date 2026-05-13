@@ -49,10 +49,14 @@ export function getProfileSections(profile: ProfileData | null): ProfileSection[
     ];
   }
 
+  const hasAtLeastOneSocial = profile.social_profiles
+    ? Object.values(profile.social_profiles).some(link => Boolean(link))
+    : false;
+
   return [
     {
       label: "Personal Info",
-      completed: !!(profile.full_name && profile.avatar_url && profile.about_me && profile.languages && profile.languages.length > 0 && profile.phone_number && profile.whatsapp_number && profile.interests && profile.interests.length > 0 && profile.social_profiles && Object.values(profile.social_profiles).some(v => v)),
+      completed: !!(profile.full_name && profile.gender && profile.phone_number && profile.about_me && profile.interests && profile.interests.length > 0 && hasAtLeastOneSocial),
       category: 'personal',
     },
     {
@@ -67,7 +71,7 @@ export function getProfileSections(profile: ProfileData | null): ProfileSection[
     },
     {
       label: "Demographic Info",
-      completed: !!(profile.country_of_residence && profile.state_of_residence && profile.city_of_residence && profile.country_of_origin && profile.state_of_origin && profile.city_of_origin),
+      completed: !!(profile.country_of_origin && profile.state_of_origin && profile.country_of_residence && profile.state_of_residence),
       category: 'demographic',
     },
   ];

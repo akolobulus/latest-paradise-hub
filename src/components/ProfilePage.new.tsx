@@ -1,7 +1,7 @@
 import { useState, useEffect, type ChangeEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  Camera, Edit2, X, Upload, ChevronDown, Plus, 
+  Edit2, X, Upload, ChevronDown, Plus, 
   Linkedin, Facebook, Twitter, Youtube, Instagram,
   Globe, Heart, Check, ArrowLeft, Bell, Grid, FileText, Trophy
 } from "lucide-react";
@@ -11,8 +11,10 @@ import PageFooter from "./PageFooter";
 import { cn } from "@/src/lib/utils";
 import { supabase } from "@/src/lib/supabase";
 import { calculateProfileCompletion, getProfileSections, ProfileData, getCurrentUserPoints } from "@/src/lib/profileCompletion";
+import { generateReferralLink } from "@/src/lib/referral";
 
 interface ProfilePageProps {
+  currentUserId?: string;
   onBack: () => void;
   onProfileUpdate?: (profile: ProfileData) => void;
   onViewCourseByTitle?: (courseTitle: string) => void;
@@ -20,7 +22,7 @@ interface ProfilePageProps {
 
 type Tab = "Personal Information" | "Education Info" | "Work Info";
 
-export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTitle }: ProfilePageProps) {
+export default function ProfilePage({ currentUserId, onBack, onProfileUpdate, onViewCourseByTitle }: ProfilePageProps) {
   const [activeTab, setActiveTab] = useState<Tab>("Personal Information");
   const [editingSection, setEditingSection] = useState<string | null>(null);
   
@@ -32,6 +34,23 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
   const [isSaving, setIsSaving] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(3);
+  const [copied, setCopied] = useState(false);
+  const [referralCount, setReferralCount] = useState<number>(0);
+
+  const inviteLink = currentUserId
+    ? generateReferralLink(currentUserId)
+    : window.location.origin;
+
+  const handleCopyLink = async () => {
+    if (!currentUserId) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy referral link:", err);
+    }
+  };
   
   // Cascading Location States
   const allCountries = Country.getAllCountries();
@@ -83,42 +102,51 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
   const getProfileCompletionData = (p: any) => {
     if (!p) return { percentage: 0, sections: [] };
 
-    // 1. Check if AT LEAST ONE social profile is filled out
-    const hasAtLeastOneSocial = p.social_profiles 
-      ? Object.values(p.social_profiles).some(link => Boolean(link)) 
+    const hasAtLeastOneSocial = p.social_profiles
+      ? Object.values(p.social_profiles).some(link => Boolean(link))
       : false;
 
-    // 2. Personal Info is strictly tied to personal/location/social fields
     const isPersonalDone = Boolean(
-      p.full_name && p.gender && p.phone_number && 
-      p.country_of_origin && p.state_of_origin && 
-      p.country_of_residence && p.state_of_residence && 
-      p.about_me && p.interests && p.interests.length > 0 &&
+      p.full_name &&
+      p.gender &&
+      p.phone_number &&
+      p.about_me &&
+      p.interests?.length > 0 &&
       hasAtLeastOneSocial
     );
 
-    // 3. Education Info is strictly tied to the education modal fields
     const isEducationDone = Boolean(
-      p.education_level && p.institution && p.course_of_study && 
-      p.year_of_graduation && p.graduation_class && p.nysc_completed
+      p.education_level &&
+      p.institution &&
+      p.course_of_study &&
+      p.year_of_graduation &&
+      p.graduation_class &&
+      p.nysc_completed
     );
 
-    // 4. Work Info is strictly tied to the professional modal fields
     const isWorkDone = Boolean(
-      p.employment_status && p.skill_level && p.english_proficiency && p.professional_experience
+      p.employment_status &&
+      p.skill_level &&
+      p.english_proficiency &&
+      p.professional_experience
     );
 
-    let completedCount = 0;
-    if (isPersonalDone) completedCount++;
-    if (isEducationDone) completedCount++;
-    if (isWorkDone) completedCount++;
+    const isDemographicDone = Boolean(
+      p.country_of_origin &&
+      p.state_of_origin &&
+      p.country_of_residence &&
+      p.state_of_residence
+    );
+
+    const completedCount = [isPersonalDone, isEducationDone, isWorkDone, isDemographicDone].filter(Boolean).length;
 
     return {
-      percentage: Math.round((completedCount / 3) * 100),
+      percentage: Math.round((completedCount / 4) * 100),
       sections: [
         { label: "Personal Info", completed: isPersonalDone },
         { label: "Education Info", completed: isEducationDone },
-        { label: "Work Info", completed: isWorkDone }
+        { label: "Work Info", completed: isWorkDone },
+        { label: "Demographic Info", completed: isDemographicDone }
       ]
     };
   };
@@ -139,6 +167,18 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
       
       if (data) {
         setProfile(data);
+
+        const { count: referredCount, error: referralError } = await supabase
+          .from("profiles")
+          .select("id", { count: "exact", head: true })
+          .eq("referred_by", user.id);
+
+        if (referralError) {
+          console.error("Error fetching referral count:", referralError);
+        } else if (typeof referredCount === "number") {
+          setReferralCount(referredCount);
+        }
+
         const names = (data.full_name || "").split(" ");
         setEditForm({
           firstName: names[0] || "",
@@ -207,30 +247,38 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
   };
 
   // --- Dynamic Location Handlers ---
-  const handleOriginCountryChange = (isoCode: string, name: string) => {
+  const handleOriginCountryChange = (countryName: string) => {
+    const country = Country.getAllCountries().find(c => c.name === countryName);
+    const isoCode = country?.isoCode ?? "";
     setLocCodes(prev => ({ ...prev, originCountryCode: isoCode, originStateCode: "" }));
-    setEditForm(prev => ({ ...prev, country_of_origin: name, state_of_origin: "", city_of_origin: "" }));
-    setOriginStates(State.getStatesOfCountry(isoCode));
+    setEditForm(prev => ({ ...prev, country_of_origin: countryName, state_of_origin: "", city_of_origin: "" }));
+    setOriginStates(isoCode ? State.getStatesOfCountry(isoCode) : []);
     setOriginCities([]);
   };
 
-  const handleOriginStateChange = (isoCode: string, name: string) => {
+  const handleOriginStateChange = (stateName: string) => {
+    const state = State.getStatesOfCountry(locCodes.originCountryCode).find(s => s.name === stateName);
+    const isoCode = state?.isoCode ?? "";
     setLocCodes(prev => ({ ...prev, originStateCode: isoCode }));
-    setEditForm(prev => ({ ...prev, state_of_origin: name, city_of_origin: "" }));
-    setOriginCities(City.getCitiesOfState(locCodes.originCountryCode, isoCode));
+    setEditForm(prev => ({ ...prev, state_of_origin: stateName, city_of_origin: "" }));
+    setOriginCities(isoCode ? City.getCitiesOfState(locCodes.originCountryCode, isoCode) : []);
   };
 
-  const handleResidenceCountryChange = (isoCode: string, name: string) => {
+  const handleResidenceCountryChange = (countryName: string) => {
+    const country = Country.getAllCountries().find(c => c.name === countryName);
+    const isoCode = country?.isoCode ?? "";
     setLocCodes(prev => ({ ...prev, residenceCountryCode: isoCode, residenceStateCode: "" }));
-    setEditForm(prev => ({ ...prev, country_of_residence: name, state_of_residence: "", city_of_residence: "" }));
-    setResidenceStates(State.getStatesOfCountry(isoCode));
+    setEditForm(prev => ({ ...prev, country_of_residence: countryName, state_of_residence: "", city_of_residence: "" }));
+    setResidenceStates(isoCode ? State.getStatesOfCountry(isoCode) : []);
     setResidenceCities([]);
   };
 
-  const handleResidenceStateChange = (isoCode: string, name: string) => {
+  const handleResidenceStateChange = (stateName: string) => {
+    const state = State.getStatesOfCountry(locCodes.residenceCountryCode).find(s => s.name === stateName);
+    const isoCode = state?.isoCode ?? "";
     setLocCodes(prev => ({ ...prev, residenceStateCode: isoCode }));
-    setEditForm(prev => ({ ...prev, state_of_residence: name, city_of_residence: "" }));
-    setResidenceCities(City.getCitiesOfState(locCodes.residenceCountryCode, isoCode));
+    setEditForm(prev => ({ ...prev, state_of_residence: stateName, city_of_residence: "" }));
+    setResidenceCities(isoCode ? City.getCitiesOfState(locCodes.residenceCountryCode, isoCode) : []);
   };
 
   // --- Profile Saving ---
@@ -387,13 +435,13 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
                   <div className="space-y-4">
                     <h4 className="font-bold text-primary border-b pb-2">Origin Information</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <select onChange={(e) => handleOriginCountryChange(e.target.options[e.target.selectedIndex].dataset.iso || "", e.target.value)} value={editForm.country_of_origin} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none text-sm">
+                      <select onChange={(e) => handleOriginCountryChange(e.target.value)} value={editForm.country_of_origin} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none text-sm">
                         <option value="">Country</option>
-                        {allCountries.map(c => <option key={c.isoCode} data-iso={c.isoCode} value={c.name}>{c.name}</option>)}
+                        {allCountries.map(c => <option key={c.isoCode} value={c.name}>{c.name}</option>)}
                       </select>
-                      <select onChange={(e) => handleOriginStateChange(e.target.options[e.target.selectedIndex].dataset.iso || "", e.target.value)} value={editForm.state_of_origin} disabled={!editForm.country_of_origin} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none text-sm disabled:bg-gray-50">
+                      <select onChange={(e) => handleOriginStateChange(e.target.value)} value={editForm.state_of_origin} disabled={!editForm.country_of_origin} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none text-sm disabled:bg-gray-50">
                         <option value="">State</option>
-                        {originStates.map(s => <option key={s.isoCode} data-iso={s.isoCode} value={s.name}>{s.name}</option>)}
+                        {originStates.map(s => <option key={s.isoCode} value={s.name}>{s.name}</option>)}
                       </select>
                       <select onChange={(e) => setEditForm({...editForm, city_of_origin: e.target.value})} value={editForm.city_of_origin} disabled={!editForm.state_of_origin} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none text-sm disabled:bg-gray-50">
                         <option value="">City / LGA</option>
@@ -405,13 +453,13 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
                   <div className="space-y-4">
                     <h4 className="font-bold text-primary border-b pb-2">Residence Information</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <select onChange={(e) => handleResidenceCountryChange(e.target.options[e.target.selectedIndex].dataset.iso || "", e.target.value)} value={editForm.country_of_residence} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none text-sm">
+                      <select onChange={(e) => handleResidenceCountryChange(e.target.value)} value={editForm.country_of_residence} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none text-sm">
                         <option value="">Country</option>
-                        {allCountries.map(c => <option key={c.isoCode} data-iso={c.isoCode} value={c.name}>{c.name}</option>)}
+                        {allCountries.map(c => <option key={c.isoCode} value={c.name}>{c.name}</option>)}
                       </select>
-                      <select onChange={(e) => handleResidenceStateChange(e.target.options[e.target.selectedIndex].dataset.iso || "", e.target.value)} value={editForm.state_of_residence} disabled={!editForm.country_of_residence} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none text-sm disabled:bg-gray-50">
+                      <select onChange={(e) => handleResidenceStateChange(e.target.value)} value={editForm.state_of_residence} disabled={!editForm.country_of_residence} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none text-sm disabled:bg-gray-50">
                         <option value="">State</option>
-                        {residenceStates.map(s => <option key={s.isoCode} data-iso={s.isoCode} value={s.name}>{s.name}</option>)}
+                        {residenceStates.map(s => <option key={s.isoCode} value={s.name}>{s.name}</option>)}
                       </select>
                       <select onChange={(e) => setEditForm({...editForm, city_of_residence: e.target.value})} value={editForm.city_of_residence} disabled={!editForm.state_of_residence} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none text-sm disabled:bg-gray-50">
                         <option value="">City / LGA</option>
@@ -524,6 +572,31 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
             <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
             <span className="font-bold text-sm tracking-tight">{profile?.points?.toLocaleString() || 0} pts</span>
           </button>
+          <button className="flex items-center gap-2 bg-white/10 border border-gray-200 rounded-full px-4 py-2 hover:bg-white/20 transition-colors">
+            <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-xs font-bold">R</div>
+            <span className="font-bold text-sm tracking-tight">{referralCount.toLocaleString()} referrals</span>
+          </button>
+          <button
+            onClick={handleCopyLink}
+            disabled={!currentUserId}
+            className={cn(
+              "px-5 py-2 text-sm font-bold rounded-lg shadow-sm transition-all active:scale-95 flex items-center gap-2",
+              currentUserId
+                ? copied
+                  ? "bg-emerald-500 text-white"
+                  : "bg-primary text-white hover:bg-primary-light"
+                : "bg-gray-100 text-gray-500 cursor-not-allowed"
+            )}
+          >
+            {copied ? (
+              <>
+                <Check size={16} />
+                Copied!
+              </>
+            ) : (
+              "Copy link"
+            )}
+          </button>
           <button onClick={() => setShowNotifications(!showNotifications)} className="p-1.5 text-gray-400 hover:bg-gray-50 rounded-full transition-colors relative">
             <Bell size={20} />
           </button>
@@ -543,7 +616,7 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
             <ArrowLeft size={20} />
           </button>
           <h1 className="text-3xl md:text-6xl font-display font-bold text-white tracking-tight">
-            <span className="text-yellow-400">Showcase</span> your Potential Here
+            Update Your Paradise Hub Profile
           </h1>
         </div>
       </div>
@@ -553,8 +626,12 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
         <div className="flex flex-col md:flex-row items-center md:items-end gap-4 md:gap-6 pb-8">
           <div className="relative group">
             <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white p-1 shadow-xl">
-              <label className={cn("w-full h-full rounded-full bg-gray-50 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors", isUploading && "opacity-50 pointer-events-none")}>
-                {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" /> : <><Camera size={32} /><span className="text-[10px] font-bold mt-1">Add Photo</span></>}
+              <label className={cn("w-full h-full rounded-full bg-gray-50 flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-200 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors", isUploading && "opacity-50 pointer-events-none")}>
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-3xl font-bold">{getInitials(profile?.full_name)}</span>
+                )}
                 <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'avatars', true)} className="hidden" />
               </label>
             </div>
@@ -579,7 +656,8 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
         {/* Content Grid */}
         <div className="flex flex-col lg:grid lg:grid-cols-3 gap-8 py-8">
           
-          {/* Sidebar (Completion Card) */}
+          {/* Sidebar (Completion Card) - COMMENTED OUT */}
+          {/* 
           <div className="order-first lg:order-last space-y-8">
             <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm">
               <h3 className="text-lg font-bold text-ink mb-6">Profile Completion</h3>
@@ -613,6 +691,7 @@ export default function ProfilePage({ onBack, onProfileUpdate, onViewCourseByTit
               )}
             </div>
           </div>
+          */}
 
           {/* MAIN TAB CONTENT */}
           <div className="lg:col-span-2 space-y-6 md:space-y-8">

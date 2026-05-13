@@ -25,6 +25,17 @@ export default function AuthPage({ initialMode = "login", onBack, onLoginSuccess
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
 
+  const isValidReferralCode = (value: string | null): value is string =>
+    !!value && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(value);
+
+  const getReferralCode = () => {
+    const params = new URLSearchParams(window.location.search);
+    const urlReferral = params.get("ref");
+    const storedReferral = sessionStorage.getItem("paradise_ref_code");
+    const referral = urlReferral || storedReferral;
+    return isValidReferralCode(referral) ? referral : null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -32,14 +43,22 @@ export default function AuthPage({ initialMode = "login", onBack, onLoginSuccess
 
     try {
       if (mode === "signup") {
+        const referralCode = getReferralCode();
+        
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { full_name: `${firstName} ${lastName}`.trim() }
+            data: { 
+              full_name: `${firstName} ${lastName}`.trim(),
+              referred_by: referralCode || undefined
+            }
           }
         });
         if (signUpError) throw signUpError;
+        if (referralCode) {
+          sessionStorage.removeItem("paradise_ref_code");
+        }
         alert("Check your email for the confirmation link!");
         // Clear form
         setEmail("");

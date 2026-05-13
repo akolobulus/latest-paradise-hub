@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Leaf, Trophy, Gift, GraduationCap, ChevronDown, ChevronUp, Clock, ArrowUpRight, ExternalLink, Plus, Sparkles, Menu, Bell, Users, HelpCircle, User } from "lucide-react";
 import { ProfileData } from "@/src/lib/profileCompletion";
+import { generateReferralLink } from "@/src/lib/referral";
 import BrandLogo from "./BrandLogo";
 import NotificationBell from "./NotificationBell";
 
@@ -98,6 +99,49 @@ interface RewardsPageProps {
   onSupportClick?: () => void;
   currentUserId?: string;
 }
+
+// Referral Actions Component
+function ReferralActions({ currentUserId }: { currentUserId?: string }) {
+  const [copied, setCopied] = useState(false);
+  
+  const inviteLink = currentUserId ? generateReferralLink(currentUserId) : "";
+
+  const copyToClipboard = async () => {
+    if (!inviteLink) return;
+    await navigator.clipboard.writeText(inviteLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const shareWhatsApp = () => {
+    if (!inviteLink) return;
+    const msg = encodeURIComponent(
+      `Join me on Paradise Hub! 🌿 Use my link to sign up, verify your email, and let's grow together: ${inviteLink}`
+    );
+    window.open(`https://wa.me/?text=${msg}`, "_blank");
+  };
+
+  return (
+    <div className="flex flex-col sm:flex-row gap-2">
+      <button 
+        onClick={copyToClipboard}
+        disabled={!currentUserId}
+        className="bg-white text-emerald-900 px-6 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-50"
+      >
+        {copied ? "✓ Copied!" : "Copy Link"}
+      </button>
+      <button 
+        onClick={shareWhatsApp}
+        disabled={!currentUserId}
+        className="bg-[#25D366] text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1fa857]"
+      >
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.272-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.67-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.076 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421-7.403h-.004a9.87 9.87 0 00-4.958 1.237 9.953 9.953 0 001.691 19.169h.004c2.46 0 4.799-.922 6.55-2.418a9.95 9.95 0 001.691-13.751 9.865 9.865 0 00-4.974-4.237M12.004 2C6.48 2 2 6.48 2 12s4.48 10 10.004 10C17.52 22 22 17.52 22 12S17.52 2 12.004 2Z"/></svg>
+        WhatsApp
+      </button>
+    </div>
+  );
+}
+
 
 export default function RewardsPage({ availablePoints, expiringPoints = 0, onBack, userProfile, onViewProfile, onViewCommunity, onViewLearning, onSupportClick, currentUserId }: RewardsPageProps) {
   const [isWaysToEarnOpen, setIsWaysToEarnOpen] = useState(true);
@@ -326,6 +370,26 @@ export default function RewardsPage({ availablePoints, expiringPoints = 0, onBac
               </motion.div>
             )}
           </AnimatePresence>
+        </section>
+
+        {/* Referral Section */}
+        <section className="bg-gradient-to-br from-emerald-900 to-emerald-950 rounded-3xl p-8 md:p-12 text-white">
+          <div className="max-w-2xl">
+            <div className="flex items-start gap-3 mb-4">
+              <Users size={28} className="text-yellow-300 shrink-0 mt-1" />
+              <div>
+                <h3 className="text-2xl md:text-3xl font-display font-bold mb-2">Invite Friends, Earn Points</h3>
+                <p className="text-emerald-200 text-sm md:text-base">Receive 5 Harvest Points when someone signs up using your referral link and verifies their email.</p>
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3 mt-8">
+              <div className="flex-grow bg-white/10 rounded-xl px-4 py-3 font-mono text-sm break-all border border-white/20 flex items-center justify-between gap-2">
+                <span className="truncate">{currentUserId ? generateReferralLink(currentUserId) : "Sign in to get your link"}</span>
+              </div>
+              <ReferralActions currentUserId={currentUserId} />
+            </div>
+          </div>
         </section>
 
         <section className="space-y-8">

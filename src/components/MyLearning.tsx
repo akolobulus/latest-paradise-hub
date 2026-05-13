@@ -224,7 +224,7 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
                       isDarkTheme ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-100 text-ink"
                     )}
                   >
-                    {/* Dark Mode Toggle */}
+                    {/* Dark Mode Toggle
                     <div className={cn(
                       "px-4 py-3 flex items-center justify-between transition-colors",
                       isDarkTheme ? "hover:bg-slate-800" : "hover:bg-gray-50"
@@ -244,6 +244,7 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
                     </div>
 
                     <div className="h-px bg-gray-100 mx-2" />
+                    */}
                     
                     <button 
                       onClick={() => {

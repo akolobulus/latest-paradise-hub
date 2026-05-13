@@ -338,7 +338,7 @@ export default function Dashboard({ points, user, userProfile, currentUserId, pr
                       transition={{ duration: 0.2 }}
                       className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 overflow-hidden"
                     >
-                      {/* Dark Mode Toggle */}
+                      {/* Dark Mode Toggle
                       <div className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
                         <div className="flex items-center gap-3">
                           <div className={cn(
@@ -355,6 +355,7 @@ export default function Dashboard({ points, user, userProfile, currentUserId, pr
                       </div>
 
                       <div className="h-px bg-gray-100 mx-2" />
+                      */}
                       
                       <button 
                         onClick={() => {
@@ -616,6 +617,8 @@ export default function Dashboard({ points, user, userProfile, currentUserId, pr
             <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
           </div>
 
+          {/* COMMENTED OUT - Complete Your Profile Card */}
+          {/*
           <div className="bg-white rounded-[32px] md:rounded-[40px] p-8 md:p-12 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
             <h3 className="text-lg md:text-xl font-bold mb-6 md:mb-8">Complete Your Profile</h3>
             <div className="relative w-32 h-32 md:w-40 md:h-40 mb-6 md:mb-8">
@@ -649,6 +652,7 @@ export default function Dashboard({ points, user, userProfile, currentUserId, pr
               {profileCompletion === 100 ? "Profile Complete!" : "Add Personal Info"}
             </button>
           </div>
+          */}
         </section>
 
         {/* Explore the eHub */}

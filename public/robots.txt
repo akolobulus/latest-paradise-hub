@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://paradise-hub.org/sitemap.xml
