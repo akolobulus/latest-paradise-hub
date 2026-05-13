@@ -329,6 +329,8 @@ className={cn(
                 <button 
                   onClick={() => {
                     setIsMenuOpen(false);
+                    // Already on learning page, but can stay or refresh
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="w-full rounded-2xl px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                 >
