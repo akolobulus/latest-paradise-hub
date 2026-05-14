@@ -215,6 +215,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           .from('quiz_results')
           .select('quiz_id')
           .eq('user_id', session.user.id)
+          .eq('course_id', course.id)
           .eq('passed', true);
 
         if (quizError) {
@@ -346,15 +347,12 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
 
     try {
       if (session?.user?.id) {
-        // Award the one-time 50 points
-        await supabase.rpc('increment_points', { amount: 50, row_id: session.user.id });
-        
-        // Mark enrollment as complete
-        await supabase
-          .from('enrollments')
-          .update({ course_completed: true })
-          .match({ user_id: session.user.id, course_id: course.id });
-          
+        // Award points only once and mark course completion atomically
+        await supabase.rpc('increment_course_points', {
+          user_id_input: session.user.id,
+          course_id_input: course.id,
+        });
+
         onAwardPoints(50);
       }
     } catch (error) {
@@ -481,6 +479,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           .select('id, score, passed')
           .eq('user_id', session.user.id)
           .eq('quiz_id', quiz.id)
+          .or(`course_id.eq.${course.id},course_id.is.null`)
           .single();
 
         if (existingResult) {
@@ -489,13 +488,23 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
               .from('quiz_results')
               .update({ 
                 score: score, 
-                passed: passed || existingResult.passed 
+                passed: passed || existingResult.passed,
+                course_id: course.id
+              })
+              .eq('id', existingResult.id);
+          } else if (!existingResult.passed && passed) {
+            await supabase
+              .from('quiz_results')
+              .update({
+                passed: true,
+                course_id: course.id
               })
               .eq('id', existingResult.id);
           }
         } else {
           await supabase.from('quiz_results').insert({
             user_id: session.user.id,
+            course_id: course.id,
             quiz_id: quiz.id,
             score: score,
             passed: passed

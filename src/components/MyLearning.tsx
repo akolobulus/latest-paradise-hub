@@ -95,45 +95,47 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
   // Calculate progress for each course
   const calculateCourseProgress = async (courseId: number) => {
     try {
-      // Fetch course content
       const courseContent = await fetchCourseContent(courseId);
-      if (!courseContent || !courseContent.weeks) return 0;
+      if (!courseContent || !Array.isArray(courseContent)) return 0;
 
-      // Calculate total items (lessons + quizzes)
-      const totalItems = courseContent.weeks.reduce((acc: number, week: any) => 
-        acc + week.lessons.length + (week.quiz ? 1 : 0), 0);
-
+      const totalLessons = courseContent.reduce(
+        (acc: number, module: any) =>
+          acc + (Array.isArray(module.lessons) ? module.lessons.length : 0),
+        0
+      );
+      const totalQuizzes = courseContent.reduce(
+        (acc: number, module: any) =>
+          acc + (Array.isArray(module.quizzes) && module.quizzes.length > 0 ? 1 : 0),
+        0
+      );
+      const totalItems = totalLessons + totalQuizzes;
       if (totalItems === 0) return 0;
 
-      // Fetch completed lessons
       const { data: lessonProgress, error: lessonError } = await supabase
         .from('lesson_progress')
         .select('lesson_id')
         .eq('user_id', currentUserId)
-        .in('lesson_id', courseContent.weeks.flatMap((w: any) => w.lessons.map((l: any) => l.id)));
+        .eq('course_id', courseId);
 
       if (lessonError) {
         console.error('Error loading lesson progress:', lessonError);
         return 0;
       }
 
-      // Fetch passed quizzes
       const { data: quizProgress, error: quizError } = await supabase
         .from('quiz_results')
         .select('quiz_id')
         .eq('user_id', currentUserId)
-        .eq('passed', true)
-        .in('quiz_id', courseContent.weeks.map((w: any) => w.quiz?.id).filter(Boolean));
+        .eq('course_id', courseId)
+        .eq('passed', true);
 
       if (quizError) {
         console.error('Error loading quiz progress:', quizError);
         return 0;
       }
 
-      const completedLessons = lessonProgress?.length || 0;
-      const passedQuizzes = quizProgress?.length || 0;
-      const completedItems = completedLessons + passedQuizzes;
-
+      const completedItems = (lessonProgress?.length || 0) + (quizProgress?.length || 0);
+      console.log(`[MyLearning] courseId=${courseId} total=${totalItems} lessons=${lessonProgress?.length} quizzes=${quizProgress?.length}`);
       return Math.round((completedItems / totalItems) * 100);
     } catch (error) {
       console.error('Error calculating course progress:', error);

@@ -142,6 +142,30 @@ $$ language plpgsql;
 
 ---
 
+## Step 2.1: Create the Course Completion Points Function
+
+This function ensures learners receive the 50-point course completion reward only once per course.
+
+```sql
+CREATE OR REPLACE FUNCTION increment_course_points(user_id_input uuid, course_id_input int)
+RETURNS void AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM enrollments 
+        WHERE user_id = user_id_input 
+        AND course_id = course_id_input 
+        AND (course_completed = false OR course_completed IS NULL)
+    ) THEN
+        UPDATE profiles SET points = points + 50 WHERE id = user_id_input;
+        UPDATE enrollments SET course_completed = true 
+        WHERE user_id = user_id_input AND course_id = course_id_input;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+---
+
 ## Step 3: Configure Email Authentication
 
 1. Go to **Authentication** → **Settings**
@@ -285,6 +309,37 @@ These credentials are required for the frontend to connect to Supabase.
 - Review and test all RLS policies
 - Set up database backups
 - Monitor API usage and set rate limits
+
+---
+
+## Database Migrations
+
+### Required Migration: Add course_id to quiz_results
+
+If you set up your database before the course progress tracking feature, run this migration to add `course_id` to the `quiz_results` table:
+
+```sql
+-- Add course_id column if it doesn't exist
+alter table public.quiz_results 
+  add column if not exists course_id integer;
+
+-- Update the unique constraint to include course_id
+alter table public.quiz_results 
+  drop constraint if exists quiz_results_user_id_quiz_id_key;
+
+alter table public.quiz_results 
+  add constraint quiz_results_user_id_quiz_id_course_id_key unique(user_id, quiz_id, course_id);
+
+-- Add update policy if missing
+drop policy if exists "Users can update own quiz results" on quiz_results;
+create policy "Users can update own quiz results" on quiz_results 
+  for update using (auth.uid() = user_id);
+```
+
+This ensures that:
+- New quiz results include the `course_id` for proper progress filtering
+- Existing quiz records can be updated without losing the course association
+- MyLearning progress calculations correctly isolate progress per course
 
 ---
 
