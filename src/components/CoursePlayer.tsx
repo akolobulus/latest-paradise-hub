@@ -94,6 +94,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const [expandedWeeks, setExpandedWeeks] = useState<string[]>([]);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [passedQuizzes, setPassedQuizzes] = useState<string[]>([]);
+  const [courseCompletionAwarded, setCourseCompletionAwarded] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
@@ -282,29 +283,102 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     );
   };
 
+  const totalCourseItems = content.weeks.reduce((acc, w) => acc + w.lessons.length + (w.quiz ? 1 : 0), 0);
+
+  const getCourseCompletionStorageKey = (courseId: number) => `course_completion_awarded_${courseId}`;
+
+  const markCourseCompletionLocally = (courseId: number) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(getCourseCompletionStorageKey(courseId), 'true');
+  };
+
+  const isCourseCompletionMarkedLocally = (courseId: number) => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(getCourseCompletionStorageKey(courseId)) === 'true';
+  };
+
+  const isCourseComplete = (lessonIds: string[], quizIds: string[]) =>
+    totalCourseItems > 0 && lessonIds.length + quizIds.length === totalCourseItems;
+
+  useEffect(() => {
+    if (!session?.user?.id || !course?.id) return;
+
+    const loadCourseCompletionFlag = async () => {
+      if (isCourseCompletionMarkedLocally(course.id)) {
+        setCourseCompletionAwarded(true);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('enrollments')
+          .select('course_completed')
+          .eq('user_id', session.user.id)
+          .eq('course_id', course.id)
+          .single();
+
+        if (!error && data?.course_completed) {
+          setCourseCompletionAwarded(true);
+          markCourseCompletionLocally(course.id);
+        }
+      } catch (error) {
+        // ignore missing field or table
+      }
+    };
+
+    loadCourseCompletionFlag();
+  }, [session?.user?.id, course.id]);
+
+  const awardCourseCompletion = async (updatedCompletedLessons: string[], updatedPassedQuizzes: string[]) => {
+    if (courseCompletionAwarded || !isCourseComplete(updatedCompletedLessons, updatedPassedQuizzes)) {
+      return;
+    }
+
+    setCourseCompletionAwarded(true);
+    markCourseCompletionLocally(course.id);
+
+    try {
+      if (session) {
+        await supabase.rpc('increment_points', { amount: 50, row_id: session.user.id });
+        await supabase
+          .from('enrollments')
+          .update({ course_completed: true })
+          .match({ user_id: session.user.id, course_id: course.id });
+      }
+    } catch (error) {
+      console.error('Error awarding course completion points:', error);
+    } finally {
+      onAwardPoints(50);
+    }
+  };
+
+  useEffect(() => {
+    if (courseCompletionAwarded) return;
+    if (isCourseComplete(completedLessons, passedQuizzes)) {
+      awardCourseCompletion(completedLessons, passedQuizzes);
+    }
+  }, [courseCompletionAwarded, completedLessons, passedQuizzes, course.id, session?.user?.id]);
+
   const handleLessonComplete = async () => {
     if (activeLesson && !completedLessons.includes(activeLesson.id)) {
+      const updatedCompletedLessons = [...completedLessons, activeLesson.id];
+
       try {
         if (session) {
           const { error } = await supabase.from('lesson_progress').insert({
             user_id: session.user.id,
             course_id: course.id,
-            lesson_id: activeLesson.id
+            lesson_id: activeLesson.id,
           });
           if (error) throw error;
-
-          await supabase.rpc('increment_points', { 
-            amount: 50, 
-            row_id: session.user.id 
-          });
         }
 
-        setCompletedLessons(prev => [...prev, activeLesson.id]);
-        onAwardPoints(50); 
+        setCompletedLessons(updatedCompletedLessons);
+        await awardCourseCompletion(updatedCompletedLessons, passedQuizzes);
       } catch (error) {
         console.error('Error marking lesson complete:', error);
-        setCompletedLessons(prev => [...prev, activeLesson.id]);
-        onAwardPoints(50);
+        setCompletedLessons(updatedCompletedLessons);
+        await awardCourseCompletion(updatedCompletedLessons, passedQuizzes);
       }
     }
   };
@@ -423,18 +497,24 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         }
 
         if (passed && !passedQuizzes.includes(quiz.id)) {
-          setPassedQuizzes(prev => [...prev, quiz.id]);
-          onAwardPoints(200); 
+          const updatedPassedQuizzes = [...passedQuizzes, quiz.id];
+          setPassedQuizzes(updatedPassedQuizzes);
+          onAwardPoints(200);
+          await awardCourseCompletion(completedLessons, updatedPassedQuizzes);
         }
       } catch (error) {
         console.error('Error saving quiz result:', error);
         if (passed && !passedQuizzes.includes(quiz.id)) {
-          setPassedQuizzes(prev => [...prev, quiz.id]);
+          const updatedPassedQuizzes = [...passedQuizzes, quiz.id];
+          setPassedQuizzes(updatedPassedQuizzes);
+          await awardCourseCompletion(completedLessons, updatedPassedQuizzes);
         }
       }
     } else {
       if (passed && !passedQuizzes.includes(quiz.id)) {
-        setPassedQuizzes(prev => [...prev, quiz.id]);
+        const updatedPassedQuizzes = [...passedQuizzes, quiz.id];
+        setPassedQuizzes(updatedPassedQuizzes);
+        await awardCourseCompletion(completedLessons, updatedPassedQuizzes);
       }
     }
   };
