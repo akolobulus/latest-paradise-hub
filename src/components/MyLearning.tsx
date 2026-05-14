@@ -119,7 +119,7 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
 
       // Fetch passed quizzes
       const { data: quizProgress, error: quizError } = await supabase
-        .from('quiz_progress')
+        .from('quiz_results')
         .select('quiz_id')
         .eq('user_id', currentUserId)
         .eq('passed', true)

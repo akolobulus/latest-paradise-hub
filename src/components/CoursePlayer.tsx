@@ -297,8 +297,13 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     return localStorage.getItem(getCourseCompletionStorageKey(courseId)) === 'true';
   };
 
-  const isCourseComplete = (lessonIds: string[], quizIds: string[]) =>
-    totalCourseItems > 0 && lessonIds.length + quizIds.length === totalCourseItems;
+  const isCourseComplete = (lessonIds: string[], quizIds: string[]) => {
+    if (totalCourseItems === 0) return false;
+    // Ensure we count UNIQUE completions only
+    const uniqueLessons = Array.from(new Set(lessonIds)).length;
+    const uniqueQuizzes = Array.from(new Set(quizIds)).length;
+    return (uniqueLessons + uniqueQuizzes) === totalCourseItems;
+  };
 
   useEffect(() => {
     if (!session?.user?.id || !course?.id) return;
@@ -330,25 +335,30 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   }, [session?.user?.id, course.id]);
 
   const awardCourseCompletion = async (updatedCompletedLessons: string[], updatedPassedQuizzes: string[]) => {
+    // 1. Guard: Don't run if already awarded OR if not at 100%
     if (courseCompletionAwarded || !isCourseComplete(updatedCompletedLessons, updatedPassedQuizzes)) {
       return;
     }
 
+    // 2. Immediate State Lock: Prevent race conditions
     setCourseCompletionAwarded(true);
     markCourseCompletionLocally(course.id);
 
     try {
-      if (session) {
+      if (session?.user?.id) {
+        // Award the one-time 50 points
         await supabase.rpc('increment_points', { amount: 50, row_id: session.user.id });
+        
+        // Mark enrollment as complete
         await supabase
           .from('enrollments')
           .update({ course_completed: true })
           .match({ user_id: session.user.id, course_id: course.id });
+          
+        onAwardPoints(50);
       }
     } catch (error) {
       console.error('Error awarding course completion points:', error);
-    } finally {
-      onAwardPoints(50);
     }
   };
 
@@ -491,15 +501,13 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
             passed: passed
           });
           
-          if (passed) {
-            await supabase.rpc('increment_points', { amount: 200, row_id: session.user.id });
-          }
+          // Note: Points are only awarded for full course completion, not per-quiz
         }
 
         if (passed && !passedQuizzes.includes(quiz.id)) {
           const updatedPassedQuizzes = [...passedQuizzes, quiz.id];
           setPassedQuizzes(updatedPassedQuizzes);
-          onAwardPoints(200);
+          // No point award here - wait for full course completion
           await awardCourseCompletion(completedLessons, updatedPassedQuizzes);
         }
       } catch (error) {
