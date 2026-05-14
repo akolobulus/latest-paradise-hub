@@ -423,7 +423,7 @@ export default function App() {
               onStartClick={() => setShowAuth("signup")}
               onDashboardClick={() => {
                 setCurrentPage("dashboard");
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                window.scrollTo(0, 0);
               }}
             />
             
@@ -447,7 +447,7 @@ export default function App() {
             isLoggedIn={isLoggedIn}
             onLogoClick={() => {
               setCurrentPage("landing");
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              window.scrollTo(0, 0);
             }}
             onAboutClick={() => {
               setCurrentPage("landing");
@@ -804,7 +804,7 @@ export default function App() {
           onDashboardClick={() => {
             if (isLoggedIn) {
               setCurrentPage("dashboard");
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              window.scrollTo(0, 0);
             }
           }}
         />
@@ -830,7 +830,7 @@ export default function App() {
         isLoggedIn={isLoggedIn}
         onLogoClick={() => {
           setCurrentPage("landing");
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          window.scrollTo(0, 0);
         }}
         onAboutClick={() => {
           const el = document.getElementById('about');

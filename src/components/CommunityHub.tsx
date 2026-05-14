@@ -31,6 +31,7 @@ import { LeaderboardList } from "./Leaderboard";
 import { supabase } from "@/src/lib/supabase";
 import { calculateTrendingTopics, TrendingTopic, formatNumber } from "@/src/lib/trendingUtils";
 import { ProfileData, getCurrentUserPoints } from "@/src/lib/profileCompletion";
+import { logActivity } from "@/src/lib/streak";
 
 interface Post {
   id: string;
@@ -110,6 +111,8 @@ export default function CommunityHub({ currentUserId, onBack, onLogoClick, onInc
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
   const [totalMembers, setTotalMembers] = useState(0);
   const [onlineMembers, setOnlineMembers] = useState(0);
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
 
   // Edit & Delete State
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
@@ -182,6 +185,10 @@ export default function CommunityHub({ currentUserId, onBack, onLogoClick, onInc
     fetchMemberStats();
     calculateTrendingTopicsFromAllPosts();
 
+    if (activeChannel === 'leaderboard') {
+      fetchLeaderboard();
+    }
+
     // Setup Realtime isolated to the current channel
     const targetChannel = activeChannel === 'leaderboard' ? 'general' : activeChannel;
     
@@ -201,8 +208,16 @@ export default function CommunityHub({ currentUserId, onBack, onLogoClick, onInc
       })
       .subscribe();
 
+    const profileSub = supabase
+      .channel('leaderboard:profiles')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        if (activeChannel === 'leaderboard') fetchLeaderboard();
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channelSub);
+      supabase.removeChannel(profileSub);
     };
   }, [activeChannel]);
 
@@ -302,6 +317,42 @@ export default function CommunityHub({ currentUserId, onBack, onLogoClick, onInc
       setOnlineMembers(onlineCount || 0);
     } catch (error) {
       console.error('Error fetching member stats:', error);
+    }
+  };
+
+  const fetchLeaderboard = async () => {
+    setIsLeaderboardLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, points, avatar_url')
+        .order('points', { ascending: false });
+
+      if (!error && data) {
+        const mapped = data.map((u: any) => {
+          const pts = u.points || 0;
+          const calculatedLevel = Math.floor(pts / 500) + 1;
+          let engagement = "New Learner";
+          if (pts > 2000) engagement = "Top Contributor";
+          else if (pts > 1000) engagement = "Highly Active";
+          else if (pts > 300) engagement = "Active";
+
+          return {
+            id: u.id,
+            name: u.full_name || 'Learner',
+            points: pts,
+            streak: Math.floor(pts / 100),
+            avatar: u.avatar_url,
+            level: calculatedLevel,
+            engagement,
+          };
+        });
+        setLeaderboardData(mapped);
+      }
+    } catch (err) {
+      console.error('Error fetching leaderboard:', err);
+    } finally {
+      setIsLeaderboardLoading(false);
     }
   };
 
@@ -448,6 +499,12 @@ export default function CommunityHub({ currentUserId, onBack, onLogoClick, onInc
         // Refresh points from database after awarding
         const freshPoints = await getCurrentUserPoints();
         setCurrentPoints(freshPoints);
+      }
+
+      // Log activity for streak tracking
+      const newStreak = await logActivity();
+      if (newStreak !== null) {
+        console.log('Activity logged, current streak:', newStreak);
       }
       
       // Force an immediate fetch so the user sees their post instantly, 
@@ -719,7 +776,7 @@ export default function CommunityHub({ currentUserId, onBack, onLogoClick, onInc
                 {userProfile.avatar_url ? (
                   <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  getInitials(userProfile.full_name)
+                  getInitials(userProfile.full_name as string | undefined)
                 )}
               </div>
               <div className="flex-1 min-w-0">
@@ -1018,7 +1075,19 @@ export default function CommunityHub({ currentUserId, onBack, onLogoClick, onInc
                     <span>WEEKLY RECAP</span>
                   </div>
                 </div>
-                <LeaderboardList />
+                {isLeaderboardLoading ? (
+                  <div className="text-center py-12 text-white/70">
+                    <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+                    Loading leaderboard...
+                  </div>
+                ) : leaderboardData.length === 0 ? (
+                  <div className="text-center py-12 text-white/70">No learners on the board yet!</div>
+                ) : (
+                  <LeaderboardList
+                    data={leaderboardData}
+                    currentUserId={currentUser?.id}
+                  />
+                )}
               </div>
             ) : (
               <>

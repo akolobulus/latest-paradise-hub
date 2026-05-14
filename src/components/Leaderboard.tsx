@@ -14,91 +14,177 @@ interface LeaderboardMember {
   engagement: string;
 }
 
+interface LeaderboardListProps {
+  data?: LeaderboardMember[];
+  currentUserId?: string;
+}
+
 // Helper to get initials from full name
 const getInitials = (name?: string) => {
   if (!name) return "U";
   return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
 };
 
-export function LeaderboardList({ data = [] }: { data?: LeaderboardMember[] }) {
+export function LeaderboardList({ data = [], currentUserId }: LeaderboardListProps) {
+  const top5 = data.slice(0, 5);
+  const currentUserIndex = currentUserId ? data.findIndex((u) => u.id === currentUserId) : -1;
+  const showCurrentUserSeparate = currentUserIndex >= 5;
+  const currentUserEntry = showCurrentUserSeparate ? data[currentUserIndex] : null;
+
   return (
-    <motion.div 
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true }}
-      variants={{
-        hidden: { opacity: 0 },
-        visible: {
-          opacity: 1,
-          transition: {
-            staggerChildren: 0.1
-          }
-        }
-      }}
-      // Added max-height and overflow-y-auto so the full list is scrollable!
-      className="space-y-4 relative z-10 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar"
-    >
-      {data.map((user, index) => (
-        <motion.div
-          key={user.id}
-          variants={{
-            hidden: { opacity: 0, x: 20 },
-            visible: { opacity: 1, x: 0 }
-          }}
-          className={cn(
-            "flex items-center justify-between p-4 rounded-2xl border border-white/5 transition-all hover:bg-white/5 group",
-            index === 0 && "bg-white/10 border-white/20"
-          )}
-        >
-          <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-            <div className="w-6 md:w-8 shrink-0 text-center font-display font-bold text-gray-500 text-sm md:text-base">
-              {index === 0 ? <Crown className="text-accent mx-auto" size={18} fill="currentColor" /> : `0${index + 1}`}
-            </div>
-            
-            <div className="relative shrink-0">
-              {/* Dynamic Avatar with Initials Fallback */}
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-primary font-bold text-sm overflow-hidden border-2 border-white/10 bg-white/5">
-                {user.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+    <div className="space-y-3 relative z-10">
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={{
+          hidden: { opacity: 0 },
+          visible: { opacity: 1, transition: { staggerChildren: 0.08 } }
+        }}
+        className="space-y-3"
+      >
+        {top5.map((user, index) => (
+          <motion.div
+            key={user.id}
+            variants={{ hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 } }}
+            className={cn(
+              "flex items-center justify-between p-4 rounded-2xl border transition-all hover:bg-white/5 group",
+              index === 0 ? "bg-yellow-400/10 border-yellow-400/30" : index === 1 ? "bg-white/8 border-white/15" : index === 2 ? "bg-amber-600/10 border-amber-600/20" : "border-white/5",
+              currentUserId === user.id && "ring-2 ring-primary/50"
+            )}
+          >
+            <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
+              <div className="w-6 md:w-8 shrink-0 text-center">
+                {index === 0 ? (
+                  <Crown className="text-yellow-400 mx-auto" size={18} fill="currentColor" />
+                ) : index === 1 ? (
+                  <span className="text-gray-300 font-bold text-sm">2</span>
+                ) : index === 2 ? (
+                  <span className="text-amber-600 font-bold text-sm">3</span>
                 ) : (
-                  <span className="text-white/80">{getInitials(user.name)}</span>
+                  <span className="text-gray-500 font-bold text-sm">{index + 1}</span>
                 )}
               </div>
-              
-              {index === 0 && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full flex items-center justify-center text-[10px] text-white font-bold shadow-lg shadow-accent/50">
-                  1
+
+              <div className="relative shrink-0">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-primary font-bold text-sm overflow-hidden border-2 border-white/10 bg-white/5">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="text-white/80">{getInitials(user.name)}</span>
+                  )}
                 </div>
-              )}
+                {index === 0 && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center text-[10px] text-black font-bold shadow-lg">
+                    1
+                  </div>
+                )}
+                {currentUserId === user.id && index !== 0 && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center text-[8px] text-white font-bold shadow-lg">
+                    You
+                  </div>
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <div className="font-bold truncate text-sm md:text-base text-white flex items-center gap-2">
+                  {user.name}
+                  {currentUserId === user.id && (
+                    <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-bold">YOU</span>
+                  )}
+                  <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-white/70 font-medium">
+                    Lv. {user.level}
+                  </span>
+                </div>
+                <div className="text-[10px] md:text-xs text-gray-400 flex items-center gap-3 mt-1">
+                  <div className="flex items-center gap-1">
+                    <Flame size={10} fill="currentColor" className={user.streak > 5 ? "text-orange-400" : "text-gray-500"} />
+                    {user.streak} Day Streak
+                  </div>
+                  <div className="flex items-center gap-1 hidden sm:flex">
+                    <Activity size={10} className="text-primary-light" />
+                    {user.engagement}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="min-w-0">
-              <div className="font-bold truncate text-sm md:text-base text-white flex items-center gap-2">
-                {user.name}
-                <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-white/70 font-medium">
-                  Lv. {user.level}
-                </span>
+            <div className="text-right shrink-0 ml-2">
+              <div className={cn("font-display font-bold text-sm md:text-base", index === 0 ? "text-yellow-400" : "text-primary-light")}>
+                {user.points.toLocaleString()}
               </div>
-              <div className="text-[10px] md:text-xs text-gray-400 flex items-center gap-3 mt-1">
-                <div className="flex items-center gap-1">
-                  <Flame size={10} fill="currentColor" className={user.streak > 5 ? "text-accent" : "text-gray-500"} />
-                  {user.streak} Day Streak
+              <div className="text-[8px] md:text-[10px] text-gray-500 uppercase tracking-widest">POINTS</div>
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {showCurrentUserSeparate && currentUserEntry && (
+        <>
+          <div className="flex items-center gap-3 py-1">
+            <div className="flex-1 border-t border-dashed border-white/10" />
+            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Your Rank</span>
+            <div className="flex-1 border-t border-dashed border-white/10" />
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between p-4 rounded-2xl border border-primary/30 bg-primary/10 ring-2 ring-primary/30"
+          >
+            <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
+              <div className="w-6 md:w-8 shrink-0 text-center">
+                <span className="text-primary font-bold text-sm">#{currentUserIndex + 1}</span>
+              </div>
+              <div className="relative shrink-0">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-primary font-bold text-sm overflow-hidden border-2 border-primary/40 bg-primary/10">
+                  {currentUserEntry.avatar ? (
+                    <img src={currentUserEntry.avatar} alt={currentUserEntry.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="text-white/80">{getInitials(currentUserEntry.name)}</span>
+                  )}
                 </div>
-                <div className="flex items-center gap-1 hidden sm:flex">
-                  <Activity size={10} className="text-primary-light" />
-                  {user.engagement}
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-[8px] text-white font-bold shadow-lg">
+                  You
+                </div>
+              </div>
+              <div className="min-w-0">
+                <div className="font-bold truncate text-sm md:text-base text-white flex items-center gap-2">
+                  {currentUserEntry.name}
+                  <span className="text-[9px] bg-primary/30 text-primary px-1.5 py-0.5 rounded-full font-bold">YOU</span>
+                  <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-white/70 font-medium">
+                    Lv. {currentUserEntry.level}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-400 flex items-center gap-3 mt-1">
+                  <div className="flex items-center gap-1">
+                    <Flame size={10} fill="currentColor" className="text-gray-500" />
+                    {currentUserEntry.streak} Day Streak
+                  </div>
+                  <span className="text-primary text-[10px]">
+                    {data[4]?.points - currentUserEntry.points > 0
+                      ? `${(data[4].points - currentUserEntry.points).toLocaleString()} pts to top 5`
+                      : currentUserEntry.engagement}
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
+            <div className="text-right shrink-0 ml-2">
+              <div className="font-display font-bold text-sm md:text-base text-primary-light">
+                {currentUserEntry.points.toLocaleString()}
+              </div>
+              <div className="text-[8px] md:text-[10px] text-gray-500 uppercase tracking-widest">POINTS</div>
+            </div>
+          </motion.div>
+        </>
+      )}
 
-          <div className="text-right shrink-0 ml-2">
-            <div className="font-display font-bold text-primary-light text-sm md:text-base">{user.points.toLocaleString()}</div>
-            <div className="text-[8px] md:text-[10px] text-gray-500 uppercase tracking-widest">POINTS</div>
-          </div>
-        </motion.div>
-      ))}
-    </motion.div>
+      {data.length > 5 && (
+        <p className="text-center text-[10px] text-gray-500 pt-2">
+          {data.length} total learners ranked by points
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -111,7 +197,7 @@ export default function Leaderboard() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, full_name, points, avatar_url')
+          .select('id, full_name, points, avatar_url, streak')
           .order('points', { ascending: false }); // Removed .limit(5) to fetch everyone!
 
         if (!error && data) {
@@ -129,7 +215,7 @@ export default function Leaderboard() {
               id: user.id,
               name: user.full_name || 'Learner',
               points: pts,
-              streak: Math.floor(pts / 100), // Approximate streak
+              streak: user.streak ?? 0,
               avatar: user.avatar_url,
               level: calculatedLevel,
               engagement: engagementStatus

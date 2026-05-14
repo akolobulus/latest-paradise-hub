@@ -110,7 +110,7 @@ function PathwayCard({ path, index, isLoggedIn, onCourseClick, onAuthRequired }:
         }
       }}
       className={cn(
-        "relative rounded-[40px] md:rounded-[48px] p-6 md:p-10 flex flex-col justify-between min-h-[450px] md:min-h-[550px] overflow-hidden group border-4 border-ink shadow-[12px_12px_0px_0px_rgba(17,24,39,1)] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[16px_16px_0px_0px_rgba(17,24,39,1)] cursor-pointer",
+        "relative rounded-[40px] md:rounded-[48px] p-6 md:p-10 flex flex-col justify-between min-h-[450px] md:min-h-[550px] overflow-hidden group border-4 border-ink shadow-[12px_12px_0px_0px_rgba(17,24,39,1)] transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[16px_16px_0px_0px_rgba(17,24,39,1)] cursor-pointer active:scale-95 active:shadow-[8px_8px_0px_0px_rgba(17,24,39,1)]",
         path.bgColor,
         path.textColor
       )}
