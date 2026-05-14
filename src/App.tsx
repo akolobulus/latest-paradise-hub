@@ -16,7 +16,7 @@ import CoursePlayer from "./components/CoursePlayer";
 import RewardsPage from "./components/RewardsPage";
 import SupportPage from "./components/SupportPage";
 import CommunityHub from "./components/CommunityHub";
-import { generateAgroTechImages } from "./lib/imageGen";
+
 import { supabase } from "./lib/supabase";
 import { ProfileData } from "./lib/profileCompletion";
 
@@ -371,9 +371,6 @@ export default function App() {
       setMousePos({ x: e.clientX, y: e.clientY });
     };
     window.addEventListener("mousemove", handleMouseMove);
-    
-    // Fetch AI images
-    generateAgroTechImages().then(setAiImages).catch(console.error);
 
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [allCourses.length]);
