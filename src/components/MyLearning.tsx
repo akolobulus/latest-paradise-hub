@@ -20,7 +20,7 @@ import {
   Menu,
   Bell
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/src/lib/utils";
 import BrandLogo from "./BrandLogo";
 import NotificationBell from "./NotificationBell";
@@ -80,8 +80,14 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
     return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
   };
   
-  const pendingPrograms = enrolledPrograms.filter(p => p.paymentStatus === 'pending');
-  const verifiedPrograms = enrolledPrograms.filter(p => p.paymentStatus === 'verified');
+  const pendingPrograms = useMemo(
+    () => enrolledPrograms.filter((p) => p.paymentStatus === "pending"),
+    [enrolledPrograms]
+  );
+  const verifiedPrograms = useMemo(
+    () => enrolledPrograms.filter((p) => p.paymentStatus === "verified"),
+    [enrolledPrograms]
+  );
 
   // Paystack Public Key from environment variables
   const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "pk_test_your_public_key_here";
@@ -138,11 +144,13 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
   // Load progress for all enrolled programs
   useEffect(() => {
     const loadProgress = async () => {
-      const progress: Record<number, number> = {};
-      for (const program of verifiedPrograms) {
-        progress[program.id] = await calculateCourseProgress(program.id);
-      }
-      setCourseProgress(progress);
+      const entries = await Promise.all(
+        verifiedPrograms.map(async (program) => [
+          program.id,
+          await calculateCourseProgress(program.id),
+        ] as const)
+      );
+      setCourseProgress(Object.fromEntries(entries));
     };
     if (verifiedPrograms.length > 0 && currentUserId) {
       loadProgress();
@@ -156,24 +164,24 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
     )}>
       {/* Navbar */}
       <nav className={cn(
-        "px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-[100]",
+        "px-4 md:px-8 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-100",
         isDarkTheme ? "bg-slate-950 border-slate-700" : "bg-white border-gray-100"
       )}>
         <div className="flex items-center gap-2 md:gap-8">
           <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onLogoClick}>
             <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" imgClassName="w-full h-full" />
-            <span className="font-display font-bold text-xl tracking-tight hidden xs:block">
+            <span className="font-display font-bold text-xl tracking-tight hidden sm:block">
               Paradise <span className="text-primary">Hub</span>
             </span>
           </div>
         </div>
         
-        <div className="flex items-center gap-3 md:gap-6">
-          <div className="bg-accent/10 border border-accent/20 rounded-full px-4 py-2 flex items-center gap-2 hidden md:flex">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-6">
+          <div className="bg-accent/10 border border-accent/20 rounded-full px-3 py-2 hidden sm:flex items-center gap-2">
             <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-accent-foreground text-xs font-bold">H</div>
-            <span className="text-xs md:text-sm font-bold">{currentPoints} points</span>
+            <span className="text-[11px] md:text-sm font-bold">{currentPoints} points</span>
           </div>
-          <div className="hidden md:block">
+          <div className="block">
             <NotificationBell currentUserId={currentUserId} />
           </div>
           <button 
@@ -185,7 +193,7 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
           >
             <Menu size={22} />
           </button>
-          <div className="relative hidden md:flex">
+          <div className="relative flex">
             <button
               onClick={() => {
                 setIsProfileOpen(!isProfileOpen);
@@ -197,7 +205,7 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
                 {userProfile?.avatar_url ? (
                   <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  getInitials(userProfile?.full_name)
+                  getInitials(userProfile?.full_name ?? undefined)
                 )}
               </div>
               <div className="hidden lg:block text-left">
@@ -211,7 +219,7 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
               {isProfileOpen && (
                 <>
                   <div 
-                    className="fixed inset-0 z-40" 
+                    className="fixed inset-0 z-90" 
                     onClick={() => setIsProfileOpen(false)} 
                   />
                   <motion.div
@@ -220,7 +228,7 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
                     className={cn(
-                      "absolute right-0 mt-2 w-64 rounded-2xl shadow-2xl py-2 z-50 overflow-hidden",
+                      "absolute right-0 mt-2 w-64 rounded-2xl shadow-2xl py-2 z-110 overflow-hidden",
                       isDarkTheme ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-100 text-ink"
                     )}
                   >
@@ -305,7 +313,7 @@ className={cn(
         {isMenuOpen && (
           <>
             <div 
-              className="fixed inset-0 z-40" 
+              className="fixed inset-0 z-90" 
               onClick={() => setIsMenuOpen(false)} 
             />
             <motion.div
@@ -313,7 +321,7 @@ className={cn(
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="absolute right-4 md:right-8 top-16 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-50"
+              className="absolute right-4 md:right-8 top-16 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-110"
             >
               <div className="space-y-2">
                 <button 
@@ -364,7 +372,7 @@ className={cn(
         )}
       </AnimatePresence>
 
-      <main className="max-w-[1400px] mx-auto px-4 md:px-12 py-8 md:py-12">
+      <main className="max-w-350 mx-auto px-4 md:px-12 py-8 md:py-12">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
             <h1 className="text-2xl md:text-5xl font-display font-bold text-ink mb-2">My Learning</h1>
@@ -519,7 +527,7 @@ className={cn(
                         <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold text-primary uppercase tracking-wider">
                           {program.category}
                         </div>
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center pointer-events-none">
                           <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-primary opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all shadow-xl">
                             <PlayCircle size={24} />
                           </div>

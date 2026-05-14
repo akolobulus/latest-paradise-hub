@@ -219,7 +219,7 @@ export default function SupportPage({
       <nav className="sticky top-0 z-50 glass border-b border-gray-200/50 px-4 md:px-8 h-20 flex items-center justify-between">
         <div
           className="flex items-center gap-3 cursor-pointer"
-          onClick={onViewLearning}
+          onClick={onBack}
         >
           <BrandLogo wrapperClassName="w-8 h-8 rounded-lg shadow-inner" />
           <span className="font-display font-bold text-xl hidden xs:block">
