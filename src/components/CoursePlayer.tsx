@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   ChevronDown, 
@@ -44,13 +44,11 @@ interface CoursePlayerProps {
 }
 
 export default function CoursePlayer({ course, userProfile, onBack, onLogoClick, onAwardPoints, onViewProfile, onViewCommunity, onViewLearning, onViewDashboard, onLogout }: CoursePlayerProps) {
-  // Helper function to extract YouTube video ID
   const getYouTubeVideoId = (url: string) => {
     const patterns = [
       /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
       /youtube\.com\/embed\/([^&\n?#]+)/
     ];
-    
     for (const pattern of patterns) {
       const match = url.match(pattern);
       if (match) return match[1];
@@ -58,16 +56,12 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     return null;
   };
 
-  // Dynamic database content
   const [dbContent, setDbContent] = useState<any[]>([]);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
-  
-  // User profile data
   const [profile, setProfile] = useState<any>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   
-  // Safely map Supabase snake_case data into the camelCase format React expects
-  const content = { 
+  const content = {
     weeks: dbContent.map(week => {
       const rawQuiz = Array.isArray(week.quizzes) ? (week.quizzes[0] || null) : (week.quizzes || null);
       const mappedLessons = (week.lessons || []).map((lesson: any) => ({
@@ -75,7 +69,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         videoUrl: lesson.video_url || lesson.videoUrl,
         orderIndex: lesson.order_index ?? lesson.orderIndex,
       }));
-
       return {
         ...week,
         lessons: mappedLessons,
@@ -83,10 +76,10 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           ...rawQuiz,
           passingGrade: rawQuiz.passing_grade,
           duration: rawQuiz.duration_text,
-          questions: rawQuiz.quiz_questions || [] 
+          questions: rawQuiz.quiz_questions || []
         } : null
       };
-    }) 
+    })
   };
   
   const [activeWeek, setActiveWeek] = useState<number>(0);
@@ -107,80 +100,84 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [videoStarted, setVideoStarted] = useState(false);
-  const [session, setSession] = useState<any>(null);
 
-  // Comment state
+  // Use a ref for session so it's always current inside async callbacks
+  const sessionRef = useRef<any>(null);
+  const [session, setSession] = useState<any>(null);
+  
+  // Track loaded course to only reset state on actual course change
+  const loadedCourseIdRef = useRef<number | null>(null);
+
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
 
-  // Get current user session and profile
+  // ─── Get session ONCE on mount ───────────────────────────────────────────────
   useEffect(() => {
     const setupUser = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setIsLoadingProfile(false);
-          return;
-        }
-        
-        setSession({ user });
-        
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        
-        if (data) {
-          setProfile(data);
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
+        if (!user) { setIsLoadingProfile(false); return; }
+        const s = { user };
+        sessionRef.current = s;
+        setSession(s);
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (data) setProfile(data);
+      } catch (e) {
+        console.error('Error fetching profile:', e);
       } finally {
         setIsLoadingProfile(false);
       }
     };
-    
     setupUser();
   }, []);
-  
-  const getInitials = (name: string | undefined) => {
-    if (!name) return "L";
-    const parts = name.split(" ");
-    return (parts[0]?.[0] + (parts[1]?.[0] || "")).toUpperCase();
-  };
 
-  // Fetch Course Content from Supabase (Dynamically handles course 101, 102, 103!)
+  // ─── EFFECT 1: Load CONTENT only (runs when course changes) ────────────────────
   useEffect(() => {
     const loadContent = async () => {
       setIsLoadingContent(true);
+
       try {
+        // Fetch course content
         const dbData = await fetchCourseContent(course.id);
-        if (dbData && dbData.length > 0) {
-          setDbContent(dbData);
-          
-          // CRITICAL: Reset the player state when switching courses!
-          const firstModule = dbData[0];
-          const rawFirstLesson = Array.isArray(firstModule.lessons) ? firstModule.lessons[0] : null;
-          const rawFirstQuiz = Array.isArray(firstModule.quizzes) ? (firstModule.quizzes[0] || null) : (firstModule.quizzes || null);
-          const hasFirstQuiz = Boolean(rawFirstQuiz);
 
-          const mappedFirstLesson = rawFirstLesson ? {
-            ...rawFirstLesson,
-            videoUrl: rawFirstLesson.video_url || rawFirstLesson.videoUrl,
-            orderIndex: rawFirstLesson.order_index ?? rawFirstLesson.orderIndex,
-          } : null;
-
-          setActiveLesson(mappedFirstLesson || null);
-          setActiveWeek(0);
-          setShowQuiz(!mappedFirstLesson && hasFirstQuiz);
-          setQuizResult(null);
-          setExpandedWeeks([String(firstModule.id)]);
-        } else {
+        if (!dbData || dbData.length === 0) {
           setDbContent([]);
+          setIsLoadingContent(false);
+          return;
         }
+
+        // Set up player UI state from content
+        const firstModule = dbData[0];
+        const rawFirstLesson = Array.isArray(firstModule.lessons) ? firstModule.lessons[0] : null;
+        const rawFirstQuiz = Array.isArray(firstModule.quizzes) ? (firstModule.quizzes[0] || null) : null;
+        const hasFirstQuiz = Boolean(rawFirstQuiz);
+
+        const mappedFirstLesson = rawFirstLesson ? {
+          ...rawFirstLesson,
+          videoUrl: rawFirstLesson.video_url || rawFirstLesson.videoUrl,
+          orderIndex: rawFirstLesson.order_index ?? rawFirstLesson.orderIndex,
+        } : null;
+
+        setActiveLesson(mappedFirstLesson || null);
+        setActiveWeek(0);
+        setShowQuiz(!mappedFirstLesson && hasFirstQuiz);
+        setQuizResult(null);
+        setExpandedWeeks([String(firstModule.id)]);
+
+        // Reset progress state only when course actually changes
+        const isNewCourse = loadedCourseIdRef.current !== course.id;
+        if (isNewCourse) {
+          setCompletedLessons([]);
+          setPassedQuizzes([]);
+          setCourseCompletionAwarded(false);
+          loadedCourseIdRef.current = course.id;
+        }
+
+        // Set content last so the sidebar renders with correct lock state
+        setDbContent(dbData);
+
       } catch (error) {
         console.error("Error loading course content:", error);
         setDbContent([]);
@@ -192,59 +189,60 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     loadContent();
   }, [course.id]);
 
-  // Load user progress from database
+  // ─── EFFECT 2: Load PROGRESS only (runs when user session is known) ─────────────
   useEffect(() => {
-    const loadUserProgress = async () => {
-      if (!session?.user?.id) return;
+    const loadProgress = async () => {
+      const userId = sessionRef.current?.user?.id ?? session?.user?.id;
+      if (!userId || !course.id) return;
 
       try {
-        // Load completed lessons
-        const { data: lessonProgress, error: lessonError } = await supabase
-          .from('lesson_progress')
-          .select('lesson_id')
-          .eq('user_id', session.user.id)
-          .eq('course_id', course.id);
+        const [lessonRes, quizRes] = await Promise.all([
+          supabase
+            .from('lesson_progress')
+            .select('lesson_id')
+            .eq('user_id', userId)
+            .eq('course_id', course.id),
+          supabase
+            .from('quiz_results')
+            .select('quiz_id')
+            .eq('user_id', userId)
+            .eq('course_id', course.id)
+            .eq('passed', true),
+        ]);
 
-        if (lessonError) {
-          console.error('Error loading lesson progress:', lessonError);
-        } else if (lessonProgress) {
-          setCompletedLessons(lessonProgress.map(lp => lp.lesson_id));
+        if (!lessonRes.error && lessonRes.data) {
+          // Deduplicate in case of duplicate rows
+          setCompletedLessons([...new Set(lessonRes.data.map((lp: any) => lp.lesson_id))]);
         }
-
-        const { data: quizResults, error: quizError } = await supabase
-          .from('quiz_results')
-          .select('quiz_id')
-          .eq('user_id', session.user.id)
-          .eq('course_id', course.id)
-          .eq('passed', true);
-
-        if (quizError) {
-          console.error('Error loading quiz results:', quizError);
-        } else if (quizResults) {
-          setPassedQuizzes(quizResults.map(qr => qr.quiz_id));
+        if (!quizRes.error && quizRes.data) {
+          setPassedQuizzes([...new Set(quizRes.data.map((qr: any) => qr.quiz_id))]);
         }
       } catch (error) {
-        console.error('Error loading user progress:', error);
+        console.error('Error loading progress:', error);
       }
     };
 
-    loadUserProgress();
+    loadProgress();
   }, [session?.user?.id, course.id]);
 
+  const getInitials = (name: string | undefined) => {
+    if (!name) return "L";
+    const parts = name.split(" ");
+    return (parts[0]?.[0] + (parts[1]?.[0] || "")).toUpperCase();
+  };
+
+  // ─── Comments ────────────────────────────────────────────────────────────────
   const loadComments = async (lessonId: string) => {
     setCommentError(null);
-
     try {
-      const { data: commentsData, error: commentsError } = await supabase
+      const { data, error } = await supabase
         .from('lesson_comments')
         .select('id, lesson_id, user_id, content, created_at, profiles(id, full_name, avatar_url)')
         .eq('lesson_id', lessonId)
         .order('created_at', { ascending: false });
-
-      if (commentsError) throw commentsError;
-      setComments(commentsData || []);
-    } catch (error) {
-      console.error('Error loading comments:', error);
+      if (error) throw error;
+      setComments(data || []);
+    } catch {
       setCommentError('Unable to load comments.');
       setComments([]);
     }
@@ -258,7 +256,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     loadComments(activeLesson.id);
   }, [activeLesson?.id]);
 
-  // Handle Mobile Resizing
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth <= 1024;
@@ -270,7 +267,6 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         setShowMobileSidebar(false);
       }
     };
-    
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -300,10 +296,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
 
   const isCourseComplete = (lessonIds: string[], quizIds: string[]) => {
     if (totalCourseItems === 0) return false;
-    // Ensure we count UNIQUE completions only
-    const uniqueLessons = Array.from(new Set(lessonIds)).length;
-    const uniqueQuizzes = Array.from(new Set(quizIds)).length;
-    return (uniqueLessons + uniqueQuizzes) === totalCourseItems;
+    return (new Set(lessonIds).size + new Set(quizIds).size) === totalCourseItems;
   };
 
   useEffect(() => {
@@ -479,8 +472,8 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           .select('id, score, passed')
           .eq('user_id', session.user.id)
           .eq('quiz_id', quiz.id)
-          .or(`course_id.eq.${course.id},course_id.is.null`)
-          .single();
+          .eq('course_id', course.id)
+          .maybeSingle();
 
         if (existingResult) {
           if (score > existingResult.score) {
@@ -564,22 +557,35 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const isWeekLocked = (weekIndex: number) => {
     if (weekIndex === 0) return false;
     const prevWeek = content.weeks[weekIndex - 1];
-    return !prevWeek.quiz || !passedQuizzes.includes(prevWeek.quiz.id);
+    // No quiz on previous week = never lock the next one
+    if (!prevWeek?.quiz) return false;
+    // Has a quiz — only locked if it hasn't been passed
+    return !passedQuizzes.includes(prevWeek.quiz.id);
   };
 
   const totalItems = content.weeks.reduce((acc, w) => acc + w.lessons.length + (w.quiz ? 1 : 0), 0);
-  const completedItems = completedLessons.length + passedQuizzes.length;
+  const uniqueCompletedLessons = new Set(completedLessons).size;
+  const uniquePassedQuizzes = new Set(passedQuizzes).size;
+  const completedItems = uniqueCompletedLessons + uniquePassedQuizzes;
   const progressPercent = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
 
   const activeQuiz = content.weeks[activeWeek]?.quiz;
+
+  // If we're showing a quiz that was already passed and quizResult is null,
+  // synthesize a passed result so we skip the start/question screens
+  const effectiveQuizResult = quizResult ?? (
+    activeQuiz && passedQuizzes.includes(activeQuiz.id)
+      ? { score: activeQuiz.questions?.length ?? 0, passed: true, alreadyPassed: true }
+      : null
+  );
   const safeQuestionIndex = Math.max(0, Math.min(currentQuestionIndex, (activeQuiz?.questions?.length ?? 1) - 1));
   const currentQuestion = activeQuiz?.questions?.[safeQuestionIndex];
 
   const getAllLessons = () => {
     const lessons: { lesson: Lesson; weekIndex: number; lessonIndex: number; isQuiz?: boolean }[] = [];
     content.weeks.forEach((week, weekIndex) => {
-      week.lessons.forEach((lesson, lessonIndex) => {
-        lessons.push({ lesson, weekIndex, lessonIndex });
+      week.lessons.forEach((lesson: any) => {
+        lessons.push({ lesson, weekIndex, lessonIndex: 0 });
       });
       // Add quiz after lessons if it exists
       if (week.quiz) {
@@ -603,7 +609,11 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         setActiveLesson(null);
         setActiveWeek(weekIndex);
         setShowQuiz(true);
-        setQuizResult(null);
+        // Only clear result if quiz wasn't already passed
+        const quizId = lesson.id.replace('quiz-', '');
+        if (!passedQuizzes.includes(quizId)) {
+          setQuizResult(null);
+        }
         setExpandedWeeks(prev => 
           prev.includes(String(content.weeks[weekIndex].id)) 
             ? prev 
@@ -735,8 +745,8 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           {content.weeks.map((week, idx) => {
             const locked = isWeekLocked(idx);
             const isExpanded = expandedWeeks.includes(String(week.id));
-            const weekLessons = week.lessons.map(l => l.id);
-            const weekCompleted = weekLessons.filter(id => completedLessons.includes(id)).length;
+            const weekLessons = week.lessons.map((l: any) => l.id);
+            const weekCompleted = weekLessons.filter((id: string) => completedLessons.includes(id)).length;
             const weekTotal = weekLessons.length + (week.quiz ? 1 : 0);
             const weekPassed = week.quiz && passedQuizzes.includes(week.quiz.id) ? 1 : 0;
             const weekProgress = Math.round(((weekCompleted + weekPassed) / weekTotal) * 100);
@@ -788,7 +798,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                       className="overflow-hidden border-t border-gray-50"
                     >
                       <div className="p-2 space-y-1">
-                        {week.lessons.map((lesson) => (
+                        {week.lessons.map((lesson: any) => (
                           <button
                             key={lesson.id}
                             onClick={() => {
@@ -819,11 +829,14 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                               setShowQuiz(true);
                               setActiveLesson(null);
                               setActiveWeek(idx);
-                              setQuizResult(null);
-                              setQuizAnswers({});
-                              setQuizStarted(false);
-                              setCurrentQuestionIndex(0);
-                              setRemainingSeconds(parseDurationToSeconds(week.quiz?.duration));
+                              // Only reset if not already passed
+                              if (!passedQuizzes.includes(week.quiz.id)) {
+                                setQuizResult(null);
+                                setQuizAnswers({});
+                                setQuizStarted(false);
+                                setCurrentQuestionIndex(0);
+                                setRemainingSeconds(parseDurationToSeconds(week.quiz?.duration));
+                              }
                             }}
                             className={cn(
                               "w-full p-3 rounded-xl flex items-center gap-3 transition-all text-left mt-2 border-t border-gray-50",
@@ -964,7 +977,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                   exit={{ opacity: 0, y: -20 }}
                   className="space-y-8 w-full"
                 >
-                  {!quizResult ? (
+                  {!effectiveQuizResult ? (
                     <>
                       <div className="text-center mb-8 md:mb-12">
                         <h1 className="text-2xl md:text-3xl font-display font-bold text-ink mb-4">{content.weeks[activeWeek]?.quiz?.title}</h1>
@@ -1110,47 +1123,65 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                     </>
                   ) : (
                     <div className="text-center py-12 md:py-20 px-4">
-                      <div className="relative w-32 h-32 md:w-48 md:h-48 mx-auto mb-8">
-                        <svg className="w-full h-full" viewBox="0 0 100 100">
-                          <circle className="text-gray-100 stroke-current" strokeWidth="8" cx="50" cy="50" r="40" fill="transparent"></circle>
-                          <motion.circle 
-                            initial={{ strokeDashoffset: 251.2 }}
-                            animate={{ strokeDashoffset: 251.2 - (251.2 * (quizResult.score / (content.weeks[activeWeek]?.quiz?.questions?.length ?? 1))) }}
-                            className={cn("stroke-current", quizResult.passed ? "text-green-500" : "text-red-500")}
-                            strokeWidth="8" 
-                            strokeLinecap="round" 
-                            cx="50" 
-                            cy="50" 
-                            r="40" 
-                            fill="transparent" 
-                            strokeDasharray="251.2"
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-2xl md:text-4xl font-display font-bold">
-                            {Math.round((quizResult.score / (content.weeks[activeWeek]?.quiz?.questions?.length ?? 1)) * 100)}%
-                          </span>
-                          <span className="text-[10px] md:text-xs text-gray-400 font-bold">{quizResult.score}/{content.weeks[activeWeek]?.quiz?.questions?.length ?? 0}</span>
+                      {(effectiveQuizResult as any).alreadyPassed ? (
+                        <div className="mb-8">
+                          <div className="w-24 h-24 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-6">
+                            <CheckCircle2 size={48} className="text-green-600" />
+                          </div>
+                          <h2 className="text-2xl md:text-3xl font-display font-bold text-green-600 mb-4">
+                            Already Completed!
+                          </h2>
+                          <p className="text-gray-500 text-sm md:text-base mb-8 max-w-lg mx-auto">
+                            You have already passed this assessment. You can proceed to the next module.
+                          </p>
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <div className="relative w-32 h-32 md:w-48 md:h-48 mx-auto mb-8">
+                            <svg className="w-full h-full" viewBox="0 0 100 100">
+                              <circle className="text-gray-100 stroke-current" strokeWidth="8" cx="50" cy="50" r="40" fill="transparent"></circle>
+                              <motion.circle 
+                                initial={{ strokeDashoffset: 251.2 }}
+                                animate={{ strokeDashoffset: 251.2 - (251.2 * (effectiveQuizResult.score / (content.weeks[activeWeek]?.quiz?.questions?.length ?? 1))) }}
+                                className={cn("stroke-current", effectiveQuizResult.passed ? "text-green-500" : "text-red-500")}
+                                strokeWidth="8" 
+                                strokeLinecap="round" 
+                                cx="50" 
+                                cy="50" 
+                                r="40" 
+                                fill="transparent" 
+                                strokeDasharray="251.2"
+                              />
+                            </svg>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <span className="text-2xl md:text-4xl font-display font-bold">
+                                {Math.round((effectiveQuizResult.score / (content.weeks[activeWeek]?.quiz?.questions?.length ?? 1)) * 100)}%
+                              </span>
+                              <span className="text-[10px] md:text-xs text-gray-400 font-bold">{effectiveQuizResult.score}/{content.weeks[activeWeek]?.quiz?.questions?.length ?? 0}</span>
+                            </div>
+                          </div>
 
-                      <h2 className={cn("text-2xl md:text-3xl font-display font-bold mb-4", quizResult.passed ? "text-green-600" : "text-red-600")}>
-                        {quizResult.passed ? "Congratulations! You Passed" : "Assessment Failed"}
-                      </h2>
-                      <p className="text-gray-500 text-sm md:text-base mb-8 md:mb-12 max-w-lg mx-auto">
-                        {quizResult.passed 
-                          ? "You have successfully completed this week's assessment. You can now proceed to the next module."
-                          : "Don't worry! You can review the materials and try again."}
-                      </p>
+                          <h2 className={cn("text-2xl md:text-3xl font-display font-bold mb-4", effectiveQuizResult.passed ? "text-green-600" : "text-red-600")}>
+                            {effectiveQuizResult.passed ? "Congratulations! You Passed" : "Assessment Failed"}
+                          </h2>
+                          <p className="text-gray-500 text-sm md:text-base mb-8 md:mb-12 max-w-lg mx-auto">
+                            {effectiveQuizResult.passed 
+                              ? "You have successfully completed this week's assessment. You can now proceed to the next module."
+                              : "Don't worry! You can review the materials and try again."}
+                          </p>
+                        </>
+                      )}
 
                       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
-                        <button
-                          onClick={() => setQuizResult(null)}
-                          className="w-full sm:w-auto px-8 py-3 rounded-xl md:rounded-full border-2 border-gray-200 font-bold hover:border-ink transition-all text-sm md:text-base"
-                        >
-                          Review Answers
-                        </button>
-                        {quizResult.passed ? (
+                        {!(effectiveQuizResult as any).alreadyPassed && (
+                          <button
+                            onClick={() => setQuizResult(null)}
+                            className="w-full sm:w-auto px-8 py-3 rounded-xl md:rounded-full border-2 border-gray-200 font-bold hover:border-ink transition-all text-sm md:text-base"
+                          >
+                            Review Answers
+                          </button>
+                        )}
+                        {effectiveQuizResult.passed ? (
                           <button
                             onClick={() => {
                               setShowQuiz(false);
@@ -1529,11 +1560,11 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
 
                 {/* Mobile Sidebar Content Menu */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3 bg-gray-50">
-                  {content.weeks.map((week, idx) => {
+                  {content.weeks.map((week: any, idx: number) => {
                     const locked = isWeekLocked(idx);
                     const isExpanded = expandedWeeks.includes(String(week.id));
-                    const weekLessons = week.lessons.map(l => l.id);
-                    const weekCompleted = weekLessons.filter(id => completedLessons.includes(id)).length;
+                    const weekLessons = week.lessons.map((l: any) => l.id);
+                    const weekCompleted = weekLessons.filter((id: any) => completedLessons.includes(id)).length;
                     const weekTotal = weekLessons.length + (week.quiz ? 1 : 0);
                     const weekPassed = week.quiz && passedQuizzes.includes(week.quiz.id) ? 1 : 0;
                     const weekProgress = Math.round(((weekCompleted + weekPassed) / weekTotal) * 100);
@@ -1576,7 +1607,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                               className="overflow-hidden border-t border-gray-50"
                             >
                               <div className="p-2 space-y-1">
-                                {week.lessons.map((lesson) => (
+                                {week.lessons.map((lesson: any) => (
                                   <button
                                     key={lesson.id}
                                     onClick={() => {
@@ -1608,10 +1639,12 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
                                       setShowQuiz(true);
                                       setActiveLesson(null);
                                       setActiveWeek(idx); 
-                                      setQuizAnswers({});
-                                      setQuizStarted(false);
-                                      setCurrentQuestionIndex(0);
-                                      setRemainingSeconds(parseDurationToSeconds(week.quiz?.duration));
+                                      if (!passedQuizzes.includes(week.quiz.id)) {
+                                        setQuizAnswers({});
+                                        setQuizStarted(false);
+                                        setCurrentQuestionIndex(0);
+                                        setRemainingSeconds(parseDurationToSeconds(week.quiz?.duration));
+                                      }
                                       setShowMobileSidebar(false); 
                                     }}
                                     className={cn(

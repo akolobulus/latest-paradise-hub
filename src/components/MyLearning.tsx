@@ -134,8 +134,10 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
         return 0;
       }
 
-      const completedItems = (lessonProgress?.length || 0) + (quizProgress?.length || 0);
-      console.log(`[MyLearning] courseId=${courseId} total=${totalItems} lessons=${lessonProgress?.length} quizzes=${quizProgress?.length}`);
+      const uniqueCompletedLessons = new Set(lessonProgress?.map((r: any) => r.lesson_id) ?? []).size;
+      const uniquePassedQuizzes = new Set(quizProgress?.map((r: any) => r.quiz_id) ?? []).size;
+      const completedItems = uniqueCompletedLessons + uniquePassedQuizzes;
+      console.log(`[MyLearning] courseId=${courseId} total=${totalItems} lessons=${uniqueCompletedLessons} quizzes=${uniquePassedQuizzes}`);
       return Math.round((completedItems / totalItems) * 100);
     } catch (error) {
       console.error('Error calculating course progress:', error);

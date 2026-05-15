@@ -54,37 +54,37 @@ const REWARDS: Reward[] = [
     id: "1",
     title: "Branded Merch from Paradise Hub",
     description: "Exclusive branded merchandise sponsored by Pd Farms ltd.",
-    points: 600,
+    points: 1500,
     image: "https://pdfarms.com/wp-content/uploads/2026/01/IMG_20251226_171605-Copy-Copy-scaled.jpg?auto=format&fit=crop&q=80&w=800",
     category: "Merchandise",
-    badge: "600 pts"
+    badge: "1500 pts"
   },
   {
     id: "2",
     title: "Branded Paradise Hoodie",
     description: "Stay warm and stylish with our premium organic cotton hub hoodie.",
-    points: 1000,
+    points: 25000,
     image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=800",
     category: "Apparel",
-    badge: "1000 pts"
+    badge: "25000 pts"
   },
   {
     id: "3",
     title: "1-on-1 Growth Consultation",
     description: "Gain personal insights and personalized career strategy from hub professionals.",
-    points: 1500,
+    points: 40000,
     image: "https://bondeducators.org/wp-content/uploads/2025/01/the-power-of-leadership-mentorship-and-love-in-black-communities.jpg?auto=format&fit=crop&q=80&w=800",
     category: "Mentorship",
-    badge: "1500 pts"
+    badge: "40000 pts"
   },
   {
     id: "4",
     title: "Internship / Elite Mentorship",
     description: "Unlock high-level career opportunities and recurring direct guidance from industry masters.",
-    points: 2000,
+    points: 60000,
     image: "https://cowrywise.com/blog/wp-content/uploads/2023/09/Oghenevoke@4x-scaled.webp?auto=format&fit=crop&q=80&w=800",
     category: "Career",
-    badge: "2000 pts"
+    badge: "60000 pts"
   }
 ];
 
