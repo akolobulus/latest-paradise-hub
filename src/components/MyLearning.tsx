@@ -27,8 +27,8 @@ import NotificationBell from "./NotificationBell";
 import PageFooter from "./PageFooter";
 import { PaystackButton } from "react-paystack";
 import { ProfileData, getCurrentUserPoints } from "@/src/lib/profileCompletion";
-import { supabase } from "@/src/lib/supabase";
 import { fetchCourseContent } from "@/src/lib/courseApi";
+import { loadCourseProgress } from "@/src/lib/courseProgress";
 
 interface EnrolledProgram {
   id: number;
@@ -94,51 +94,18 @@ export default function MyLearning({ currentUserId, enrolledPrograms = [], userP
 
   // Calculate progress for each course
   const calculateCourseProgress = async (courseId: number) => {
+    if (!currentUserId) return 0;
+
     try {
       const courseContent = await fetchCourseContent(courseId);
       if (!courseContent || !Array.isArray(courseContent)) return 0;
 
-      const totalLessons = courseContent.reduce(
-        (acc: number, module: any) =>
-          acc + (Array.isArray(module.lessons) ? module.lessons.length : 0),
-        0
-      );
-      const totalQuizzes = courseContent.reduce(
-        (acc: number, module: any) =>
-          acc + (Array.isArray(module.quizzes) && module.quizzes.length > 0 ? 1 : 0),
-        0
-      );
-      const totalItems = totalLessons + totalQuizzes;
-      if (totalItems === 0) return 0;
+      const progress = await loadCourseProgress({
+        userId: currentUserId,
+        courseContent,
+      });
 
-      const { data: lessonProgress, error: lessonError } = await supabase
-        .from('lesson_progress')
-        .select('lesson_id')
-        .eq('user_id', currentUserId)
-        .eq('course_id', courseId);
-
-      if (lessonError) {
-        console.error('Error loading lesson progress:', lessonError);
-        return 0;
-      }
-
-      const { data: quizProgress, error: quizError } = await supabase
-        .from('quiz_results')
-        .select('quiz_id')
-        .eq('user_id', currentUserId)
-        .eq('course_id', courseId)
-        .eq('passed', true);
-
-      if (quizError) {
-        console.error('Error loading quiz progress:', quizError);
-        return 0;
-      }
-
-      const uniqueCompletedLessons = new Set(lessonProgress?.map((r: any) => r.lesson_id) ?? []).size;
-      const uniquePassedQuizzes = new Set(quizProgress?.map((r: any) => r.quiz_id) ?? []).size;
-      const completedItems = uniqueCompletedLessons + uniquePassedQuizzes;
-      console.log(`[MyLearning] courseId=${courseId} total=${totalItems} lessons=${uniqueCompletedLessons} quizzes=${uniquePassedQuizzes}`);
-      return Math.round((completedItems / totalItems) * 100);
+      return progress.percent;
     } catch (error) {
       console.error('Error calculating course progress:', error);
       return 0;

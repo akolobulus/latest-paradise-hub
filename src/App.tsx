@@ -20,6 +20,109 @@ import CommunityHub from "./components/CommunityHub";
 import { supabase } from "./lib/supabase";
 import { ProfileData } from "./lib/profileCompletion";
 
+// Complete course definitions with all metadata
+const RECOMMENDED_PROGRAMS = [
+  {
+    id: 101,
+    title: "Agribusiness Innovation",
+    headline: "The Ultimate Hybrid Career",
+    description: "Smart farming for a growing world: Driving efficiency through data and automation to build a more resilient global food future.",
+    image: "/agribusiness-innovation.jpg",
+    startDate: "25 May 2026",
+    duration: "16 weeks",
+    commitment: "15-25 hrs/week",
+    accessFee: "Free",
+    category: "Agribusiness",
+    includes: [
+      "Industry-recognized certificate",
+      "1-on-1 mentorship",
+      "Real-world project portfolio"
+    ],
+    structure: [
+      {
+        title: "Introduction To Agribusiness",
+        description: "Connecting the farm to the cloud.",
+        date: "25 May 2026",
+        duration: "3 weeks",
+        status: "Available" as const
+      }
+    ]
+  },
+  {
+    id: 102,
+    title: "Sustainable Farm Management",
+    headline: "Eco-Friendly Farming for the Future",
+    description: "Mastering modern agriculture: Bridging eco-friendly farming practices with strategic business growth and value chain success.",
+    image: "/farm-management.jpg",
+    startDate: "15 May 2026",
+    duration: "10 Weeks",
+    commitment: "3-5 hours/week",
+    accessFee: "Free",
+    category: "Farming",
+    includes: [
+      "Certificate",
+      "Live Classes",
+      "Community access"
+    ],
+    structure: [
+      {
+        title: "Introduction to Modern Farming",
+        description: "Core concepts of sustainable agriculture.",
+        date: "15 May 2026",
+        duration: "1 week",
+        status: "Available" as const
+      }
+    ]
+  },
+  {
+    id: 103,
+    title: "AI-Powered Business Automation",
+    headline: "Lead the Future of Tech with AI",
+    description: "Work smarter, not harder: Use AI and low-code tools to eliminate manual tasks, optimize workflows, and scale business impact.",
+    image: "/ai-automate.jpg",
+    startDate: "18 May 2026",
+    duration: "24 weeks",
+    commitment: "20-30 hrs/week",
+    accessFee: "Free",
+    category: "Technology",
+    includes: [
+      "Certificate",
+      "API Access",
+      "Live mentoring sessions"
+    ],
+    structure: [
+      {
+        title: "AI Fundamentals",
+        description: "Understanding LLMs and automation.",
+        date: "18 May 2026",
+        duration: "4 weeks",
+        status: "Available" as const
+      }
+    ]
+  }
+];
+
+// Enrich database course with complete metadata
+const enrichCourse = (dbCourse: any) => {
+  const programMetadata = RECOMMENDED_PROGRAMS.find(p => p.id === dbCourse.id);
+  return {
+    ...dbCourse,
+    ...programMetadata,
+    id: dbCourse.id,
+    title: programMetadata?.title || dbCourse.title || "Untitled Course",
+    headline: programMetadata?.headline || dbCourse.headline || "",
+    description: programMetadata?.description || dbCourse.description || "",
+    image: programMetadata?.image || dbCourse.image || "",
+    startDate: programMetadata?.startDate || dbCourse.start_date || dbCourse.startDate || "TBA",
+    duration: programMetadata?.duration || dbCourse.duration || "",
+    commitment: programMetadata?.commitment || dbCourse.commitment || "",
+    accessFee: programMetadata?.accessFee || dbCourse.access_fee || dbCourse.accessFee || "Free",
+    category: programMetadata?.category || dbCourse.category || "",
+    includes: programMetadata?.includes || dbCourse.includes || [],
+    structure: programMetadata?.structure || dbCourse.structure || []
+  };
+};
+
 export default function App() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [aiImages, setAiImages] = useState<{ heroImage: string; footerImage: string } | null>(null);
@@ -153,14 +256,13 @@ export default function App() {
           .filter((e: any) => coursesById[e.course_id]) // Only include enrollments with valid courses
           .map((e: any) => {
             const course = coursesById[e.course_id];
+            const enrichedCourse = enrichCourse(course);
             return {
-              ...course,
+              ...enrichedCourse,
               id: Number(e.course_id),
               enrollment_id: e.id,
               paymentStatus: e.payment_status,
               payment_status: e.payment_status,
-              accessFee: course.access_fee ?? course.accessFee ?? 'Free',
-              startDate: course.start_date ?? course.startDate ?? '',
               enrolledAt: e.created_at,
             };
           });

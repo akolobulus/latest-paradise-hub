@@ -25,8 +25,14 @@ import {
 } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import { cn } from "@/src/lib/utils";
-import { Week, Lesson, Quiz } from "@/src/data/courseContent";
+import { Lesson } from "@/src/data/courseContent";
 import { fetchCourseContent } from "@/src/lib/courseApi";
+import {
+  loadCourseProgress,
+  normalizeCourseModules,
+  saveQuizResult,
+  summarizeCourseProgress,
+} from "@/src/lib/courseProgress";
 import { supabase } from "@/src/lib/supabase";
 import { ProfileData } from "@/src/lib/profileCompletion";
 
@@ -58,28 +64,12 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
 
   const [dbContent, setDbContent] = useState<any[]>([]);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
+  const [isLoadingProgress, setIsLoadingProgress] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   
   const content = {
-    weeks: dbContent.map(week => {
-      const rawQuiz = Array.isArray(week.quizzes) ? (week.quizzes[0] || null) : (week.quizzes || null);
-      const mappedLessons = (week.lessons || []).map((lesson: any) => ({
-        ...lesson,
-        videoUrl: lesson.video_url || lesson.videoUrl,
-        orderIndex: lesson.order_index ?? lesson.orderIndex,
-      }));
-      return {
-        ...week,
-        lessons: mappedLessons,
-        quiz: rawQuiz ? {
-          ...rawQuiz,
-          passingGrade: rawQuiz.passing_grade,
-          duration: rawQuiz.duration_text,
-          questions: rawQuiz.quiz_questions || []
-        } : null
-      };
-    })
+    weeks: normalizeCourseModules(dbContent)
   };
   
   const [activeWeek, setActiveWeek] = useState<number>(0);
@@ -107,6 +97,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   
   // Track loaded course to only reset state on actual course change
   const loadedCourseIdRef = useRef<number | null>(null);
+  const restoredCourseIdRef = useRef<number | null>(null);
 
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -137,6 +128,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   useEffect(() => {
     const loadContent = async () => {
       setIsLoadingContent(true);
+      setIsLoadingProgress(true);
 
       try {
         // Fetch course content
@@ -144,6 +136,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
 
         if (!dbData || dbData.length === 0) {
           setDbContent([]);
+          setIsLoadingProgress(false);
           setIsLoadingContent(false);
           return;
         }
@@ -172,6 +165,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
           setCompletedLessons([]);
           setPassedQuizzes([]);
           setCourseCompletionAwarded(false);
+          restoredCourseIdRef.current = null;
           loadedCourseIdRef.current = course.id;
         }
 
@@ -189,41 +183,108 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     loadContent();
   }, [course.id]);
 
-  // ─── EFFECT 2: Load PROGRESS only (runs when user session is known) ─────────────
+  const restoreProgressPosition = (lessonIds: string[], quizIds: string[]) => {
+    if (restoredCourseIdRef.current === course.id) return;
+
+    const completedLessonSet = new Set(lessonIds.map(String));
+    const passedQuizSet = new Set(quizIds.map(String));
+    const firstWeekId = content.weeks[0]?.id;
+
+    if (lessonIds.length === 0 && quizIds.length === 0) {
+      restoredCourseIdRef.current = course.id;
+      return;
+    }
+
+    for (let weekIndex = 0; weekIndex < content.weeks.length; weekIndex++) {
+      const week = content.weeks[weekIndex];
+      const incompleteLesson = week.lessons.find((lesson: any) => !completedLessonSet.has(String(lesson.id)));
+
+      if (incompleteLesson) {
+        setActiveLesson(incompleteLesson);
+        setActiveWeek(weekIndex);
+        setShowQuiz(false);
+        setQuizResult(null);
+        setExpandedWeeks((prev) => (
+          prev.includes(String(week.id)) ? prev : [...prev, String(week.id)]
+        ));
+        restoredCourseIdRef.current = course.id;
+        return;
+      }
+
+      if (week.quiz && !passedQuizSet.has(String(week.quiz.id))) {
+        setActiveLesson(null);
+        setActiveWeek(weekIndex);
+        setShowQuiz(true);
+        setQuizResult(null);
+        setQuizAnswers({});
+        setQuizStarted(false);
+        setCurrentQuestionIndex(0);
+        setRemainingSeconds(parseDurationToSeconds(week.quiz.duration));
+        setExpandedWeeks((prev) => (
+          prev.includes(String(week.id)) ? prev : [...prev, String(week.id)]
+        ));
+        restoredCourseIdRef.current = course.id;
+        return;
+      }
+    }
+
+    const lastWeekIndex = Math.max(0, content.weeks.length - 1);
+    const lastWeek = content.weeks[lastWeekIndex];
+    const lastLesson = lastWeek?.lessons?.[lastWeek.lessons.length - 1] || null;
+
+    setActiveWeek(lastWeekIndex);
+    if (lastLesson) {
+      setActiveLesson(lastLesson);
+      setShowQuiz(false);
+    } else if (lastWeek?.quiz) {
+      setActiveLesson(null);
+      setShowQuiz(true);
+    }
+    setExpandedWeeks((prev) => {
+      const ids = [firstWeekId, lastWeek?.id].filter(Boolean).map(String);
+      return [...new Set([...prev, ...ids])];
+    });
+    restoredCourseIdRef.current = course.id;
+  };
+
+  // ─── EFFECT 2: Load PROGRESS after content and session are known ─────────────
   useEffect(() => {
     const loadProgress = async () => {
+      if (isLoadingContent || isLoadingProfile || !course.id) return;
+
+      if (dbContent.length === 0) {
+        setCompletedLessons([]);
+        setPassedQuizzes([]);
+        setIsLoadingProgress(false);
+        return;
+      }
+
       const userId = sessionRef.current?.user?.id ?? session?.user?.id;
-      if (!userId || !course.id) return;
+      if (!userId) {
+        setIsLoadingProgress(false);
+        return;
+      }
+
+      setIsLoadingProgress(true);
 
       try {
-        const [lessonRes, quizRes] = await Promise.all([
-          supabase
-            .from('lesson_progress')
-            .select('lesson_id')
-            .eq('user_id', userId)
-            .eq('course_id', course.id),
-          supabase
-            .from('quiz_results')
-            .select('quiz_id')
-            .eq('user_id', userId)
-            .eq('course_id', course.id)
-            .eq('passed', true),
-        ]);
+        const progress = await loadCourseProgress({
+          userId,
+          courseContent: dbContent,
+        });
 
-        if (!lessonRes.error && lessonRes.data) {
-          // Deduplicate in case of duplicate rows
-          setCompletedLessons([...new Set(lessonRes.data.map((lp: any) => lp.lesson_id))]);
-        }
-        if (!quizRes.error && quizRes.data) {
-          setPassedQuizzes([...new Set(quizRes.data.map((qr: any) => qr.quiz_id))]);
-        }
+        setCompletedLessons(progress.completedLessonIds);
+        setPassedQuizzes(progress.passedQuizIds);
+        restoreProgressPosition(progress.completedLessonIds, progress.passedQuizIds);
       } catch (error) {
         console.error('Error loading progress:', error);
+      } finally {
+        setIsLoadingProgress(false);
       }
     };
 
     loadProgress();
-  }, [session?.user?.id, course.id]);
+  }, [session?.user?.id, isLoadingProfile, isLoadingContent, dbContent, course.id]);
 
   const getInitials = (name: string | undefined) => {
     if (!name) return "L";
@@ -280,7 +341,8 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     );
   };
 
-  const totalCourseItems = content.weeks.reduce((acc, w) => acc + w.lessons.length + (w.quiz ? 1 : 0), 0);
+  const progressSummary = summarizeCourseProgress(content.weeks, completedLessons, passedQuizzes);
+  const totalCourseItems = progressSummary.totalItems;
 
   const getCourseCompletionStorageKey = (courseId: number) => `course_completion_awarded_${courseId}`;
 
@@ -467,46 +529,17 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     
     if (session) {
       try {
-        const { data: existingResult } = await supabase
-          .from('quiz_results')
-          .select('id, score, passed')
-          .eq('user_id', session.user.id)
-          .eq('quiz_id', quiz.id)
-          .eq('course_id', course.id)
-          .maybeSingle();
+        const persistedResult = await saveQuizResult({
+          userId: session.user.id,
+          courseId: course.id,
+          quizId: quiz.id,
+          score,
+          passed,
+        });
 
-        if (existingResult) {
-          if (score > existingResult.score) {
-            await supabase
-              .from('quiz_results')
-              .update({ 
-                score: score, 
-                passed: passed || existingResult.passed,
-                course_id: course.id
-              })
-              .eq('id', existingResult.id);
-          } else if (!existingResult.passed && passed) {
-            await supabase
-              .from('quiz_results')
-              .update({
-                passed: true,
-                course_id: course.id
-              })
-              .eq('id', existingResult.id);
-          }
-        } else {
-          await supabase.from('quiz_results').insert({
-            user_id: session.user.id,
-            course_id: course.id,
-            quiz_id: quiz.id,
-            score: score,
-            passed: passed
-          });
-          
-          // Note: Points are only awarded for full course completion, not per-quiz
-        }
+        setQuizResult(persistedResult);
 
-        if (passed && !passedQuizzes.includes(quiz.id)) {
+        if (persistedResult.passed && !passedQuizzes.includes(quiz.id)) {
           const updatedPassedQuizzes = [...passedQuizzes, quiz.id];
           setPassedQuizzes(updatedPassedQuizzes);
           // No point award here - wait for full course completion
@@ -556,6 +589,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
 
   const isWeekLocked = (weekIndex: number) => {
     if (weekIndex === 0) return false;
+    if (isLoadingProgress) return false;
     const prevWeek = content.weeks[weekIndex - 1];
     // No quiz on previous week = never lock the next one
     if (!prevWeek?.quiz) return false;
@@ -563,11 +597,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     return !passedQuizzes.includes(prevWeek.quiz.id);
   };
 
-  const totalItems = content.weeks.reduce((acc, w) => acc + w.lessons.length + (w.quiz ? 1 : 0), 0);
-  const uniqueCompletedLessons = new Set(completedLessons).size;
-  const uniquePassedQuizzes = new Set(passedQuizzes).size;
-  const completedItems = uniqueCompletedLessons + uniquePassedQuizzes;
-  const progressPercent = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
+  const progressPercent = progressSummary.percent;
 
   const activeQuiz = content.weeks[activeWeek]?.quiz;
 
@@ -657,7 +687,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
     }
   };
 
-  if (isLoadingContent) {
+  if (isLoadingContent || isLoadingProgress) {
     return (
       <div className="flex h-screen items-center justify-center bg-white">
         <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
