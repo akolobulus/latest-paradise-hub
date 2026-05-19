@@ -89,6 +89,7 @@ export default function CourseDetails({ course, currentUserId, user, userProfile
   // Force all courses to be free for now
   const isPaidCourse = false;
   const displayFee = "Free";
+  const displayStartDate = course.startDate || "19th May 2026";
 
   return (
     <div className="min-h-screen transition-colors duration-500 selection:bg-primary selection:text-white bg-[#F8FAFC] text-ink">
@@ -409,7 +410,7 @@ export default function CourseDetails({ course, currentUserId, user, userProfile
             </div>
             <div className="border-l-0 sm:border-l border-white/20 sm:pl-4 md:pl-12">
               <p className="text-yellow-400 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">Start Date</p>
-              <p className="text-sm md:text-lg font-bold">{course.startDate}</p>
+              <p className="text-sm md:text-lg font-bold">{displayStartDate}</p>
             </div>
             <div className="border-l border-white/20 pl-4 md:pl-12">
               <p className="text-yellow-400 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">Access Fee</p>

@@ -102,6 +102,10 @@ const RECOMMENDED_PROGRAMS = [
   }
 ];
 
+const DEFAULT_COURSE_START_DATE = "19th May 2026";
+const APP_SESSION_KEY = "paradise_app_session_started_at";
+const APP_SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000;
+
 // Enrich database course with complete metadata
 const enrichCourse = (dbCourse: any) => {
   const programMetadata = RECOMMENDED_PROGRAMS.find(p => p.id === dbCourse.id);
@@ -113,7 +117,7 @@ const enrichCourse = (dbCourse: any) => {
     headline: programMetadata?.headline || dbCourse.headline || "",
     description: programMetadata?.description || dbCourse.description || "",
     image: programMetadata?.image || dbCourse.image || "",
-    startDate: programMetadata?.startDate || dbCourse.start_date || dbCourse.startDate || "TBA",
+    startDate: programMetadata?.startDate || dbCourse.start_date || dbCourse.startDate || DEFAULT_COURSE_START_DATE,
     duration: programMetadata?.duration || dbCourse.duration || "",
     commitment: programMetadata?.commitment || dbCourse.commitment || "",
     accessFee: programMetadata?.accessFee || dbCourse.access_fee || dbCourse.accessFee || "Free",
@@ -151,6 +155,32 @@ export default function App() {
     }
   };
 
+  const startAppSession = () => {
+    if (typeof window === "undefined") return;
+    sessionStorage.setItem(APP_SESSION_KEY, String(Date.now()));
+  };
+
+  const clearAppSession = () => {
+    if (typeof window === "undefined") return;
+    sessionStorage.removeItem(APP_SESSION_KEY);
+  };
+
+  const isAppSessionValid = () => {
+    if (typeof window === "undefined") return false;
+    const startedAt = Number(sessionStorage.getItem(APP_SESSION_KEY));
+    return Boolean(startedAt) && Date.now() - startedAt <= APP_SESSION_MAX_AGE_MS;
+  };
+
+  const resetAuthenticatedState = () => {
+    setSession(null);
+    setIsLoggedIn(false);
+    setEnrolledPrograms([]);
+    setPoints(0);
+    setUserProfile(null);
+    setSelectedCourse(null);
+    setCurrentPage("dashboard");
+  };
+
   useEffect(() => {
     captureReferralFromUrl();
     if (!isLoggedIn && window.location.pathname === "/signup") {
@@ -164,6 +194,14 @@ export default function App() {
       setIsLoading(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
+
+        if (session && !isAppSessionValid()) {
+          clearAppSession();
+          await supabase.auth.signOut();
+          resetAuthenticatedState();
+          return;
+        }
+
         setSession(session);
         setIsLoggedIn(!!session);
         if (session) fetchUserData(session.user.id);
@@ -183,17 +221,26 @@ export default function App() {
 
     initializeAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && event === "TOKEN_REFRESHED" && !isAppSessionValid()) {
+        supabase.auth.signOut();
+        clearAppSession();
+        resetAuthenticatedState();
+        return;
+      }
+
+      if (session && event === "SIGNED_IN") {
+        startAppSession();
+      }
+
       setSession(session);
       setIsLoggedIn(!!session);
       if (session) {
         fetchUserData(session.user.id);
       } else {
         // User logged out, reset state
-        setEnrolledPrograms([]);
-        setPoints(0);
-        setUserProfile(null);
-        setCurrentPage("dashboard");
+        clearAppSession();
+        resetAuthenticatedState();
       }
     });
 
@@ -437,13 +484,27 @@ export default function App() {
   // 5. Logout function
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    setIsLoggedIn(false);
-    setCurrentPage("dashboard");
+    clearAppSession();
+    resetAuthenticatedState();
   };
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentPage, isLoggedIn, selectedCourse]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const intervalId = window.setInterval(() => {
+      if (!isAppSessionValid()) {
+        supabase.auth.signOut();
+        clearAppSession();
+        resetAuthenticatedState();
+      }
+    }, 60 * 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [isLoggedIn]);
 
   useEffect(() => {
     const fetchCourses = async () => {
