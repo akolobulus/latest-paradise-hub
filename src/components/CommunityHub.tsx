@@ -325,7 +325,7 @@ export default function CommunityHub({ currentUserId, onBack, onLogoClick, onInc
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, points, avatar_url')
+        .select('id, full_name, points, avatar_url, streak')
         .order('points', { ascending: false });
 
       if (!error && data) {
@@ -341,7 +341,7 @@ export default function CommunityHub({ currentUserId, onBack, onLogoClick, onInc
             id: u.id,
             name: u.full_name || 'Learner',
             points: pts,
-            streak: Math.floor(pts / 100),
+            streak: u.streak ?? 0,
             avatar: u.avatar_url,
             level: calculatedLevel,
             engagement,

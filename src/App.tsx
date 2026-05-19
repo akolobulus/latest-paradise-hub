@@ -19,6 +19,7 @@ import CommunityHub from "./components/CommunityHub";
 
 import { supabase } from "./lib/supabase";
 import { ProfileData } from "./lib/profileCompletion";
+import { logActivity } from "./lib/streak";
 
 // Complete course definitions with all metadata
 const RECOMMENDED_PROGRAMS = [
@@ -204,7 +205,10 @@ export default function App() {
 
         setSession(session);
         setIsLoggedIn(!!session);
-        if (session) fetchUserData(session.user.id);
+        if (session) {
+          fetchUserData(session.user.id);
+          logActivity();
+        }
 
         const url = window.location.href;
         const hasAuthParams = url.includes('access_token=') || url.includes('refresh_token=') || url.includes('type=') || url.includes('provider_token=');
@@ -237,6 +241,9 @@ export default function App() {
       setIsLoggedIn(!!session);
       if (session) {
         fetchUserData(session.user.id);
+        if (event === "SIGNED_IN") {
+          logActivity();
+        }
       } else {
         // User logged out, reset state
         clearAppSession();

@@ -147,19 +147,26 @@ $$ language plpgsql;
 This function ensures learners receive the 50-point course completion reward only once per course.
 
 ```sql
+-- See supabase_points_streak_fix.sql for the full migration.
+-- The function returns true only when 50 points were actually awarded.
 CREATE OR REPLACE FUNCTION increment_course_points(user_id_input uuid, course_id_input int)
-RETURNS void AS $$
+RETURNS boolean AS $$
+DECLARE
+  did_mark_complete boolean := false;
 BEGIN
-    IF EXISTS (
-        SELECT 1 FROM enrollments 
-        WHERE user_id = user_id_input 
-        AND course_id = course_id_input 
-        AND (course_completed = false OR course_completed IS NULL)
-    ) THEN
-        UPDATE profiles SET points = points + 50 WHERE id = user_id_input;
-        UPDATE enrollments SET course_completed = true 
-        WHERE user_id = user_id_input AND course_id = course_id_input;
-    END IF;
+  UPDATE enrollments
+  SET course_completed = true
+  WHERE user_id = user_id_input
+    AND course_id = course_id_input
+    AND course_completed = false
+  RETURNING true INTO did_mark_complete;
+
+  IF coalesce(did_mark_complete, false) THEN
+    UPDATE profiles SET points = coalesce(points, 0) + 50 WHERE id = user_id_input;
+    RETURN true;
+  END IF;
+
+  RETURN false;
 END;
 $$ LANGUAGE plpgsql;
 ```

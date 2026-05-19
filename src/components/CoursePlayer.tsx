@@ -35,6 +35,7 @@ import {
 } from "@/src/lib/courseProgress";
 import { supabase } from "@/src/lib/supabase";
 import { ProfileData } from "@/src/lib/profileCompletion";
+import { logActivity } from "@/src/lib/streak";
 
 interface CoursePlayerProps {
   course: any;
@@ -78,6 +79,7 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [passedQuizzes, setPassedQuizzes] = useState<string[]>([]);
   const [courseCompletionAwarded, setCourseCompletionAwarded] = useState(false);
+  const [isAwardingCourseCompletion, setIsAwardingCourseCompletion] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
@@ -392,26 +394,33 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
 
   const awardCourseCompletion = async (updatedCompletedLessons: string[], updatedPassedQuizzes: string[]) => {
     // 1. Guard: Don't run if already awarded OR if not at 100%
-    if (courseCompletionAwarded || !isCourseComplete(updatedCompletedLessons, updatedPassedQuizzes)) {
+    if (courseCompletionAwarded || isAwardingCourseCompletion || !isCourseComplete(updatedCompletedLessons, updatedPassedQuizzes)) {
       return;
     }
 
-    // 2. Immediate State Lock: Prevent race conditions
-    setCourseCompletionAwarded(true);
-    markCourseCompletionLocally(course.id);
+    setIsAwardingCourseCompletion(true);
 
     try {
       if (session?.user?.id) {
         // Award points only once and mark course completion atomically
-        await supabase.rpc('increment_course_points', {
+        const { data: wasAwarded, error } = await supabase.rpc('increment_course_points', {
           user_id_input: session.user.id,
           course_id_input: course.id,
         });
 
-        onAwardPoints(50);
+        if (error) throw error;
+
+        setCourseCompletionAwarded(true);
+        markCourseCompletionLocally(course.id);
+
+        if (wasAwarded === true) {
+          onAwardPoints(50);
+        }
       }
     } catch (error) {
       console.error('Error awarding course completion points:', error);
+    } finally {
+      setIsAwardingCourseCompletion(false);
     }
   };
 
@@ -437,10 +446,12 @@ export default function CoursePlayer({ course, userProfile, onBack, onLogoClick,
         }
 
         setCompletedLessons(updatedCompletedLessons);
+        logActivity();
         await awardCourseCompletion(updatedCompletedLessons, passedQuizzes);
       } catch (error) {
         console.error('Error marking lesson complete:', error);
         setCompletedLessons(updatedCompletedLessons);
+        logActivity();
         await awardCourseCompletion(updatedCompletedLessons, passedQuizzes);
       }
     }
